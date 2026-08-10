@@ -1,0 +1,6 @@
+.RData
+.Rhistory
+.RProj.user
+pipeline.Rproj
+/pipeline/output/
+/pipeline/raw/

@@ -1,0 +1,15 @@
+# Study area definition for the current pipeline run.
+# Every script reads this file so you only change your target area here -
+# nothing else in the pipeline should hardcode a place name or boundary.
+
+name: "shibuya_pilot"          # used as a prefix for every output file
+pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"   # set this to your actual downloaded
+                                             # .osm.pbf - both the road network
+                                             # and the boundary are read from it
+osm_relation_id: 2689447       # Shibuya City's admin boundary relation -
+                                 # https://www.openstreetmap.org/relation/1759477
+                                 # find another area's ID by searching openstreetmap.org,
+                                 # opening the matching result, and reading "Relation: <name> (<id>)"
+crs: 4326                       # WGS84 lon/lat - matches OSM, e-Stat, web maps
+hex_resolution: 9               # H3 resolution ~0.1 km2/cell - see docs, revisit
+                                 # after you see the first render
