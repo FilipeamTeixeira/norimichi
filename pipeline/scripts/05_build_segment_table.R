@@ -1,6 +1,6 @@
 # 05_build_segment_table.R
 # Applies LTS scoring to the raw OSM road network. Joins nearby POI counts
-# first, since score_lts()'s informal-parking proxy needs them.
+# and footway proximity first, since score_lts() needs both.
 
 source("R/utils_config.R")
 source("R/score_lts.R")
@@ -8,22 +8,61 @@ library(sf)
 
 cfg <- load_study_area()
 
-roads <- sf::st_read(sprintf("output/%s_roads_raw.gpkg", cfg$name), quiet = TRUE)
-poi   <- sf::st_read(sprintf("output/%s_poi.gpkg", cfg$name), quiet = TRUE)
+roads    <- sf::st_read(sprintf("output/%s_roads_raw.gpkg", cfg$name), quiet = TRUE)
+poi      <- sf::st_read(sprintf("output/%s_poi.gpkg", cfg$name), quiet = TRUE)
+footways <- sf::st_read(sprintf("output/%s_footways.gpkg", cfg$name), quiet = TRUE)
 
-# Count POIs within a short buffer of each road segment - "fronting this
-# road", not the whole surrounding block.
-POI_BUFFER_M <- 20
 # Metric CRS for accurate buffering. Japan Plane Rectangular zone IX
 # (Tokyo) - swap for the correct zone if your pilot area is elsewhere
 # (same value used in 08_join_poi.R - keep both in sync).
 METRIC_CRS <- 6677
 
-roads_m  <- sf::st_transform(roads, METRIC_CRS)
-poi_m    <- sf::st_transform(poi, METRIC_CRS)
+roads_m    <- sf::st_transform(roads, METRIC_CRS)
+poi_m      <- sf::st_transform(poi, METRIC_CRS)
+footways_m <- sf::st_transform(footways, METRIC_CRS)
+
+# --- Nearby POI count, grouping divided-road sibling carriageways -------
+# OSM commonly maps a divided road as two separate one-way ways (one per
+# direction). Buffering and counting each independently is wrong: shops
+# near the median can fall within range of one carriageway but not the
+# other, asymmetrically flagging only one side for informal parking even
+# though both sides face the exact same shops. Fix: group ways that share
+# a name, are both explicitly one-way, and sit close together, and give
+# every member of the group the same combined count.
+POI_BUFFER_M <- 20                    # "fronting this road"
+SIBLING_DIST_M <- 40                  # generous enough to bridge a typical median
+
 buffered <- sf::st_buffer(roads_m, POI_BUFFER_M)
 
-roads$nearby_poi_count <- lengths(sf::st_intersects(buffered, poi_m))
+oneway_val <- tolower(trimws(as.character(roads_m$oneway)))
+is_divided_candidate <- !is.na(roads_m$name) & roads_m$name != "" &
+  oneway_val %in% c("yes", "true", "1", "-1")
+
+sibling_matrix <- sf::st_is_within_distance(roads_m, roads_m, SIBLING_DIST_M)
+
+nearby_poi_count <- integer(nrow(roads_m))
+for (i in seq_len(nrow(roads_m))) {
+  neighbor_idx <- setdiff(sibling_matrix[[i]], i)
+  if (is_divided_candidate[i] && length(neighbor_idx) > 0) {
+    siblings <- neighbor_idx[
+      is_divided_candidate[neighbor_idx] & roads_m$name[neighbor_idx] == roads_m$name[i]
+    ]
+    idx_to_combine <- c(i, siblings)
+  } else {
+    idx_to_combine <- i
+  }
+  combined_buffer <- sf::st_union(buffered[idx_to_combine, ])
+  nearby_poi_count[i] <- length(sf::st_intersects(combined_buffer, poi_m)[[1]])
+}
+roads$nearby_poi_count <- nearby_poi_count
+
+# --- Footway proximity, for sidewalks mapped as their own geometry ------
+# Small buffer - a sidewalk running alongside a road should be very close,
+# unlike the wider POI buffer above.
+FOOTWAY_BUFFER_M <- 12
+roads$footway_nearby <- lengths(sf::st_intersects(
+  sf::st_buffer(roads_m, FOOTWAY_BUFFER_M), footways_m
+)) > 0
 
 roads <- score_lts(roads)
 

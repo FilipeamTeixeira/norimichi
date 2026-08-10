@@ -44,6 +44,12 @@ parse_lanes <- function(lanes, default_lanes = 2) {
 #' "no"/"none"/missing as present, since a false positive is safer than
 #' missing a real sidewalk for this purpose (sidewalk cycling is common
 #' in Japan regardless of on-road stress level - see score_lts()'s notes).
+#'
+#' This only catches sidewalks recorded as a tag on the road itself. A
+#' common Japanese mapping convention instead draws the sidewalk as its
+#' own separate `highway=footway` line with no tag on the road at all -
+#' that case is caught separately via `footway_nearby` in score_lts(),
+#' not by this function.
 has_sidewalk <- function(sidewalk) {
   val <- tolower(trimws(as.character(sidewalk)))
   !is.na(val) & !(val %in% c("no", "none", ""))
@@ -78,8 +84,10 @@ INFORMAL_PARKING_POI_THRESHOLD <- 3
 #' @param roads data frame with columns: highway, maxspeed, lanes, cycleway,
 #'   `cycleway_left`, `cycleway_right`, `cycleway_both`,
 #'   `parking_lane_left`, `parking_lane_right`, `parking_lane_both`,
-#'   `sidewalk`, and `nearby_poi_count` (joined upstream in
-#'   05_build_segment_table.R - see the informal-parking proxy notes)
+#'   `sidewalk`, `nearby_poi_count` (joined upstream in
+#'   05_build_segment_table.R - see the informal-parking proxy notes),
+#'   and `footway_nearby` (also joined upstream - see the sidewalk_available
+#'   notes above)
 #' @return the same object with `lts` (integer, 1-4), `sidewalk_available`
 #'   (logical), and `likely_informal_parking` (logical) columns added
 score_lts <- function(roads) {
@@ -106,7 +114,7 @@ score_lts <- function(roads) {
       likely_informal_parking = !.has_cycle_infra &
         dplyr::coalesce(nearby_poi_count, 0) >= INFORMAL_PARKING_POI_THRESHOLD,
       .parking_risk = .has_marked_parking | likely_informal_parking,
-      sidewalk_available = has_sidewalk(sidewalk),
+      sidewalk_available = has_sidewalk(sidewalk) | dplyr::coalesce(footway_nearby, FALSE),
       lts = case_when(
         highway %in% c("cycleway", "path")               ~ 1L,
         .has_cycle_infra & .speed_kmh <= 40                ~ 1L,

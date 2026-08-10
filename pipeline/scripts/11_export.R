@@ -27,5 +27,6 @@ segments$estimated_beneficiaries <- NA_integer_      # TODO: derive from nearby 
 
 export_hex_layer(hexes, "output/hexagons.geojson")
 export_segment_layer(segments, "output/segments.geojson")
+export_summary_stats(sprintf("output/%s_summary.json", cfg$name), "output/summary.json")
 
-message("Exported hexagons.geojson and segments.geojson to the Next.js app")
+message("Exported hexagons.geojson, segments.geojson, and summary.json to the Next.js app")

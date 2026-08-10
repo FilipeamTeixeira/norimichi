@@ -77,3 +77,37 @@ get_osm_roads <- function(pbf_path, boundary) {
     dplyr::filter(highway %in% CYCLABLE_HIGHWAY_TYPES) |>
     sf::st_cast("MULTILINESTRING")
 }
+
+#' Load pedestrian footway geometries from the same local .osm.pbf.
+#'
+#' score_lts.R's sidewalk detection originally only checked the
+#' `sidewalk=*` tag on the road itself. That misses a common Japanese
+#' mapping convention: a sidewalk drawn as its own separate
+#' `highway=footway` line running parallel to the road, with no
+#' `sidewalk` tag on the road at all. This function fetches those
+#' footways so 05_build_segment_table.R can check proximity instead of
+#' relying on the tag alone.
+#'
+#' Deliberately a separate oe_read() call rather than folding into
+#' get_osm_roads() (which already filters to CYCLABLE_HIGHWAY_TYPES,
+#' excluding footways) - costs a second vectortranslate pass over the
+#' file, but keeps get_osm_roads()'s existing, tested behavior untouched.
+#'
+#' @param pbf_path path to the same .osm.pbf used for roads/boundary
+#' @param boundary sf/sfc polygon used to clip the extract (WGS84)
+#' @return sf MULTILINESTRING, one row per footway
+get_footways <- function(pbf_path, boundary) {
+  footways <- osmextract::oe_read(
+    pbf_path,
+    layer = "lines",
+    extra_tags = c("highway", "footway"),
+    boundary = boundary,
+    boundary_type = "clipsrc",
+    force_vectortranslate = TRUE,
+    quiet = FALSE
+  )
+
+  footways |>
+    dplyr::filter(highway == "footway") |>
+    sf::st_cast("MULTILINESTRING")
+}
