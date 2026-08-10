@@ -26,9 +26,13 @@ app_id <- Sys.getenv("ESTAT_APP_ID")
 if (app_id == "") stop("Set ESTAT_APP_ID in your environment (.Renviron)")
 
 # TODO: replace with the statsDataId you found via find_estat_table()
-POPULATION_MESH_STATS_ID <- "00200511"
+POPULATION_MESH_STATS_ID <- "8003007262"
 
+#8003007262 (1km)
+#8003007402 (500m)
+#8003007573 (250m)
 
+#00200511
 #8003007265
 
 # Restrict the query to mesh codes that actually cover the study area.

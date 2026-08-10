@@ -1,6 +1,7 @@
 .RData
 .Rhistory
 .RProj.user
+.Renviron
 pipeline.Rproj
 /pipeline/output/
 /pipeline/raw/
