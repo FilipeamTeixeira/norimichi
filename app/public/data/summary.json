@@ -1,0 +1,40 @@
+{
+  "network": {
+    "total_segments": 3163,
+    "total_length_km": 0,
+    "lts_distribution": {
+      "1": 200,
+      "2": 2259,
+      "3": 511,
+      "4": 193
+    },
+    "pct_high_stress_length": "NaN",
+    "pct_no_sidewalk_length": "NaN",
+    "pct_no_safe_option_length": "NaN",
+    "pct_likely_informal_parking": 8.9
+  },
+  "destinations": {
+    "shops_and_restaurants": 1217,
+    "schools": 54,
+    "stations": 13
+  },
+  "demand": {
+    "total_population": 152944,
+    "avg_demand_score": 0.276,
+    "avg_gap_score": -0.269,
+    "missed_opportunity_hexes": 38,
+    "population_in_missed_opportunity_hexes": 32827
+  },
+  "roi_scenario": {
+    "note": "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",
+    "daily_car_trips": 107061,
+    "daily_congestion_cost_yen": 37462641,
+    "daily_operating_cost_yen": 5230980,
+    "daily_shifted_trips": 21412,
+    "daily_congestion_savings_yen": 7492528,
+    "daily_operating_savings_yen": 1046196,
+    "daily_emissions_avoided_kg": 5567.2,
+    "daily_health_benefit_yen": 642364,
+    "parking_spaces_freed": 428.2
+  }
+}

@@ -38,10 +38,12 @@ export_hex_layer <- function(hexes, path) {
 #' @param path output path, e.g. "../app/public/data/segments.geojson"
 export_segment_layer <- function(segments, path) {
   required_cols <- c(
-    "way_id", "length_m", "lts", "speed_kmh", "traffic_signals_count",
+    "way_id", "name", "highway", "length_m", "lts", "speed_kmh", "lanes_n",
+    "traffic_signals_count", "has_cycle_infra",
     "sidewalk_available", "likely_informal_parking",
-    "school_nearby", "station_nearby", "existing_cycling", "infra_gap",
-    "recommendation", "estimated_beneficiaries"
+    "school_nearby", "station_nearby", "existing_cycling",
+    "mean_slope_deg", "flat_terrain",
+    "infra_gap", "recommendation", "estimated_beneficiaries"
   )
   missing <- setdiff(required_cols, names(segments))
   if (length(missing) > 0) {

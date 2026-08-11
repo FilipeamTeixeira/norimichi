@@ -116,6 +116,8 @@ score_lts <- function(roads) {
       # for a cyclist since there's less room to pass a stopped car. This
       # is a calibrated proxy, not ground truth - there's no open dataset
       # for actual informal parking behavior.
+      has_cycle_infra = .has_cycle_infra,
+      lanes_n = .lanes_n,
       likely_informal_parking = !.has_cycle_infra &
         dplyr::coalesce(nearby_poi_count, 0) >= INFORMAL_PARKING_POI_THRESHOLD,
       .parking_risk = .has_marked_parking | likely_informal_parking,
