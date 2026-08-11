@@ -12,13 +12,21 @@ const userTypes = [
 
 const tripDistances = ["0 – 3 km", "3 – 5 km", "5 – 10 km"] as const;
 
+// These must match the `recommendation` values written by
+// pipeline/scripts/11_export.R, which is what the map filters on.
+// "Bike parking" has no segment-level equivalent - it's a point facility,
+// carried by the bike_facilities layer instead - so it has nothing to match.
 const interventionTypes = [
   "Protected cycle lane",
   "Crossing improvement",
   "Traffic calming",
-  "Bike parking",
   "Missing link",
 ] as const;
+
+interface Props {
+  intervention: string | null;
+  onInterventionChange: (value: string | null) => void;
+}
 
 function InfoIcon() {
   return (
@@ -38,22 +46,49 @@ function SectionHeader({ title, info }: { title: string; info?: boolean }) {
   );
 }
 
+/**
+ * Explains why a filter group is inert instead of letting the user click
+ * controls that quietly do nothing.
+ */
+function NotAvailable({ reason }: { reason: string }) {
+  return (
+    <p className="text-[11px] leading-relaxed text-neutral-400 mt-2 italic">
+      {reason}
+    </p>
+  );
+}
+
 function Checkbox({
   label,
   checked,
   onChange,
+  disabled,
 }: {
   label: string;
   checked: boolean;
   onChange: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <label className="flex items-center gap-2.5 py-1 cursor-pointer group">
+    <label
+      className={`flex items-center gap-2.5 py-1 group ${
+        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"
+      }`}
+    >
+      {/* A real input, visually hidden: gives keyboard focus and screen
+          reader semantics that a styled <div> alone cannot. */}
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        disabled={disabled}
+        className="sr-only peer"
+      />
       <div
-        className={`w-[18px] h-[18px] rounded border-[1.5px] flex items-center justify-center transition-colors ${
+        className={`w-[18px] h-[18px] rounded border-[1.5px] flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400 peer-focus-visible:ring-offset-1 ${
           checked
             ? "bg-neutral-800 border-neutral-800"
-            : "bg-white border-neutral-300 group-hover:border-neutral-400"
+            : `bg-white border-neutral-300 ${!disabled && "group-hover:border-neutral-400"}`
         }`}
       >
         {checked && (
@@ -71,18 +106,38 @@ function Radio({
   label,
   checked,
   onChange,
+  disabled,
+  name,
 }: {
   label: string;
   checked: boolean;
   onChange: () => void;
+  disabled?: boolean;
+  name: string;
 }) {
   return (
-    <label className="flex items-center gap-2.5 py-1 cursor-pointer group">
+    <label
+      className={`flex items-center gap-2.5 py-1 group ${
+        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"
+      }`}
+    >
+      {/* Radios are click-to-toggle-off here, so onClick carries the change
+          rather than onChange - React won't fire onChange when re-clicking
+          an already-checked radio. */}
+      <input
+        type="radio"
+        name={name}
+        checked={checked}
+        onChange={() => {}}
+        onClick={onChange}
+        disabled={disabled}
+        className="sr-only peer"
+      />
       <div
-        className={`w-[18px] h-[18px] rounded-full border-[1.5px] flex items-center justify-center transition-colors ${
+        className={`w-[18px] h-[18px] rounded-full border-[1.5px] flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400 peer-focus-visible:ring-offset-1 ${
           checked
             ? "border-neutral-800"
-            : "border-neutral-300 group-hover:border-neutral-400"
+            : `border-neutral-300 ${!disabled && "group-hover:border-neutral-400"}`
         }`}
       >
         {checked && <div className="w-2.5 h-2.5 rounded-full bg-neutral-800" />}
@@ -92,27 +147,19 @@ function Radio({
   );
 }
 
-export default function FilterSidebar() {
-  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
-  const [selectedDistance, setSelectedDistance] = useState<string | null>(null);
-  const [selectedIntervention, setSelectedIntervention] = useState<string | null>(null);
+export default function FilterSidebar({
+  intervention,
+  onInterventionChange,
+}: Props) {
+  // Users and Trip distance are kept visible because they're part of the
+  // design, but there is no data behind either yet (persona-reweighted
+  // demand scoring and isochrone reachability - both Part D item 7), so
+  // they stay disabled rather than pretending to filter.
+  const [selectedUsers] = useState<Set<string>>(new Set());
+  const [selectedDistance] = useState<string | null>(null);
 
-  const toggleUser = (u: string) => {
-    setSelectedUsers((prev) => {
-      const next = new Set(prev);
-      if (next.has(u)) next.delete(u);
-      else next.add(u);
-      return next;
-    });
-  };
-
-  const reset = () => {
-    setSelectedUsers(new Set());
-    setSelectedDistance(null);
-    setSelectedIntervention(null);
-  };
-
-  const hasSelection = selectedUsers.size > 0 || selectedDistance || selectedIntervention;
+  const reset = () => onInterventionChange(null);
+  const hasSelection = intervention != null;
 
   return (
     <aside className="w-[220px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
@@ -132,10 +179,12 @@ export default function FilterSidebar() {
               key={u}
               label={u}
               checked={selectedUsers.has(u)}
-              onChange={() => toggleUser(u)}
+              onChange={() => {}}
+              disabled
             />
           ))}
         </div>
+        <NotAvailable reason="Needs persona-weighted demand scoring — not built yet." />
       </div>
 
       <div className="mx-5 border-t border-neutral-100" />
@@ -146,12 +195,15 @@ export default function FilterSidebar() {
           {tripDistances.map((d) => (
             <Radio
               key={d}
+              name="trip-distance"
               label={d}
               checked={selectedDistance === d}
-              onChange={() => setSelectedDistance(selectedDistance === d ? null : d)}
+              onChange={() => {}}
+              disabled
             />
           ))}
         </div>
+        <NotAvailable reason="Needs isochrone reachability analysis — not built yet." />
       </div>
 
       <div className="mx-5 border-t border-neutral-100" />
@@ -162,10 +214,11 @@ export default function FilterSidebar() {
           {interventionTypes.map((t) => (
             <Radio
               key={t}
+              name="intervention-type"
               label={t}
-              checked={selectedIntervention === t}
+              checked={intervention === t}
               onChange={() =>
-                setSelectedIntervention(selectedIntervention === t ? null : t)
+                onInterventionChange(intervention === t ? null : t)
               }
             />
           ))}

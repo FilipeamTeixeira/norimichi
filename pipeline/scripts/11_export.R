@@ -7,6 +7,7 @@
 source("R/utils_config.R")
 source("R/export_geojson.R")
 source("R/score_lts.R")
+source("R/score_suitability.R")
 library(sf)
 library(dplyr)
 
@@ -56,23 +57,60 @@ message(sprintf("Beneficiary estimates: median %d, max %d",
                 median(segments$estimated_beneficiaries),
                 max(segments$estimated_beneficiaries)))
 
-# --- Recommendation text from segment attributes ---
+# --- Recommendation, cost tier, and expected score after intervention ---
+#
+# Labels are deliberately the same five intervention types the design's
+# sidebar filter offers, so that filter can actually match against this
+# field rather than being decorative. ("Bike parking" is the one sidebar
+# type with no segment-level equivalent - it's a point facility, already
+# covered by the bike_facilities layer.)
+#
+# `bridges_islands` is tested first: when the network analysis says
+# upgrading a segment would merge two low-stress islands, that framing
+# ("missing link") is the most important thing to say about it, ahead of
+# whatever its lane count or speed limit happens to be.
 
 segments$recommendation <- case_when(
-  segments$has_cycle_infra ~ NA_character_,
-  segments$lts >= 4 & segments$lanes_n >= 3 ~
-    "Protected cycle lane",
-  segments$lts >= 3 & segments$speed_kmh > 40 ~
-    "Protected cycle lane",
-  segments$lts >= 3 & segments$likely_informal_parking ~
-    "Parking management + cycle lane",
-  segments$lts >= 3 ~
-    "Cycle lane marking",
-  TRUE ~ NA_character_
+  segments$has_cycle_infra                       ~ NA_character_,
+  segments$lts < 3                               ~ NA_character_,
+  segments$bridges_islands                       ~ "Missing link",
+  segments$lanes_n >= 3 | segments$speed_kmh > 40 ~ "Protected cycle lane",
+  segments$likely_informal_parking               ~ "Traffic calming",
+  segments$traffic_signals_count >= 2            ~ "Crossing improvement",
+  TRUE                                           ~ "Protected cycle lane"
+)
+
+message("Recommendation distribution:")
+print(table(segments$recommendation, useNA = "no"))
+
+# Cost tier scales with how much physical road space has to be reallocated.
+segments$cost_tier <- case_when(
+  is.na(segments$recommendation)                        ~ NA_character_,
+  segments$lanes_n >= 4 | segments$speed_kmh >= 60      ~ "High",
+  segments$lanes_n == 3 | segments$speed_kmh > 40       ~ "Medium",
+  TRUE                                                  ~ "Low"
+)
+
+# Expected suitability after the intervention. Rather than a flat "+44",
+# re-run the actual scoring function under the counterfactual that the
+# segment now has cycle infrastructure - score_lts()'s own rules say such a
+# segment is LTS 1 at <=40km/h and LTS 2 above it, so the "after" number is
+# derived from the same logic that produced the "before" one.
+segments$suitability_after <- ifelse(
+  is.na(segments$recommendation),
+  NA_integer_,
+  score_suitability(
+    lts                = ifelse(segments$speed_kmh <= 40, 1L, 2L),
+    sidewalk_available = segments$sidewalk_available,
+    has_cycle_infra    = TRUE
+  )
 )
 
 message(sprintf("Segments with recommendations: %d of %d",
                 sum(!is.na(segments$recommendation)), nrow(segments)))
+message(sprintf("Mean expected suitability gain: %.1f points",
+                mean(segments$suitability_after - segments$suitability_score,
+                     na.rm = TRUE)))
 
 export_hex_layer(hexes, "output/hexagons.geojson")
 export_segment_layer(segments, "output/segments.geojson")

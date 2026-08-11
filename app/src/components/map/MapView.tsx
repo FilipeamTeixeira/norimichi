@@ -1,22 +1,87 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import { Map, NavigationControl, type MapMouseEvent } from "maplibre-gl";
+import {
+  Map,
+  NavigationControl,
+  type MapMouseEvent,
+  type ExpressionSpecification,
+} from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { SegmentFeature } from "@/lib/types";
+import { CATEGORY_COLORS } from "@/lib/types";
 
 interface MapViewProps {
   onSegmentClick: (feature: SegmentFeature | null) => void;
+  /** A `recommendation` value to isolate, or null to show everything. */
+  interventionFilter?: string | null;
 }
 
-const LTS_COLORS: [number, string][] = [
-  [1, "#22c55e"],
-  [2, "#86efac"],
-  [3, "#f59e0b"],
-  [4, "#ef4444"],
-];
+/**
+ * Build a MapLibre `match` expression that gives bottlenecks, low-priority
+ * roads, and everything else three different values of the same property.
+ */
+function byCategory(
+  bottleneck: number,
+  lowPriority: number,
+  rest: number
+): ExpressionSpecification {
+  return [
+    "match",
+    ["get", "display_category"],
+    "bottleneck",
+    bottleneck,
+    "low_priority",
+    lowPriority,
+    rest,
+  ];
+}
 
-export default function MapView({ onSegmentClick }: MapViewProps) {
+/** True where the segment carries the recommendation being isolated. */
+function matchesFilter(filter: string): ExpressionSpecification {
+  return ["==", ["get", "recommendation"], filter];
+}
+
+/**
+ * Line width. With no filter, width tracks category (bottlenecks heavier).
+ * With a filter, matching segments go heavy and everything else thins out to
+ * a faint trace - kept visible rather than removed, so the surrounding
+ * network still reads as context for where the matches sit.
+ */
+function widthFor(filter: string | null | undefined): ExpressionSpecification {
+  const at = (
+    bottleneck: number,
+    lowPriority: number,
+    rest: number,
+    matched: number
+  ): ExpressionSpecification =>
+    filter
+      ? ["case", matchesFilter(filter), matched, 0.7]
+      : byCategory(bottleneck, lowPriority, rest);
+
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    10,
+    at(1.4, 0.8, 1, 2),
+    14,
+    at(3.5, 1.8, 2.5, 4.5),
+    18,
+    at(5.5, 3, 4, 7),
+  ];
+}
+
+function opacityFor(filter: string | null | undefined): ExpressionSpecification {
+  return filter
+    ? ["case", matchesFilter(filter), 0.95, 0.12]
+    : byCategory(0.95, 0.5, 0.85);
+}
+
+export default function MapView({
+  onSegmentClick,
+  interventionFilter = null,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -145,29 +210,22 @@ export default function MapView({ onSegmentClick }: MapViewProps) {
         paint: {
           "line-color": [
             "match",
-            ["get", "lts"],
-            1,
-            LTS_COLORS[0][1],
-            2,
-            LTS_COLORS[1][1],
-            3,
-            LTS_COLORS[2][1],
-            4,
-            LTS_COLORS[3][1],
+            ["get", "display_category"],
+            "high",
+            CATEGORY_COLORS.high,
+            "moderate",
+            CATEGORY_COLORS.moderate,
+            "bottleneck",
+            CATEGORY_COLORS.bottleneck,
+            "low_priority",
+            CATEGORY_COLORS.low_priority,
             "#9ca3af",
           ],
-          "line-width": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            10,
-            1,
-            14,
-            2.5,
-            18,
-            4,
-          ],
-          "line-opacity": 0.85,
+          // Bottlenecks are the headline finding, so they read heavier;
+          // low-priority stressful roads recede rather than competing for
+          // attention with them.
+          "line-width": widthFor(interventionFilter),
+          "line-opacity": opacityFor(interventionFilter),
         },
       });
 
@@ -251,6 +309,16 @@ export default function MapView({ onSegmentClick }: MapViewProps) {
       map.off("click", handleClick);
     };
   }, [handleClick, loaded]);
+
+  // Re-paint when the intervention filter changes. Repainting beats
+  // setFilter here: dropping non-matching segments from the layer entirely
+  // would leave the matches floating with no network around them.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !map.getLayer("segments-layer")) return;
+    map.setPaintProperty("segments-layer", "line-width", widthFor(interventionFilter));
+    map.setPaintProperty("segments-layer", "line-opacity", opacityFor(interventionFilter));
+  }, [interventionFilter, loaded]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

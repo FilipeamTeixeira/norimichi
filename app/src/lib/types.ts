@@ -17,10 +17,31 @@ export interface SegmentProperties {
   existing_cycling: boolean | null;
   mean_slope_deg?: number | null;
   flat_terrain?: boolean;
+  // B.3: suitability score + stress-based network analysis
+  suitability_score?: number;
+  network_criticality_score?: number;
+  bridges_islands?: boolean;
+  islands_adjacent?: number;
+  island_id?: number | null;
+  display_category?: DisplayCategory;
   infra_gap: string;
   recommendation: string | null;
+  cost_tier?: string | null;
+  suitability_after?: number | null;
   estimated_beneficiaries: number | null;
 }
+
+/**
+ * The four map colour categories. `bottleneck` and `low_priority` are both
+ * low-suitability roads — the difference is whether the network analysis
+ * found that upgrading them would join otherwise-severed low-stress areas.
+ * See pipeline/R/score_network.R.
+ */
+export type DisplayCategory =
+  | "high"
+  | "moderate"
+  | "bottleneck"
+  | "low_priority";
 
 export interface HexProperties {
   hex_id: string;
@@ -116,4 +137,40 @@ export function suitabilityLabel(score: number): string {
   if (score >= 67) return "Good";
   if (score >= 34) return "Moderate";
   return "Bottleneck";
+}
+
+/**
+ * Colours keyed to display_category rather than raw score, so that a
+ * low-scoring road that connects nothing reads as de-prioritised (neutral
+ * grey) instead of urgent (red). Kept in sync with the thresholds in
+ * pipeline/R/score_suitability.R.
+ */
+export const CATEGORY_COLORS: Record<DisplayCategory, string> = {
+  high: "#22c55e",
+  moderate: "#f59e0b",
+  bottleneck: "#ef4444",
+  low_priority: "#9ca3af",
+};
+
+export const CATEGORY_LABELS: Record<DisplayCategory, string> = {
+  high: "High suitability",
+  moderate: "Moderate",
+  bottleneck: "Strategic bottleneck",
+  low_priority: "Low priority",
+};
+
+/**
+ * Resolve a segment's category, falling back to its LTS-derived score for
+ * data exported before the network analysis existed.
+ */
+export function segmentCategory(p: SegmentProperties): DisplayCategory {
+  if (p.display_category) return p.display_category;
+  const score = p.suitability_score ?? ltsToSuitability(p.lts);
+  if (score >= 67) return "high";
+  if (score >= 34) return "moderate";
+  return "bottleneck";
+}
+
+export function segmentSuitability(p: SegmentProperties): number {
+  return p.suitability_score ?? ltsToSuitability(p.lts);
 }

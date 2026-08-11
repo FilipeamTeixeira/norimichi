@@ -43,7 +43,11 @@ export_segment_layer <- function(segments, path) {
     "sidewalk_available", "likely_informal_parking",
     "school_nearby", "station_nearby", "existing_cycling",
     "mean_slope_deg", "flat_terrain",
-    "infra_gap", "recommendation", "estimated_beneficiaries"
+    # B.3: suitability score + stress-based network analysis
+    "suitability_score", "network_criticality_score",
+    "bridges_islands", "islands_adjacent", "island_id", "display_category",
+    "infra_gap", "recommendation", "cost_tier", "suitability_after",
+    "estimated_beneficiaries"
   )
   missing <- setdiff(required_cols, names(segments))
   if (length(missing) > 0) {

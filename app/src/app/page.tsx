@@ -9,12 +9,19 @@ import type { SegmentFeature } from "@/lib/types";
 
 export default function NetworkPage() {
   const [selected, setSelected] = useState<SegmentFeature | null>(null);
+  const [intervention, setIntervention] = useState<string | null>(null);
 
   return (
     <>
-      <FilterSidebar />
+      <FilterSidebar
+        intervention={intervention}
+        onInterventionChange={setIntervention}
+      />
       <main className="flex-1 relative bg-[#F7F8FA]">
-        <MapView onSegmentClick={setSelected} />
+        <MapView
+          onSegmentClick={setSelected}
+          interventionFilter={intervention}
+        />
         {selected && (
           <SegmentInfoPanel
             segment={selected}
