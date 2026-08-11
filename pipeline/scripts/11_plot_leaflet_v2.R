@@ -403,7 +403,27 @@ m <- m %>%
     options = layersControlOptions(
       collapsed = FALSE
     )
-  )
+  ) %>%
+
+  hideGroup(c(
+    "Population",
+    "Production score",
+    "Attraction score",
+    "Demand score",
+    "Stress score",
+    "Infrastructure quality",
+    "Gap score",
+    "Schools nearby",
+    "Stations nearby",
+    "Shops nearby",
+    "Flat terrain",
+
+    "Segments: LTS",
+    "Segments: Length",
+    "Segments: Infrastructure gap",
+    "Segments: Sidewalk available",
+    "Segments: Informal parking"
+  ))
 
 
 # ============================================================

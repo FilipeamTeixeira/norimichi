@@ -15,7 +15,8 @@ export_hex_layer <- function(hexes, path) {
   required_cols <- c(
     "hex_id", "population", "production_score", "attraction_score",
     "demand_score", "stress_score", "infra_quality_score", "gap_score",
-    "schools_nearby", "stations_nearby", "shops_nearby", "flat_terrain",
+    "schools_nearby", "stations_nearby", "shops_nearby",
+    "bike_parking_nearby", "bike_parking_capacity_nearby", "flat_terrain",
     "roi_car_trips_per_day", "roi_congestion_cost_yen_day", "roi_operating_cost_yen_day",
     "roi_emissions_kg_day", "roi_shifted_trips_per_day", "roi_congestion_savings_yen_day",
     "roi_operating_savings_yen_day", "roi_emissions_avoided_kg_day",
@@ -36,7 +37,8 @@ export_hex_layer <- function(hexes, path) {
 #' @param path output path, e.g. "../app/public/data/segments.geojson"
 export_segment_layer <- function(segments, path) {
   required_cols <- c(
-    "way_id", "length_m", "lts", "sidewalk_available", "likely_informal_parking",
+    "way_id", "length_m", "lts", "speed_kmh", "traffic_signals_count",
+    "sidewalk_available", "likely_informal_parking",
     "school_nearby", "station_nearby", "existing_cycling", "infra_gap",
     "recommendation", "estimated_beneficiaries"
   )

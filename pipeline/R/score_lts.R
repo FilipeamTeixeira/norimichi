@@ -88,13 +88,18 @@ INFORMAL_PARKING_POI_THRESHOLD <- 3
 #'   05_build_segment_table.R - see the informal-parking proxy notes),
 #'   and `footway_nearby` (also joined upstream - see the sidewalk_available
 #'   notes above)
-#' @return the same object with `lts` (integer, 1-4), `sidewalk_available`
-#'   (logical), and `likely_informal_parking` (logical) columns added
+#' @return the same object with `lts` (integer, 1-4), `speed_kmh` (numeric,
+#'   parsed from the raw `maxspeed` tag), `sidewalk_available` (logical),
+#'   and `likely_informal_parking` (logical) columns added. `speed_kmh` is
+#'   kept as a real output (not just an internal scoring helper) because a
+#'   future per-route travel-time calculator on the frontend needs the
+#'   actual parsed speed limit, not just the derived `lts` score - same
+#'   reasoning as fetching traffic signals in fetch_osm.R.
 score_lts <- function(roads) {
 
   roads |>
     mutate(
-      .speed_kmh = parse_maxspeed_kmh(maxspeed),
+      speed_kmh  = parse_maxspeed_kmh(maxspeed),
       .lanes_n   = parse_lanes(lanes),
       .has_cycle_infra = has_cycle_infra(
         cycleway, cycleway_left, cycleway_right, cycleway_both
@@ -117,7 +122,7 @@ score_lts <- function(roads) {
       sidewalk_available = has_sidewalk(sidewalk) | dplyr::coalesce(footway_nearby, FALSE),
       lts = case_when(
         highway %in% c("cycleway", "path")               ~ 1L,
-        .has_cycle_infra & .speed_kmh <= 40                ~ 1L,
+        .has_cycle_infra & speed_kmh <= 40                 ~ 1L,
         .has_cycle_infra                                   ~ 2L,
         # Parking risk matters here too, not just below - a narrow
         # residential street with informal parking in front of shops is
@@ -125,11 +130,11 @@ score_lts <- function(roads) {
         # have the same lane count and speed limit.
         highway %in% c("residential", "living_street",
                         "service", "unclassified") &
-          .speed_kmh <= 30 & .lanes_n <= 2 & !.parking_risk  ~ 2L,
+          speed_kmh <= 30 & .lanes_n <= 2 & !.parking_risk   ~ 2L,
         highway %in% c("residential", "living_street",
                         "service", "unclassified") &
-          .speed_kmh <= 30 & .lanes_n <= 2 & .parking_risk   ~ 3L,
-        .speed_kmh <= 40 & .lanes_n <= 2 & !.parking_risk    ~ 3L,
+          speed_kmh <= 30 & .lanes_n <= 2 & .parking_risk    ~ 3L,
+        speed_kmh <= 40 & .lanes_n <= 2 & !.parking_risk     ~ 3L,
         TRUE                                                 ~ 4L
       )
     ) |>

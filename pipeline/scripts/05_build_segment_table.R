@@ -11,6 +11,7 @@ cfg <- load_study_area()
 roads    <- sf::st_read(sprintf("output/%s_roads_raw.gpkg", cfg$name), quiet = TRUE)
 poi      <- sf::st_read(sprintf("output/%s_poi.gpkg", cfg$name), quiet = TRUE)
 footways <- sf::st_read(sprintf("output/%s_footways.gpkg", cfg$name), quiet = TRUE)
+signals  <- sf::st_read(sprintf("output/%s_traffic_signals.gpkg", cfg$name), quiet = TRUE)
 
 # Metric CRS for accurate buffering. Japan Plane Rectangular zone IX
 # (Tokyo) - swap for the correct zone if your pilot area is elsewhere
@@ -20,6 +21,7 @@ METRIC_CRS <- 6677
 roads_m    <- sf::st_transform(roads, METRIC_CRS)
 poi_m      <- sf::st_transform(poi, METRIC_CRS)
 footways_m <- sf::st_transform(footways, METRIC_CRS)
+signals_m  <- sf::st_transform(signals, METRIC_CRS)
 
 # --- Nearby POI count, grouping divided-road sibling carriageways -------
 # OSM commonly maps a divided road as two separate one-way ways (one per
@@ -63,6 +65,18 @@ FOOTWAY_BUFFER_M <- 12
 roads$footway_nearby <- lengths(sf::st_intersects(
   sf::st_buffer(roads_m, FOOTWAY_BUFFER_M), footways_m
 )) > 0
+
+# --- Traffic signals along each segment, for travel-time estimation -----
+# Not used by score_lts() itself (signals affect travel time, not crash-
+# risk stress), but exported so a future per-route calculator can build a
+# realistic time estimate from speed_kmh + signal count rather than the
+# flat average this pipeline's aggregate ROI estimate uses (see
+# R/score_roi.R). Small buffer - OSM places a signal node essentially on
+# the road's own line at the intersection, not offset from it.
+SIGNAL_BUFFER_M <- 15
+roads$traffic_signals_count <- lengths(sf::st_intersects(
+  sf::st_buffer(roads_m, SIGNAL_BUFFER_M), signals_m
+))
 
 roads <- score_lts(roads)
 

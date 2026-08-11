@@ -111,3 +111,61 @@ get_footways <- function(pbf_path, boundary) {
     dplyr::filter(highway == "footway") |>
     sf::st_cast("MULTILINESTRING")
 }
+
+#' Load traffic signal locations from the same local .osm.pbf.
+#'
+#' Needed for realistic travel-time estimation: a route's actual travel
+#' time (and anything derived from it - congestion cost, car-vs-bike time
+#' comparison) depends heavily on how many signalized intersections it
+#' crosses, not just its distance and speed limit. This pipeline's
+#' study-area-wide ROI estimate (score_roi.R) deliberately uses a flat
+#' average trip duration rather than a network travel-time model, but a
+#' future per-route calculator on the frontend will need this - along
+#' with the speed limit, which score_lts.R already parses but keeps as
+#' `speed_kmh` (see below) rather than exporting the raw untidy tag.
+#'
+#' @param pbf_path path to the same .osm.pbf used for roads/boundary
+#' @param boundary sf/sfc polygon used to clip the extract (WGS84)
+#' @return sf POINT, one row per traffic signal
+get_traffic_signals <- function(pbf_path, boundary) {
+  points <- osmextract::oe_read(
+    pbf_path,
+    layer = "points",
+    extra_tags = c("highway"),
+    boundary = boundary,
+    boundary_type = "clipsrc",
+    force_vectortranslate = TRUE,
+    quiet = FALSE
+  )
+
+  points |> dplyr::filter(highway == "traffic_signals")
+}
+
+#' Load bicycle parking facilities from the same local .osm.pbf.
+#'
+#' Kept separate from fetch_poi.R's get_poi(), even though both read
+#' `amenity=*` tags from the same "points" layer - POI there models trip
+#' *attraction* (shops/restaurants people cycle to), while bike parking is
+#' *supply* (whether they can actually leave the bike once they arrive).
+#' Mixing the two would understate attraction_score wherever a hex is
+#' full of bike racks but isn't itself a destination, and would hide a
+#' real, distinct gap: a station or shopping street with strong demand
+#' and safe roads but nowhere to park is still a missed opportunity, just
+#' a different kind than an infrastructure gap in the road network.
+#'
+#' @param pbf_path path to the same .osm.pbf used for roads/boundary
+#' @param boundary sf/sfc polygon used to clip the extract (WGS84)
+#' @return sf POINT, one row per facility, columns: amenity, capacity
+get_bike_parking <- function(pbf_path, boundary) {
+  points <- osmextract::oe_read(
+    pbf_path,
+    layer = "points",
+    extra_tags = c("amenity", "capacity"),
+    boundary = boundary,
+    boundary_type = "clipsrc",
+    force_vectortranslate = TRUE,
+    quiet = FALSE
+  )
+
+  points |> dplyr::filter(amenity == "bicycle_parking")
+}
