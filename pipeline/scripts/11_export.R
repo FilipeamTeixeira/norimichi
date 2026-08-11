@@ -13,8 +13,9 @@ source("R/export_geojson.R")
 library(sf)
 
 cfg <- load_study_area()
-hexes    <- sf::st_read(sprintf("output/%s_hexgrid_scored.gpkg", cfg$name), quiet = TRUE)
-segments <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TRUE)
+hexes           <- sf::st_read(sprintf("output/%s_hexgrid_scored.gpkg", cfg$name), quiet = TRUE)
+segments        <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TRUE)
+bike_facilities <- sf::st_read(sprintf("output/%s_bike_facilities.gpkg", cfg$name), quiet = TRUE)
 
 segments$way_id                  <- seq_len(nrow(segments))
 segments$length_m                <- as.numeric(sf::st_length(segments))
@@ -27,6 +28,7 @@ segments$estimated_beneficiaries <- NA_integer_      # TODO: derive from nearby 
 
 export_hex_layer(hexes, "output/hexagons.geojson")
 export_segment_layer(segments, "output/segments.geojson")
+export_bike_facilities_layer(bike_facilities, "output/bike_facilities.geojson")
 export_summary_stats(sprintf("output/%s_summary.json", cfg$name), "output/summary.json")
 
-message("Exported hexagons.geojson, segments.geojson, and summary.json to the Next.js app")
+message("Exported hexagons.geojson, segments.geojson, bike_facilities.geojson, and summary.json to the Next.js app")

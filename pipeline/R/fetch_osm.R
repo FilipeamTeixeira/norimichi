@@ -141,22 +141,44 @@ get_traffic_signals <- function(pbf_path, boundary) {
   points |> dplyr::filter(highway == "traffic_signals")
 }
 
-#' Load bicycle parking facilities from the same local .osm.pbf.
+#' Load bicycle parking AND bike-sharing facilities from the same local
+#' .osm.pbf, distinguished by a `facility_type` column ("parking" vs
+#' "sharing"). OSM tags these as two different amenity values:
+#'   - amenity=bicycle_parking - racks/sheds for personally-owned bikes
+#'   - amenity=bicycle_rental  - docking stations for shared/rental bikes
+#'     (Docomo Bike Share, HELLO CYCLING etc. are common in Japan)
+#' These matter differently: parking only helps someone who already has
+#' a bike, while a sharing station is itself a transport option for
+#' people who don't - directly relevant to the "people who can't afford
+#' a bike/car" persona from the project's original framing, not just an
+#' amenity for existing cyclists.
 #'
 #' Kept separate from fetch_poi.R's get_poi(), even though both read
 #' `amenity=*` tags from the same "points" layer - POI there models trip
-#' *attraction* (shops/restaurants people cycle to), while bike parking is
-#' *supply* (whether they can actually leave the bike once they arrive).
-#' Mixing the two would understate attraction_score wherever a hex is
-#' full of bike racks but isn't itself a destination, and would hide a
-#' real, distinct gap: a station or shopping street with strong demand
-#' and safe roads but nowhere to park is still a missed opportunity, just
-#' a different kind than an infrastructure gap in the road network.
+#' *attraction* (shops/restaurants people cycle to), while bike
+#' parking/sharing is *supply* (whether they can actually leave the bike,
+#' or get one, once they arrive). Mixing the two would understate
+#' attraction_score wherever a hex is full of bike racks but isn't itself
+#' a destination, and would hide a real, distinct gap: a station or
+#' shopping street with strong demand and safe roads but nowhere to park
+#' is still a missed opportunity, just a different kind than an
+#' infrastructure gap in the road network.
+#'
+#' NOTE: if this returns far fewer facilities than you know exist on the
+#' ground, that's very likely genuine OSM under-mapping rather than a
+#' bug here - amenity-level detail like bike racks is mapped far less
+#' consistently than roads/schools/stations, and coverage varies a lot by
+#' area depending on whether local contributors have specifically
+#' surveyed it. Worth independently checking via overpass-turbo.eu with
+#' a raw query for `amenity=bicycle_parking` over your study area's bbox
+#' before assuming the pipeline is at fault.
 #'
 #' @param pbf_path path to the same .osm.pbf used for roads/boundary
 #' @param boundary sf/sfc polygon used to clip the extract (WGS84)
-#' @return sf POINT, one row per facility, columns: amenity, capacity
-get_bike_parking <- function(pbf_path, boundary) {
+#' @return sf POINT, one row per facility, columns: amenity, capacity,
+#'   facility_type ("parking" or "sharing")
+get_bike_facilities <- function(pbf_path, boundary) {
+  # 1. Fetch Point geometries (Nodes)
   points <- osmextract::oe_read(
     pbf_path,
     layer = "points",
@@ -165,7 +187,30 @@ get_bike_parking <- function(pbf_path, boundary) {
     boundary_type = "clipsrc",
     force_vectortranslate = TRUE,
     quiet = FALSE
-  )
+  ) |>
+    dplyr::filter(amenity %in% c("bicycle_parking", "bicycle_rental"))
 
-  points |> dplyr::filter(amenity == "bicycle_parking")
+  # 2. Fetch Polygon geometries (Ways/Areas)
+  polygons <- osmextract::oe_read(
+    pbf_path,
+    layer = "multipolygons",
+    extra_tags = c("amenity", "capacity"),
+    boundary = boundary,
+    boundary_type = "clipsrc",
+    force_vectortranslate = TRUE,
+    quiet = FALSE
+  ) |>
+    dplyr::filter(amenity %in% c("bicycle_parking", "bicycle_rental"))
+
+  # 3. Convert polygons to points (centroids) and combine
+  if (nrow(polygons) > 0) {
+    # Suppress constant geometry warning for centroids
+    polygons_as_points <- suppressWarnings(sf::st_centroid(polygons))
+    combined_facilities <- dplyr::bind_rows(points, polygons_as_points)
+  } else {
+    combined_facilities <- points
+  }
+
+  combined_facilities |>
+    dplyr::mutate(facility_type = ifelse(amenity == "bicycle_parking", "parking", "sharing"))
 }

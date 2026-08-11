@@ -1,3 +1,5 @@
+source("R/utils_config.R")
+
 print("Downloading OSM Data")
 source("scripts/01_download_osm.R")
 source("scripts/01b_download_poi.R")
