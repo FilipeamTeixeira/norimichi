@@ -56,6 +56,14 @@ interface MapViewProps {
   showBridges: boolean;
   /** Populated once the map exists, so the panels can drive it. */
   controlRef?: React.RefObject<MapControls | null>;
+  /**
+   * The map itself, once its style has loaded. Only the Route Analysis page
+   * uses this: its layers are per-request rather than per-deployment, so they
+   * live in their own component (RouteLayer) instead of adding a fourth mode
+   * to the source-and-layer block below. Fires on style load, not on data
+   * load — that page passes no GeoJSON at all.
+   */
+  onMapReady?: (map: Map) => void;
 }
 
 /**
@@ -209,6 +217,7 @@ export default function MapView({
   color,
   showBridges,
   controlRef,
+  onMapReady,
 }: MapViewProps) {
   const showHex = coloredGeometry === "areas";
   const showSegments = coloredGeometry === "streets";
@@ -228,6 +237,12 @@ export default function MapView({
   useEffect(() => {
     onZoomChangeRef.current = onZoomChange;
   }, [onZoomChange]);
+
+  // Same reasoning as onZoomChange: the map survives a remount, so this hands
+  // out the live instance to whichever render is current.
+  useEffect(() => {
+    if (styleReady && mapRef.current) onMapReady?.(mapRef.current);
+  }, [styleReady, onMapReady]);
 
   const clearHighlights = useCallback((map: Map) => {
     const reset: [string, string, string | number][] = [

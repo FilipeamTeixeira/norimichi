@@ -18,6 +18,7 @@ import {
   type MetricDef,
 } from "@/lib/metrics";
 import PanelShell from "./PanelShell";
+import FactorRow from "./FactorRow";
 
 interface Props {
   segment: SegmentFeature;
@@ -96,25 +97,14 @@ function InputRow({ metric, value }: { metric: MetricDef; value: unknown }) {
     isBool && metric.key === "likely_informal_parking" ? value !== true : value === true;
 
   return (
-    <div
-      title={metric.hint}
-      className="flex items-baseline justify-between gap-3 py-[3px]"
-    >
-      <span className="text-[12px] text-neutral-500 leading-snug">
-        {metric.label}
-      </span>
-      <span
-        className={`text-[12px] font-medium shrink-0 tabular-nums ${
-          isBool && value != null
-            ? good
-              ? "text-emerald-700"
-              : "text-red-700"
-            : "text-neutral-900"
-        }`}
-      >
-        {formatValue(metric, value)}
-      </span>
-    </div>
+    <FactorRow
+      label={metric.label}
+      value={formatValue(metric, value)}
+      hint={metric.hint}
+      tone={
+        isBool && value != null ? (good ? "good" : "bad") : "neutral"
+      }
+    />
   );
 }
 

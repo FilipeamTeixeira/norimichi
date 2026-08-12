@@ -97,6 +97,18 @@ export const VIEW_GROUPS: {
 ];
 
 /**
+ * The LTS classes in words, indexed 0-3 for LTS 1-4. The map legend below and
+ * the Route Analysis panel's stacked bar both read these rather than writing
+ * their own, so the two cannot end up describing LTS 3 differently.
+ */
+export const LTS_LABELS = [
+  "Comfortable for anyone",
+  "Most adults",
+  "Confident riders only",
+  "Hostile",
+] as const;
+
+/**
  * No variable appears twice. `stress_score` and `infra_quality_score` used to
  * sit here as area layers, but they are aggregates of the segment data, so
  * offering them alongside `lts` presented one measurement as two rival views.
@@ -155,12 +167,7 @@ export const VIEWS: ViewDef[] = [
       label: "Level of traffic stress",
       scale: "ordinal",
       domain: [1, 2, 3, 4],
-      domainLabels: [
-        "1 — comfortable for anyone",
-        "2 — most adults",
-        "3 — confident riders only",
-        "4 — hostile",
-      ],
+      domainLabels: LTS_LABELS.map((l, i) => `${i + 1} — ${l.toLowerCase()}`),
     },
   },
   {

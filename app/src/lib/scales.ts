@@ -45,8 +45,16 @@ const DIVERGING = ["#256abf", "#9ec5f4", "#f0efec", "#f1aea8", "#b13f3c"];
  * pair 20.5 (protan) / 20.4 (tritan) / 21.3 normal, all well clear of the
  * floors. The lightest step sits under 3:1 on contrast, which the legend's
  * always-present labels relieve — do not use this ramp unlabelled.
+ *
+ * Exported because the Route Analysis page colours a trip by the same variable
+ * on the same ramp. It is deliberately *not* the green/amber/red of
+ * CATEGORY_COLORS: that ramp encodes `display_category`, which is an investment
+ * judgement ("this bottleneck is worth money, that cul-de-sac is not") and says
+ * nothing a rider can use about their own trip. One variable, one language —
+ * the route line and the panel's stacked bar are the same four colours, so a
+ * red stretch on the map is the same red bar in the breakdown.
  */
-const STRESS_LINE = ["#5b9fe8", "#1f5aa8", "#d9776f", "#992f2c"];
+export const STRESS_LINE = ["#5b9fe8", "#1f5aa8", "#d9776f", "#992f2c"];
 
 /** Categorical slots 1-4, in the order the palette fixes them. */
 const NOMINAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];

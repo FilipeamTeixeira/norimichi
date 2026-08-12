@@ -174,6 +174,37 @@ export_bike_facilities_layer <- function(bike_facilities, path) {
   sf::st_write(bike_facilities[, required_cols], path, driver = "GeoJSON", quiet = TRUE)
 }
 
+#' Write the traffic signal point layer for the frontend's route scorer.
+#'
+#' Why a point layer when segments already carry `traffic_signals_count`:
+#' that column is a count of signal nodes within SIGNAL_BUFFER_M of a way
+#' (05_build_segment_table.R), which is the right shape for scoring one
+#' segment and the wrong shape for scoring a route. OSM tags signals per
+#' approach, so one junction is ~1.6 nodes here, and every way meeting
+#' that junction counts all of them - across this study area the counts
+#' sum to 1,661 for 465 actual nodes at ~294 junctions. Summing the
+#' column along a route therefore over-counts stops several times over,
+#' and a route's travel time is exactly what those signals were fetched
+#' for (see the comment above SIGNAL_BUFFER_M).
+#'
+#' Exported as raw nodes rather than pre-clustered junctions: the
+#' clustering distance is a scoring choice, and it lives next to the
+#' route scorer's other constants in app/src/lib/scoring-constants.ts
+#' rather than being baked in here.
+#'
+#' @param signals sf POINT object as written by 01d_download_traffic_signals.R
+#' @param path output path, e.g. "../app/public/data/traffic_signals.geojson"
+export_traffic_signals_layer <- function(signals, path) {
+  required_cols <- c("osm_id", "highway")
+  missing <- setdiff(required_cols, names(signals))
+  if (length(missing) > 0) {
+    stop("traffic signals layer is missing columns: ", paste(missing, collapse = ", "))
+  }
+
+  if (file.exists(path)) file.remove(path)  # st_write won't overwrite by default
+  sf::st_write(signals[, required_cols], path, driver = "GeoJSON", quiet = TRUE)
+}
+
 #' Write the amenities point layer for the frontend's context toggle.
 #'
 #' The three destination types the demand model counts (`schools_nearby`,

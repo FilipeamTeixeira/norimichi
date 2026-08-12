@@ -2,6 +2,7 @@
 .Rhistory
 .RProj.user
 .Renviron
+.env.local
 pipeline.Rproj
 /pipeline/output/
 /pipeline/raw/

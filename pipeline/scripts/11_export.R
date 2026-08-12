@@ -18,6 +18,7 @@ bike_facilities <- sf::st_read(sprintf("output/%s_bike_facilities.gpkg", cfg$nam
 schools         <- sf::st_read(sprintf("output/%s_schools.gpkg", cfg$name), quiet = TRUE)
 stations        <- sf::st_read(sprintf("output/%s_stations.gpkg", cfg$name), quiet = TRUE)
 poi             <- sf::st_read(sprintf("output/%s_poi.gpkg", cfg$name), quiet = TRUE)
+traffic_signals <- sf::st_read(sprintf("output/%s_traffic_signals.gpkg", cfg$name), quiet = TRUE)
 
 METRIC_CRS <- 6677
 BENEFICIARY_BUFFER_M <- 500
@@ -128,6 +129,7 @@ export_segment_layer(segments, "output/segments.geojson")
 export_cycleway_layer(segments, "output/cycleways.geojson")
 export_bike_facilities_layer(bike_facilities, "output/bike_facilities.geojson")
 export_amenities_layer(schools, stations, poi, "output/amenities.geojson")
+export_traffic_signals_layer(traffic_signals, "output/traffic_signals.geojson")
 export_summary_stats(sprintf("output/%s_summary.json", cfg$name), "output/summary.json")
 
-message("Exported hexagons.geojson, segments.geojson, cycleways.geojson, bike_facilities.geojson, amenities.geojson and summary.json to the Next.js app")
+message("Exported hexagons.geojson, segments.geojson, cycleways.geojson, bike_facilities.geojson, amenities.geojson, traffic_signals.geojson and summary.json to the Next.js app")
