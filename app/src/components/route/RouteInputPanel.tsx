@@ -1,5 +1,6 @@
 "use client";
 
+import AddressSearch, { type Endpoint } from "@/components/route/AddressSearch";
 import type { RouteErrorKind } from "@/lib/route-types";
 
 /**
@@ -7,67 +8,31 @@ import type { RouteErrorKind } from "@/lib/route-types";
  * on the network view — same width, same section rhythm, so switching tabs
  * doesn't feel like switching applications.
  *
- * Setting the two ends is done by clicking the map. There is no address search:
- * the tool answers "what is my commute actually like", the study area is one
- * ward, and the map is already the thing the reader is looking at. A geocoder
- * would be a second external quota to manage for a step a click already does.
+ * Either end can be set by searching for an address or by clicking the map,
+ * and neither is the fallback for the other: a commute is remembered by name
+ * at one end ("Yamashita Park") and by sight at the other ("that corner"). The
+ * two share a single field per end so the panel always reads as one answer per
+ * end rather than as two competing inputs — see AddressSearch.
  */
 
 export type PinTarget = "origin" | "destination";
 
 interface Props {
-  origin: [number, number] | null;
-  destination: [number, number] | null;
+  origin: Endpoint | null;
+  destination: Endpoint | null;
   /** Which end the next map click sets. */
   next: PinTarget;
   onNextChange: (target: PinTarget) => void;
+  /** An address picked from search, for one end. */
+  onPick: (target: PinTarget, at: [number, number], label: string) => void;
+  /** Drop one end without touching the other. */
+  onClearOne: (target: PinTarget) => void;
   onClear: () => void;
   onSwap: () => void;
   loading: boolean;
   error: { kind: RouteErrorKind; message: string } | null;
   /** True when the last result came from the coordinate cache, not from ORS. */
   cached: boolean;
-}
-
-const formatPoint = ([lon, lat]: [number, number]) =>
-  `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-
-function PointRow({
-  label,
-  letter,
-  value,
-  active,
-  onSelect,
-}: {
-  label: string;
-  letter: string;
-  value: [number, number] | null;
-  active: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={`w-full flex items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left transition-colors ${
-        active
-          ? "border-neutral-900 bg-neutral-50"
-          : "border-neutral-200 hover:border-neutral-300"
-      }`}
-    >
-      <span className="w-5 h-5 rounded-full bg-neutral-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-        {letter}
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[12px] font-medium text-neutral-900 leading-tight">
-          {label}
-        </span>
-        <span className="block text-[11px] text-neutral-500 tabular-nums truncate">
-          {value ? formatPoint(value) : "Click the map to set"}
-        </span>
-      </span>
-    </button>
-  );
 }
 
 /**
@@ -113,6 +78,8 @@ export default function RouteInputPanel({
   destination,
   next,
   onNextChange,
+  onPick,
+  onClearOne,
   onClear,
   onSwap,
   loading,
@@ -126,25 +93,32 @@ export default function RouteInputPanel({
           Score a trip
         </h2>
         <p className="text-[11px] text-neutral-400 mt-1.5 leading-relaxed">
-          Click the map to drop A, then B. The route comes back coloured by this
-          project&rsquo;s own traffic-stress data, not by a generic bike layer.
+          Search for an address or click the map to set A, then B. The route
+          comes back coloured by this project&rsquo;s own traffic-stress data,
+          not by a generic bike layer.
         </p>
       </div>
 
       <div className="px-5 pb-4 flex flex-col gap-1.5">
-        <PointRow
+        <AddressSearch
           label="Start"
           letter="A"
+          placeholder="Search or click the map"
           value={origin}
           active={next === "origin"}
-          onSelect={() => onNextChange("origin")}
+          onFocus={() => onNextChange("origin")}
+          onPick={(at, label) => onPick("origin", at, label)}
+          onClear={() => onClearOne("origin")}
         />
-        <PointRow
+        <AddressSearch
           label="Destination"
           letter="B"
+          placeholder="Search or click the map"
           value={destination}
           active={next === "destination"}
-          onSelect={() => onNextChange("destination")}
+          onFocus={() => onNextChange("destination")}
+          onPick={(at, label) => onPick("destination", at, label)}
+          onClear={() => onClearOne("destination")}
         />
         <div className="flex items-center gap-3 pt-1">
           <button
@@ -201,7 +175,8 @@ export default function RouteInputPanel({
       </div>
 
       <p className="text-[11px] leading-relaxed text-neutral-400 px-5 py-4 border-t border-neutral-200 italic mt-auto">
-        Geometry: OpenRouteService (cycling-regular). Everything scored on it:
+        Address search: Photon, over OpenStreetMap, restricted to the study
+        area. Geometry: OpenRouteService (cycling-regular). Everything scored on it:
         segments.geojson and bike_facilities.geojson from
         pipeline/scripts/11_export.R. Cost and CO&#8322; units: see
         lib/scoring-constants.ts.

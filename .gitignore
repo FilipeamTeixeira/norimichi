@@ -8,3 +8,4 @@ pipeline.Rproj
 /pipeline/raw/
 CLAUDE.md
 docs/
+app/.env.local
