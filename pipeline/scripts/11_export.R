@@ -15,6 +15,9 @@ cfg <- load_study_area()
 hexes           <- sf::st_read(sprintf("output/%s_hexgrid_scored.gpkg", cfg$name), quiet = TRUE)
 segments        <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TRUE)
 bike_facilities <- sf::st_read(sprintf("output/%s_bike_facilities.gpkg", cfg$name), quiet = TRUE)
+schools         <- sf::st_read(sprintf("output/%s_schools.gpkg", cfg$name), quiet = TRUE)
+stations        <- sf::st_read(sprintf("output/%s_stations.gpkg", cfg$name), quiet = TRUE)
+poi             <- sf::st_read(sprintf("output/%s_poi.gpkg", cfg$name), quiet = TRUE)
 
 METRIC_CRS <- 6677
 BENEFICIARY_BUFFER_M <- 500
@@ -30,6 +33,14 @@ segments$infra_gap <- ifelse(segments$lts >= 3, "high", "low")
 # them here from the same raw tags so 11 works standalone).
 if (!"has_cycle_infra" %in% names(segments)) {
   segments$has_cycle_infra <- has_cycle_infra(
+    segments$cycleway, segments$cycleway_left,
+    segments$cycleway_right, segments$cycleway_both,
+    segments$highway, segments$bicycle
+  )
+}
+if (!"cycleway_type" %in% names(segments)) {
+  segments$cycleway_type <- classify_cycleway_type(
+    segments$highway, segments$bicycle, segments$segregated,
     segments$cycleway, segments$cycleway_left,
     segments$cycleway_right, segments$cycleway_both
   )
@@ -112,9 +123,11 @@ message(sprintf("Mean expected suitability gain: %.1f points",
                 mean(segments$suitability_after - segments$suitability_score,
                      na.rm = TRUE)))
 
-export_hex_layer(hexes, "output/hexagons.geojson")
+export_hex_layer(drop_empty_hexes(hexes, segments), "output/hexagons.geojson")
 export_segment_layer(segments, "output/segments.geojson")
+export_cycleway_layer(segments, "output/cycleways.geojson")
 export_bike_facilities_layer(bike_facilities, "output/bike_facilities.geojson")
+export_amenities_layer(schools, stations, poi, "output/amenities.geojson")
 export_summary_stats(sprintf("output/%s_summary.json", cfg$name), "output/summary.json")
 
-message("Exported hexagons.geojson, segments.geojson, bike_facilities.geojson, and summary.json to the Next.js app")
+message("Exported hexagons.geojson, segments.geojson, cycleways.geojson, bike_facilities.geojson, amenities.geojson and summary.json to the Next.js app")

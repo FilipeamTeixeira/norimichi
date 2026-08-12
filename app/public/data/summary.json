@@ -1,17 +1,24 @@
 {
   "network": {
-    "total_segments": 3163,
-    "total_length_km": 0,
+    "total_segments": 3188,
+    "total_length_km": 413.9,
     "lts_distribution": {
-      "1": 200,
+      "1": 225,
       "2": 2259,
       "3": 511,
       "4": 193
     },
-    "pct_high_stress_length": "NaN",
-    "pct_no_sidewalk_length": "NaN",
-    "pct_no_safe_option_length": "NaN",
-    "pct_likely_informal_parking": 8.9
+    "pct_high_stress_length": 32.3,
+    "pct_no_sidewalk_length": 45.6,
+    "pct_no_safe_option_length": 4.7,
+    "pct_likely_informal_parking": 8.7
+  },
+  "existing_cycling_network": {
+    "total_length_km": 4.7,
+    "pct_of_network_length": 1.1,
+    "dedicated_km": 1.6,
+    "shared_path_km": 2.9,
+    "on_road_km": 0.3
   },
   "destinations": {
     "shops_and_restaurants": 1217,
@@ -20,8 +27,8 @@
   },
   "demand": {
     "total_population": 152944,
-    "avg_demand_score": 0.276,
-    "avg_gap_score": -0.269,
+    "avg_demand_score": 0.277,
+    "avg_gap_score": -0.271,
     "missed_opportunity_hexes": 38,
     "population_in_missed_opportunity_hexes": 32827
   },

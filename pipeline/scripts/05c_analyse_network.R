@@ -22,6 +22,14 @@ segments <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TR
 if (!"has_cycle_infra" %in% names(segments)) {
   segments$has_cycle_infra <- has_cycle_infra(
     segments$cycleway, segments$cycleway_left,
+    segments$cycleway_right, segments$cycleway_both,
+    segments$highway, segments$bicycle
+  )
+}
+if (!"cycleway_type" %in% names(segments)) {
+  segments$cycleway_type <- classify_cycleway_type(
+    segments$highway, segments$bicycle, segments$segregated,
+    segments$cycleway, segments$cycleway_left,
     segments$cycleway_right, segments$cycleway_both
   )
 }

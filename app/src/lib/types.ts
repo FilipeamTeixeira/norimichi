@@ -10,6 +10,8 @@ export interface SegmentProperties {
   lanes_n?: number;
   traffic_signals_count: number;
   has_cycle_infra?: boolean;
+  /** Null on anything that is not cycling infrastructure. */
+  cycleway_type?: CyclewayType | null;
   sidewalk_available: boolean;
   likely_informal_parking: boolean;
   school_nearby: number | null;
@@ -43,6 +45,39 @@ export type DisplayCategory =
   | "bottleneck"
   | "low_priority";
 
+/**
+ * What kind of cycling provision a way already is. Mirrors
+ * classify_cycleway_type() in pipeline/R/score_lts.R — three categories
+ * because those are the three a planner has to tell apart, not because OSM
+ * tags them that way (it is far more granular than any decision needs).
+ *
+ * The distinction that matters most here is `dedicated` vs `shared_path`:
+ * a shared bike/pedestrian path is the standard Japanese 自転車歩行者道, it
+ * is legal provision and it is most of what exists — but counting it as
+ * cycle route km is how a network gets overstated. They are never summed
+ * into one number in the UI for that reason.
+ */
+export type CyclewayType = "dedicated" | "shared_path" | "on_road";
+
+export const CYCLEWAY_TYPE_LABELS: Record<CyclewayType, string> = {
+  dedicated: "Dedicated cycleway",
+  shared_path: "Shared with pedestrians",
+  on_road: "On-road lane",
+};
+
+export interface CyclewayProperties {
+  way_id: number;
+  name: string | null;
+  highway: string;
+  cycleway_type: CyclewayType;
+  length_m: number;
+  lts: number;
+  surface: string | null;
+  lit: string | null;
+}
+
+export type CyclewayFeature = Feature<MultiLineString, CyclewayProperties>;
+
 export interface HexProperties {
   hex_id: string;
   population: number;
@@ -72,15 +107,25 @@ export interface HexProperties {
   roi_parking_spaces_freed: number;
 }
 
+/**
+ * Mirrors export_bike_facilities_layer() in pipeline/R/export_geojson.R: the
+ * six source columns plus the eight keys parsed out of OSM's `other_tags`.
+ */
 export interface BikeFacilityProperties {
   osm_id: string;
   name: string | null;
+  ref: string | null;
   amenity: string;
   capacity: number | null;
   facility_type: "parking" | "sharing";
   fee: string | null;
   brand: string | null;
+  access: string | null;
+  covered: string | null;
+  supervised: string | null;
+  note: string | null;
   operator: string | null;
+  opening_hours: string | null;
 }
 
 export interface StudySummary {
@@ -92,6 +137,13 @@ export interface StudySummary {
     pct_no_sidewalk_length: number | string;
     pct_no_safe_option_length: number | string;
     pct_likely_informal_parking: number;
+  };
+  existing_cycling_network: {
+    total_length_km: number;
+    pct_of_network_length: number;
+    dedicated_km: number;
+    shared_path_km: number;
+    on_road_km: number;
   };
   destinations: {
     shops_and_restaurants: number;
@@ -151,6 +203,40 @@ export const CATEGORY_COLORS: Record<DisplayCategory, string> = {
   bottleneck: "#ef4444",
   low_priority: "#9ca3af",
 };
+
+/**
+ * Genuinely additive layers, and only those. They draw *on top of* whichever
+ * view is active without taking the colour channel from it, which is what
+ * makes them safe to combine freely.
+ *
+ * "Disconnected networks" used to live here and did not belong: it recoloured
+ * the same street lines and suppressed the active view to do it. It is a view
+ * now (VIEWS in metrics.ts), not an overlay.
+ */
+export type ToggleKey =
+  | "amenities"
+  | "bike_facilities"
+  | "cycleways"
+  | "recommendations";
+
+export type ToggleState = Record<ToggleKey, boolean>;
+
+/** Everything starts off: the map opens as a basemap and waits to be asked. */
+export const DEFAULT_TOGGLES: ToggleState = {
+  amenities: false,
+  bike_facilities: false,
+  cycleways: false,
+  recommendations: false,
+};
+
+export interface AmenityProperties {
+  amenity_id: number;
+  kind: "school" | "station" | "shop";
+  name: string | null;
+  detail: string | null;
+}
+
+export type AmenityFeature = Feature<Point, AmenityProperties>;
 
 export const CATEGORY_LABELS: Record<DisplayCategory, string> = {
   high: "High suitability",

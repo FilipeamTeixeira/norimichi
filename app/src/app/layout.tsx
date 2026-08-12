@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Norimichi — Cycling Infrastructure Observatory",
+  title: "Norimichi",
   description:
     "Data-driven cycling infrastructure planning for Japanese cities",
 };

@@ -13,9 +13,13 @@ library(osmextract)
 library(sf)
 library(dplyr)
 
-# Way types a cyclist could plausibly use. Excludes motorways/trunk roads
-# (illegal or unsafe to cycle on) - add/remove types here if your area
-# needs it (e.g. add "footway" if you want to model shared paths too).
+# Shared with score_lts.R - see the note at the top of that file about why
+# this vocabulary lives on its own.
+source("R/osm_cycling_tags.R")
+
+# Way types a cyclist could plausibly use *by default*, i.e. without
+# needing a bicycle=* tag to say so. Excludes motorways/trunk roads
+# (illegal or unsafe to cycle on).
 CYCLABLE_HIGHWAY_TYPES <- c(
   "primary", "primary_link", "secondary", "secondary_link",
   "tertiary", "tertiary_link", "residential", "living_street",
@@ -24,8 +28,14 @@ CYCLABLE_HIGHWAY_TYPES <- c(
 
 # Tags osmextract should keep. Listing them explicitly (rather than
 # reading all tags) keeps the vectortranslate step faster on a big extract.
+#
+# `bicycle`, `foot` and `segregated` are what distinguish a shared
+# bike/pedestrian path from an ordinary sidewalk, and a segregated path
+# (bikes have their own marked half) from one where riders and walkers
+# mix. All three are needed by classify_cycleway_type() in score_lts.R.
 OSM_EXTRA_TAGS <- c(
   "highway", "cycleway", "cycleway:left", "cycleway:right", "cycleway:both",
+  "bicycle", "foot", "segregated",
   "maxspeed", "lanes", "oneway",
   "parking:lane:left", "parking:lane:right", "parking:lane:both",
   "surface", "lit", "name", "sidewalk"
@@ -57,6 +67,17 @@ OSM_EXTRA_TAGS <- c(
 #'    the st_cast() below also normalizes this at the R level regardless,
 #'    so nothing downstream sees mixed types either way.
 #'
+#' The network is the union of two rules, not one list of highway types:
+#' ways cyclable by default (CYCLABLE_HIGHWAY_TYPES), plus shared
+#' bike/pedestrian paths that are only cyclable because OSM says so
+#' (SHARED_PATH_HIGHWAY_TYPES + a permissive `bicycle` tag). Folding the
+#' second rule in here rather than exporting it as a separate layer is
+#' deliberate: those paths have to be in the *same* table as the roads for
+#' score_network.R's adjacency graph to see them, and a shared path is
+#' usually exactly the link that joins two low-stress islands. Kept out,
+#' the connectivity analysis reported a fragmented network and scored
+#' bridges over gaps that a rider can already cross.
+#'
 #' @param pbf_path path to the downloaded .osm.pbf
 #' @param boundary sf/sfc polygon or bbox used to clip the extract (WGS84)
 #' @return sf MULTILINESTRING, one row per way, columns = OSM_EXTRA_TAGS + geometry
@@ -73,8 +94,14 @@ get_osm_roads <- function(pbf_path, boundary) {
     quiet = FALSE
   )
 
+  bicycle_val <- tolower(trimws(as.character(roads$bicycle)))
+
   roads |>
-    dplyr::filter(highway %in% CYCLABLE_HIGHWAY_TYPES) |>
+    dplyr::filter(
+      highway %in% CYCLABLE_HIGHWAY_TYPES |
+        (highway %in% SHARED_PATH_HIGHWAY_TYPES &
+           !is.na(bicycle_val) & bicycle_val %in% BICYCLE_ROUTABLE)
+    ) |>
     sf::st_cast("MULTILINESTRING")
 }
 
@@ -89,9 +116,16 @@ get_osm_roads <- function(pbf_path, boundary) {
 #' relying on the tag alone.
 #'
 #' Deliberately a separate oe_read() call rather than folding into
-#' get_osm_roads() (which already filters to CYCLABLE_HIGHWAY_TYPES,
-#' excluding footways) - costs a second vectortranslate pass over the
-#' file, but keeps get_osm_roads()'s existing, tested behavior untouched.
+#' get_osm_roads() - costs a second vectortranslate pass over the file,
+#' but keeps get_osm_roads()'s existing, tested behavior untouched.
+#'
+#' OVERLAP WITH THE ROAD NETWORK: since get_osm_roads() now promotes
+#' `highway=footway` + `bicycle=designated` ways into the cycling network,
+#' some rows here are also rows there. `bicycle` is fetched so
+#' 05_build_segment_table.R can drop those by osm_id before running the
+#' sidewalk-proximity test - otherwise a shared bike/pedestrian path finds
+#' *itself* 0m away and reports `sidewalk_available = TRUE`, which is not
+#' a sidewalk, it is the path the rider is already on.
 #'
 #' @param pbf_path path to the same .osm.pbf used for roads/boundary
 #' @param boundary sf/sfc polygon used to clip the extract (WGS84)
@@ -100,7 +134,7 @@ get_footways <- function(pbf_path, boundary) {
   footways <- osmextract::oe_read(
     pbf_path,
     layer = "lines",
-    extra_tags = c("highway", "footway"),
+    extra_tags = c("highway", "footway", "bicycle", "segregated"),
     boundary = boundary,
     boundary_type = "clipsrc",
     force_vectortranslate = TRUE,

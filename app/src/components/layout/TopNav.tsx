@@ -22,8 +22,8 @@ export default function TopNav() {
           <path d="M8 20l4-12h4l4 12" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
           <path d="M12 8h4" stroke="#1e293b" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span className="text-[15px] font-semibold text-neutral-900">
-          Cycling Infrastructure Observatory
+        <span className="text-[15px] font-semibold text-neutral-900 tracking-tight">
+          Norimichi
         </span>
       </div>
 

@@ -28,6 +28,22 @@ compute_study_area_summary <- function(hexes, segments,
 
   total_length_km <- sum(segments_df$length_m, na.rm = TRUE) / 1000
   high_stress_length_km <- sum(segments_df$length_m[segments_df$lts >= 3], na.rm = TRUE) / 1000
+
+  # Existing provision. Reported as length by kind rather than a single
+  # "km of cycleway" figure because the three kinds are not
+  # interchangeable: a shared bike/pedestrian path is legal provision that
+  # a planner cannot claim as a cycle route with a straight face, and
+  # summing it with dedicated cycleway km is how a network gets overstated.
+  # `cycleway_type` is NA on everything that is not cycling infrastructure
+  # (see classify_cycleway_type() in score_lts.R).
+  cycleway_length_km_by_type <- function(type) {
+    round(sum(segments_df$length_m[
+      !is.na(segments_df$cycleway_type) & segments_df$cycleway_type == type
+    ], na.rm = TRUE) / 1000, 1)
+  }
+  cycle_infra_length_km <- sum(
+    segments_df$length_m[!is.na(segments_df$cycleway_type)], na.rm = TRUE
+  ) / 1000
   no_sidewalk_length_km <- sum(segments_df$length_m[!segments_df$sidewalk_available], na.rm = TRUE) / 1000
   no_safe_option_length_km <- sum(
     segments_df$length_m[segments_df$lts >= 3 & !segments_df$sidewalk_available],
@@ -46,6 +62,13 @@ compute_study_area_summary <- function(hexes, segments,
       # comfortable to ride, on-road or off.
       pct_no_safe_option_length = round(100 * no_safe_option_length_km / total_length_km, 1),
       pct_likely_informal_parking = round(100 * mean(segments_df$likely_informal_parking, na.rm = TRUE), 1)
+    ),
+    existing_cycling_network = list(
+      total_length_km = round(cycle_infra_length_km, 1),
+      pct_of_network_length = round(100 * cycle_infra_length_km / total_length_km, 1),
+      dedicated_km = cycleway_length_km_by_type("dedicated"),
+      shared_path_km = cycleway_length_km_by_type("shared_path"),
+      on_road_km = cycleway_length_km_by_type("on_road")
     ),
     destinations = list(
       shops_and_restaurants = poi_count,

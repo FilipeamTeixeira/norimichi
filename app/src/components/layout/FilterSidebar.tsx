@@ -1,244 +1,208 @@
 "use client";
 
-import { useState } from "react";
-
-const userTypes = [
-  "Children going to school",
-  "Elderly mobility",
-  "Commuters",
-  "Station access",
-  "Tourism routes",
-] as const;
-
-const tripDistances = ["0 – 3 km", "3 – 5 km", "5 – 10 km"] as const;
-
-// These must match the `recommendation` values written by
-// pipeline/scripts/11_export.R, which is what the map filters on.
-// "Bike parking" has no segment-level equivalent - it's a point facility,
-// carried by the bike_facilities layer instead - so it has nothing to match.
-const interventionTypes = [
-  "Protected cycle lane",
-  "Crossing improvement",
-  "Traffic calming",
-  "Missing link",
-] as const;
+import type { ToggleKey, ToggleState } from "@/lib/types";
+import { VIEWS, VIEW_GROUPS, type ViewDef } from "@/lib/metrics";
+import { CYCLEWAY_COLOR } from "@/lib/scales";
 
 interface Props {
-  intervention: string | null;
-  onInterventionChange: (value: string | null) => void;
+  /** `null` = no view is on and the map is basemap only. */
+  activeView: string | null;
+  onViewChange: (id: string) => void;
+  toggles: ToggleState;
+  onTogglesChange: (next: ToggleState) => void;
 }
 
-function InfoIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-neutral-400 shrink-0">
-      <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M7 6.5v4M7 4.5v.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
+const TOGGLE_ROWS: {
+  key: ToggleKey;
+  label: string;
+  description: string;
+  swatch: string;
+}[] = [
+  {
+    key: "recommendations",
+    label: "Recommendations",
+    description: "Segments with a proposed intervention",
+    swatch: "#1baf7a",
+  },
+  {
+    key: "cycleways",
+    label: "Existing cycleways",
+    description: "Cycling provision already on the ground",
+    swatch: CYCLEWAY_COLOR,
+  },
+  {
+    key: "amenities",
+    label: "Amenities",
+    description: "Schools, stations, shops",
+    swatch: "#eb6834",
+  },
+  {
+    key: "bike_facilities",
+    label: "Bike facilities",
+    description: "Parking and sharing docks",
+    swatch: "#6366f1",
+  },
+];
 
-function SectionHeader({ title, info }: { title: string; info?: boolean }) {
+function Switch({ on }: { on: boolean }) {
   return (
-    <div className="flex items-center gap-1.5 mb-3">
-      <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
-      {info && <InfoIcon />}
+    <div
+      className={`w-[30px] h-[18px] rounded-full shrink-0 transition-colors relative peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400 peer-focus-visible:ring-offset-1 ${
+        on ? "bg-neutral-800" : "bg-neutral-200 group-hover:bg-neutral-300"
+      }`}
+    >
+      <div
+        className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white transition-all ${
+          on ? "left-[14px]" : "left-[2px]"
+        }`}
+      />
     </div>
   );
 }
 
-/**
- * Explains why a filter group is inert instead of letting the user click
- * controls that quietly do nothing.
- */
-function NotAvailable({ reason }: { reason: string }) {
-  return (
-    <p className="text-[11px] leading-relaxed text-neutral-400 mt-2 italic">
-      {reason}
-    </p>
-  );
-}
-
-function Checkbox({
-  label,
-  checked,
-  onChange,
-  disabled,
+function ViewOption({
+  view,
+  selected,
+  onSelect,
 }: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
+  view: ViewDef;
+  selected: boolean;
+  onSelect: () => void;
 }) {
+  // A checkbox, not a radio: clicking the active view switches it off, which
+  // is the only way to see the basemap (or the overlays alone) underneath.
   return (
-    <label
-      className={`flex items-center gap-2.5 py-1 group ${
-        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"
-      }`}
-    >
-      {/* A real input, visually hidden: gives keyboard focus and screen
-          reader semantics that a styled <div> alone cannot. */}
+    <label className="flex items-start gap-2.5 py-1 cursor-pointer group">
       <input
         type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        disabled={disabled}
+        checked={selected}
+        onChange={onSelect}
         className="sr-only peer"
       />
-      <div
-        className={`w-[18px] h-[18px] rounded border-[1.5px] flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400 peer-focus-visible:ring-offset-1 ${
-          checked
-            ? "bg-neutral-800 border-neutral-800"
-            : `bg-white border-neutral-300 ${!disabled && "group-hover:border-neutral-400"}`
-        }`}
-      >
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <div className="mt-[1px]">
+        <Switch on={selected} />
+      </div>
+      <div className="min-w-0">
+        <span
+          className={`text-[13px] leading-snug ${
+            selected
+              ? "text-neutral-900 font-medium"
+              : "text-neutral-600 group-hover:text-neutral-900"
+          }`}
+        >
+          {view.label}
+        </span>
+        {selected && (
+          <p className="text-[11px] text-neutral-500 leading-relaxed mt-0.5">
+            {view.hint}
+          </p>
         )}
       </div>
-      <span className="text-[13px] text-neutral-700">{label}</span>
-    </label>
-  );
-}
-
-function Radio({
-  label,
-  checked,
-  onChange,
-  disabled,
-  name,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-  disabled?: boolean;
-  name: string;
-}) {
-  return (
-    <label
-      className={`flex items-center gap-2.5 py-1 group ${
-        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"
-      }`}
-    >
-      {/* Radios are click-to-toggle-off here, so onClick carries the change
-          rather than onChange - React won't fire onChange when re-clicking
-          an already-checked radio. */}
-      <input
-        type="radio"
-        name={name}
-        checked={checked}
-        onChange={() => {}}
-        onClick={onChange}
-        disabled={disabled}
-        className="sr-only peer"
-      />
-      <div
-        className={`w-[18px] h-[18px] rounded-full border-[1.5px] flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-neutral-400 peer-focus-visible:ring-offset-1 ${
-          checked
-            ? "border-neutral-800"
-            : `border-neutral-300 ${!disabled && "group-hover:border-neutral-400"}`
-        }`}
-      >
-        {checked && <div className="w-2.5 h-2.5 rounded-full bg-neutral-800" />}
-      </div>
-      <span className="text-[13px] text-neutral-700">{label}</span>
     </label>
   );
 }
 
 export default function FilterSidebar({
-  intervention,
-  onInterventionChange,
+  activeView,
+  onViewChange,
+  toggles,
+  onTogglesChange,
 }: Props) {
-  // Users and Trip distance are kept visible because they're part of the
-  // design, but there is no data behind either yet (persona-reweighted
-  // demand scoring and isochrone reachability - both Part D item 7), so
-  // they stay disabled rather than pretending to filter.
-  const [selectedUsers] = useState<Set<string>>(new Set());
-  const [selectedDistance] = useState<string | null>(null);
-
-  const reset = () => onInterventionChange(null);
-  const hasSelection = intervention != null;
+  const toggle = (key: ToggleKey) =>
+    onTogglesChange({ ...toggles, [key]: !toggles[key] });
 
   return (
-    <aside className="w-[220px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
-      <div className="px-5 pt-5 pb-2">
+    <aside className="w-[268px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
+      <div className="px-5 pt-5 pb-3">
         <h2 className="text-base font-bold text-neutral-900 leading-tight">
           What do you want
           <br />
           to analyse?
         </h2>
+        <p className="text-[11px] text-neutral-400 mt-1.5 leading-relaxed">
+          One at a time — each colours the map its own way. Nothing here changes
+          on its own as you move around.
+        </p>
       </div>
 
-      <div className="px-5 py-3">
-        <SectionHeader title="Users" info />
-        <div className="flex flex-col gap-0.5">
-          {userTypes.map((u) => (
-            <Checkbox
-              key={u}
-              label={u}
-              checked={selectedUsers.has(u)}
-              onChange={() => {}}
-              disabled
-            />
+      {/* Every view is listed at every zoom. The list used to swap itself out
+          when the map crossed z15, so navigating silently replaced the
+          question being asked. */}
+      {VIEW_GROUPS.map((group) => {
+        const views = VIEWS.filter((v) => v.group === group.id);
+        if (views.length === 0) return null;
+        return (
+          <div key={group.id} className="px-5 pb-4">
+            <h3 className="text-sm font-semibold text-neutral-900 mb-0.5">
+              {group.title}
+            </h3>
+            <p className="text-[11px] text-neutral-400 mb-2 leading-relaxed">
+              {group.caption}
+            </p>
+            <div className="flex flex-col gap-0.5">
+              {views.map((v) => (
+                <ViewOption
+                  key={v.id}
+                  view={v}
+                  selected={activeView === v.id}
+                  onSelect={() => onViewChange(v.id)}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      <div className="px-5 py-4 border-t border-neutral-200">
+        <h3 className="text-sm font-semibold text-neutral-900 mb-0.5">
+          Overlays
+        </h3>
+        <p className="text-[11px] text-neutral-400 mb-2.5 leading-relaxed">
+          Drawn on top of any view without taking its colours, so these combine
+          freely. Click anything for detail.
+        </p>
+        <div className="flex flex-col gap-1">
+          {TOGGLE_ROWS.map((row) => (
+            <label
+              key={row.key}
+              className="flex items-start gap-2.5 py-1 cursor-pointer group"
+            >
+              <input
+                type="checkbox"
+                checked={toggles[row.key]}
+                onChange={() => toggle(row.key)}
+                className="sr-only peer"
+              />
+              <div className="mt-[1px]">
+                <Switch on={toggles[row.key]} />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: row.swatch }}
+                  />
+                  <span
+                    className={`text-[13px] leading-snug ${
+                      toggles[row.key] ? "text-neutral-900" : "text-neutral-600"
+                    }`}
+                  >
+                    {row.label}
+                  </span>
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed mt-0.5">
+                  {row.description}
+                </p>
+              </div>
+            </label>
           ))}
         </div>
-        <NotAvailable reason="Needs persona-weighted demand scoring — not built yet." />
       </div>
 
-      <div className="mx-5 border-t border-neutral-100" />
-
-      <div className="px-5 py-3">
-        <SectionHeader title="Trip distance" info />
-        <div className="flex flex-col gap-0.5">
-          {tripDistances.map((d) => (
-            <Radio
-              key={d}
-              name="trip-distance"
-              label={d}
-              checked={selectedDistance === d}
-              onChange={() => {}}
-              disabled
-            />
-          ))}
-        </div>
-        <NotAvailable reason="Needs isochrone reachability analysis — not built yet." />
-      </div>
-
-      <div className="mx-5 border-t border-neutral-100" />
-
-      <div className="px-5 py-3">
-        <SectionHeader title="Intervention type" info />
-        <div className="flex flex-col gap-0.5">
-          {interventionTypes.map((t) => (
-            <Radio
-              key={t}
-              name="intervention-type"
-              label={t}
-              checked={intervention === t}
-              onChange={() =>
-                onInterventionChange(intervention === t ? null : t)
-              }
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-auto px-5 py-4">
-        {hasSelection && (
-          <button
-            onClick={reset}
-            className="flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 7a5 5 0 019.33-2.5M12 7a5 5 0 01-9.33 2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              <path d="M11 2v3h-3M3 12V9h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Reset
-          </button>
-        )}
-      </div>
+      <p className="text-[11px] leading-relaxed text-neutral-400 px-5 py-4 border-t border-neutral-200 italic mt-auto">
+        Sources: hexagons, segments, cycleways, bike_facilities and amenities GeoJSON
+        (exported by pipeline/scripts/11_export.R).
+      </p>
     </aside>
   );
 }
