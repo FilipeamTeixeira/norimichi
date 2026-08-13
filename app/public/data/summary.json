@@ -1,47 +1,47 @@
 {
   "network": {
-    "total_segments": 9595,
-    "total_length_km": 1097.6,
+    "total_segments": 13765,
+    "total_length_km": 1496.6,
     "lts_distribution": {
-      "1": 578,
-      "2": 7282,
-      "3": 1015,
-      "4": 720
+      "1": 734,
+      "2": 10976,
+      "3": 1239,
+      "4": 816
     },
-    "pct_high_stress_length": 27.7,
-    "pct_no_sidewalk_length": 46.5,
-    "pct_no_safe_option_length": 3.5,
-    "pct_likely_informal_parking": 5.7
+    "pct_high_stress_length": 24.7,
+    "pct_no_sidewalk_length": 49,
+    "pct_no_safe_option_length": 3.1,
+    "pct_likely_informal_parking": 5.2
   },
   "existing_cycling_network": {
-    "total_length_km": 9.3,
-    "pct_of_network_length": 0.8,
+    "total_length_km": 9.8,
+    "pct_of_network_length": 0.7,
     "dedicated_km": 4.2,
-    "shared_path_km": 4.8,
+    "shared_path_km": 5.2,
     "on_road_km": 0.3
   },
   "destinations": {
-    "shops_and_restaurants": 2171,
-    "schools": 128,
-    "stations": 34
+    "shops_and_restaurants": 2795,
+    "schools": 185,
+    "stations": 41
   },
   "demand": {
-    "total_population": 421928,
-    "avg_demand_score": 0.289,
+    "total_population": 610783,
+    "avg_demand_score": 0.3,
     "avg_gap_score": -0.279,
-    "missed_opportunity_hexes": 53,
-    "population_in_missed_opportunity_hexes": 49383
+    "missed_opportunity_hexes": 56,
+    "population_in_missed_opportunity_hexes": 56821
   },
   "roi_scenario": {
     "note": "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",
-    "daily_car_trips": 295350,
-    "daily_congestion_cost_yen": 103348806,
-    "daily_operating_cost_yen": 14430792,
-    "daily_shifted_trips": 59070,
-    "daily_congestion_savings_yen": 20669761,
-    "daily_operating_savings_yen": 2886158,
-    "daily_emissions_avoided_kg": 15358.2,
-    "daily_health_benefit_yen": 1772099,
-    "parking_spaces_freed": 1181.4
+    "daily_car_trips": 427548,
+    "daily_congestion_cost_yen": 149607526,
+    "daily_operating_cost_yen": 20889986,
+    "daily_shifted_trips": 85510,
+    "daily_congestion_savings_yen": 29921505,
+    "daily_operating_savings_yen": 4177997,
+    "daily_emissions_avoided_kg": 22232.5,
+    "daily_health_benefit_yen": 2565287,
+    "parking_spaces_freed": 1710.2
   }
 }

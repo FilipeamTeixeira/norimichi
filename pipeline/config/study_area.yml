@@ -21,6 +21,7 @@ wards:
   Naka-ku: 2689447
   Isogo-ku: 2689464
   Nishi-ku: 2689468
+  Minami-ku: 2689452
 
 # Wards not run yet - move one up into `wards:` when you want it included.
 #  Minami-ku: 2689452
