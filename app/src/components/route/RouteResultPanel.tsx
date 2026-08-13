@@ -57,15 +57,19 @@ function Section({
 /**
  * Two travel times, side by side, neither presented as the answer.
  *
- * ORS's is a generic cycling profile's guess and models no junctions at all.
- * Ours rides slower on the streets our own data calls hostile and then charges
- * for the traffic signals the pipeline counted — which is the entire reason
- * those were fetched. The gap between the two numbers is the finding.
+ * The provider's is a generic cycling profile's guess and models no junctions
+ * at all. Ours rides slower on the streets our own data calls hostile and then
+ * charges for the traffic signals the pipeline counted — which is the entire
+ * reason those were fetched. The gap between the two numbers is the finding.
+ *
+ * The `graph` provider reports nothing, because its route *was* chosen on our
+ * own data and a second column would be the same number twice pretending to
+ * corroborate itself. There the estimate stands alone, full width.
  */
 function Times({ result }: { result: RouteScoreResponse }) {
-  const { ours, ors } = result;
+  const { ours, reported, provider } = result;
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className={reported ? "grid grid-cols-2 gap-2" : "grid grid-cols-1"}>
       <div className="rounded-lg border border-neutral-900/10 bg-neutral-50 p-3">
         <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-500">
           Our estimate
@@ -81,20 +85,22 @@ function Times({ result }: { result: RouteScoreResponse }) {
           {Math.round(ours.signal_minutes)} at signals
         </p>
       </div>
-      <div className="rounded-lg border border-neutral-200 p-3">
-        <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-400">
-          OpenRouteService
-        </p>
-        <p className="text-2xl font-bold text-neutral-400 leading-none mt-1">
-          {Math.round(ors.minutes)}
-          <span className="text-[13px] font-medium text-neutral-300 ml-1">
-            min
-          </span>
-        </p>
-        <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">
-          Generic profile, no signals modelled
-        </p>
-      </div>
+      {reported ? (
+        <div className="rounded-lg border border-neutral-200 p-3">
+          <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-400">
+            {provider.label}
+          </p>
+          <p className="text-2xl font-bold text-neutral-400 leading-none mt-1">
+            {Math.round(reported.minutes)}
+            <span className="text-[13px] font-medium text-neutral-300 ml-1">
+              min
+            </span>
+          </p>
+          <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">
+            Generic profile, no signals modelled
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

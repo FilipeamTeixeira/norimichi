@@ -112,6 +112,12 @@ export interface HexProperties {
  * six source columns plus the eight keys parsed out of OSM's `other_tags`.
  */
 export interface BikeFacilityProperties {
+  /**
+   * `node/<id>` or `way/<id>` — namespaced because a facility mapped as a
+   * building outline is a way and node/way ids are independent OSM
+   * sequences. Unique per feature, so the map uses it as the feature's
+   * identity for hit-testing and highlighting.
+   */
   osm_id: string;
   name: string | null;
   ref: string | null;

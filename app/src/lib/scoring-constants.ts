@@ -125,3 +125,37 @@ export const MATCH_TOLERANCE_M = 20;
  * route is hundreds of lookups rather than thousands.
  */
 export const CHUNK_LENGTH_M = 15;
+
+// --- Graph routing: what stress costs a rider ----------------------------
+
+/**
+ * The detour a rider is assumed willing to make to avoid one metre of a given
+ * LTS class — the cost multiplier the `graph` provider's Dijkstra minimises.
+ *
+ * This is the one thing no external provider can do for us. ORS and BRouter
+ * both route on generic profiles that have never seen `lts`; this table is
+ * where the pipeline's own stress classification finally gets to *choose* the
+ * road rather than merely describe it after the fact. See PROJECT_STATUS.md
+ * C.3 — this is the answer to the V2 question.
+ *
+ * Read a multiplier as "1m here costs as much as Nm on a calm street", so
+ * `relaxed`'s 8.0 on LTS 4 means a rider will ride up to 800m around to avoid
+ * 100m of hostile road, and no further. Illustrative: the ordering and rough
+ * magnitudes are defensible, the exact values are not calibrated against
+ * observed route choice. They are the obvious thing to tune first.
+ */
+export const LTS_COST_FACTOR: Record<string, Record<number, number>> = {
+  /** Safety first, detour accepted. */
+  relaxed: { 1: 1.0, 2: 1.3, 3: 3.0, 4: 8.0 },
+  /** The default: prefers calm, but will not treble the trip for it. */
+  efficient: { 1: 1.0, 2: 1.1, 3: 1.6, 4: 2.6 },
+  /** Nearly pure travel time; stress barely enters. */
+  quick: { 1: 1.0, 2: 1.0, 3: 1.05, 4: 1.15 },
+};
+
+/**
+ * How far from a clicked point the graph router will look for a node to start
+ * from, metres. Beyond this the click is treated as unroutable rather than
+ * silently teleported to a street several blocks away.
+ */
+export const GRAPH_SNAP_RADIUS_M = 250;

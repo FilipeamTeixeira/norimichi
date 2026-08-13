@@ -52,7 +52,7 @@ export default function BikeFacilityPanel({
   return (
     <PanelShell
       title={p.name ?? type.label}
-      subtitle={`OSM #${p.osm_id}`}
+      subtitle={`OSM ${p.osm_id}`}
       onClose={onClose}
       badge={
         <div

@@ -9,6 +9,11 @@ import {
 } from "maplibre-gl";
 import type { FeatureCollection, LineString } from "geojson";
 import type { RoutePieceProperties } from "@/lib/route-matching";
+import {
+  ACCESS_LEG_COLOR,
+  ACCESS_LEG_DASH,
+  accessLegs,
+} from "@/lib/access-leg";
 import type { NearbyFacility } from "@/lib/route-types";
 import { BIKE_COLOR, NO_DATA, STRESS_LINE } from "@/lib/scales";
 
@@ -31,6 +36,11 @@ interface Props {
   origin: [number, number] | null;
   destination: [number, number] | null;
   route: FeatureCollection<LineString, RoutePieceProperties> | null;
+  /**
+   * Where the router actually started and ended, once it had snapped the two
+   * pins onto its own network. Null before a result comes back.
+   */
+  snapped: { origin: [number, number]; destination: [number, number] } | null;
   /** way_id of the highest-stress segment, drawn with a halo. */
   worstWayId: number | null;
   facilities: NearbyFacility[];
@@ -108,6 +118,7 @@ export default function RouteLayer({
   origin,
   destination,
   route,
+  snapped,
   worstWayId,
   facilities,
 }: Props) {
@@ -119,7 +130,26 @@ export default function RouteLayer({
     if (!map || map.getSource("route")) return;
 
     map.addSource("route", { type: "geojson", data: EMPTY });
+    map.addSource("route-access", { type: "geojson", data: EMPTY });
     map.addSource("route-facilities", { type: "geojson", data: EMPTY });
+
+    // Pin → where the router actually started. Added before the route so the
+    // casing paints over the last few metres of it rather than the other way
+    // round, and dashed and grey because it is not part of the ride: nothing
+    // was scored along it, and colouring it on the LTS ramp would claim
+    // otherwise.
+    map.addLayer({
+      id: "route-access",
+      type: "line",
+      source: "route-access",
+      layout: { "line-cap": "round" },
+      paint: {
+        "line-color": ACCESS_LEG_COLOR,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 11, 1.5, 15, 2.5, 18, 3],
+        "line-dasharray": ACCESS_LEG_DASH,
+        "line-opacity": 0.9,
+      },
+    });
 
     // A white casing under the coloured line. The basemap is near-monochrome
     // but not empty, and a 7px line laid straight onto it reads as part of the
@@ -196,6 +226,22 @@ export default function RouteLayer({
       map.setFilter("route-worst", ["==", ["get", "way_id"], worstWayId ?? -1]);
     }
   }, [map, route, worstWayId]);
+
+  // --- The two access legs -----------------------------------------------
+  useEffect(() => {
+    if (!map) return;
+    const source = map.getSource<GeoJSONSource>("route-access");
+    if (!source) return;
+
+    source.setData({
+      type: "FeatureCollection",
+      features: accessLegs({ origin, destination }, snapped).map((coords) => ({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: coords },
+        properties: {},
+      })),
+    });
+  }, [map, origin, destination, snapped]);
 
   // --- Bike facilities at the destination --------------------------------
   useEffect(() => {

@@ -10,14 +10,21 @@ import RouteInputPanel, {
 } from "@/components/route/RouteInputPanel";
 import RouteResultPanel from "@/components/route/RouteResultPanel";
 import Legend, { type LegendSection } from "@/components/panels/Legend";
+import {
+  ACCESS_LEG_COLOR,
+  ACCESS_LEG_DASH,
+  accessLegs,
+} from "@/lib/access-leg";
 import { LTS_LABELS } from "@/lib/metrics";
-import { NO_DATA, STRESS_LINE } from "@/lib/scales";
+import { NO_DATA, STRESS_LINE, type LegendEntry } from "@/lib/scales";
 import {
   isRouteError,
   type RouteErrorKind,
+  type ProviderInfo,
   type RouteScoreError,
   type RouteScoreResponse,
 } from "@/lib/route-types";
+import type { RouteAlternative, RouteType } from "@/lib/routing/types";
 
 /**
  * Route Analysis — the personal A→B half of the project, as against the
@@ -33,22 +40,30 @@ import {
 
 type Point = [number, number];
 
-/** Bounds of a route, for the fit after a result comes back. */
+/**
+ * Bounds of a route, for the fit after a result comes back. The two pins are
+ * folded in as well: the router snaps each end onto its own network, and a fit
+ * to the line alone would push a pin that snapped inward off the edge of the
+ * view — the one part of the picture the reader placed themselves.
+ */
 function routeBounds(
-  result: RouteScoreResponse
+  result: RouteScoreResponse,
+  pins: Point[]
 ): [[number, number], [number, number]] | null {
   let w = Infinity;
   let s = Infinity;
   let e = -Infinity;
   let n = -Infinity;
+  const see = ([lon, lat]: number[]) => {
+    if (lon < w) w = lon;
+    if (lon > e) e = lon;
+    if (lat < s) s = lat;
+    if (lat > n) n = lat;
+  };
   for (const f of result.geometry.features) {
-    for (const [lon, lat] of f.geometry.coordinates) {
-      if (lon < w) w = lon;
-      if (lon > e) e = lon;
-      if (lat < s) s = lat;
-      if (lat > n) n = lat;
-    }
+    for (const c of f.geometry.coordinates) see(c);
   }
+  for (const p of pins) see(p);
   return Number.isFinite(w) ? [[w, s], [e, n]] : null;
 }
 
@@ -68,7 +83,30 @@ export default function RouteAnalysisPage() {
     destination: Endpoint | null;
   }>({ origin: null, destination: null });
   const [next, setNext] = useState<PinTarget>("origin");
+  /**
+   * What the rider is optimising for. Honoured by `graph` and `brouter`,
+   * accepted and ignored by `ors` — the panel says which, once a result has
+   * come back and there is a provider to ask.
+   */
+  const [routeType, setRouteType] = useState<RouteType>("efficient");
+  /**
+   * Which of the router's ranked answers to show. Only BRouter has more than
+   * one; the control hides itself elsewhere and the handler folds the value
+   * back to 0 for providers that cannot honour it.
+   */
+  const [alternative, setAlternative] = useState<RouteAlternative>(0);
   const [result, setResult] = useState<RouteScoreResponse | null>(null);
+  /**
+   * The last provider that answered, held separately from `result`.
+   *
+   * The two selectors describe *the backend*, not the current route, and a
+   * failed request clears `result` — so reading the provider off `result`
+   * would make the alternatives control vanish and the route-preference note
+   * fall back to generic wording at precisely the moment the reader wants to
+   * change something and try again. What the provider is has not changed just
+   * because one request to it failed.
+   */
+  const [lastProvider, setLastProvider] = useState<ProviderInfo | null>(null);
   const [error, setError] = useState<{
     kind: RouteErrorKind;
     message: string;
@@ -84,10 +122,14 @@ export default function RouteAnalysisPage() {
    */
   const pinsRef = useRef(pins);
   const nextRef = useRef(next);
+  const routeTypeRef = useRef(routeType);
+  const alternativeRef = useRef(alternative);
   useEffect(() => {
     pinsRef.current = pins;
     nextRef.current = next;
-  }, [pins, next]);
+    routeTypeRef.current = routeType;
+    alternativeRef.current = alternative;
+  }, [pins, next, routeType, alternative]);
 
   /**
    * Monotonic request id. Moving a pin while a score is in flight leaves an
@@ -107,7 +149,14 @@ export default function RouteAnalysisPage() {
       const res = await fetch("/api/route-score", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: from, destination: to }),
+        body: JSON.stringify({
+          origin: from,
+          destination: to,
+          // Read from the ref, not from state, for the same reason the pins
+          // are: `score` is captured by the map click handler registered once.
+          route_type: routeTypeRef.current,
+          alternative: alternativeRef.current,
+        }),
       });
       const body = (await res.json()) as RouteScoreResponse | RouteScoreError;
       if (id !== requestId.current) return;
@@ -118,7 +167,8 @@ export default function RouteAnalysisPage() {
         return;
       }
       setResult(body);
-      const bounds = routeBounds(body);
+      setLastProvider(body.provider);
+      const bounds = routeBounds(body, [from, to]);
       if (bounds) mapControls.current?.fitBounds(bounds);
     } catch (err) {
       if (id !== requestId.current) return;
@@ -221,6 +271,40 @@ export default function RouteAnalysisPage() {
     setLoading(false);
   }, []);
 
+  /**
+   * Changing what the route is optimising for re-runs it immediately, rather
+   * than waiting for the reader to nudge a pin. The whole point of the control
+   * is to compare the three against each other, and a selector that changes a
+   * label but not the line would invite exactly the wrong conclusion.
+   *
+   * Cheap to do: provider + route type are both in the cache key, so flipping
+   * back and forth between two already-seen options costs nothing upstream.
+   */
+  const changeRouteType = useCallback(
+    (value: RouteType) => {
+      if (value === routeTypeRef.current) return;
+      routeTypeRef.current = value;
+      setRouteType(value);
+
+      const { origin, destination } = pinsRef.current;
+      if (origin && destination) void score(origin.at, destination.at);
+    },
+    [score]
+  );
+
+  /** Same immediate re-score as the route type, for the same reason. */
+  const changeAlternative = useCallback(
+    (value: RouteAlternative) => {
+      if (value === alternativeRef.current) return;
+      alternativeRef.current = value;
+      setAlternative(value);
+
+      const { origin, destination } = pinsRef.current;
+      if (origin && destination) void score(origin.at, destination.at);
+    },
+    [score]
+  );
+
   const swap = useCallback(() => {
     const { origin, destination } = pinsRef.current;
     if (!origin || !destination) return;
@@ -237,7 +321,7 @@ export default function RouteAnalysisPage() {
    */
   const legendSections = useMemo<LegendSection[]>(() => {
     if (!result) return [];
-    const entries = result.stats.lts_bands
+    const entries: LegendEntry[] = result.stats.lts_bands
       .filter((b) => b.length_m > 0)
       .map((b) => ({
         color: STRESS_LINE[b.lts - 1],
@@ -246,16 +330,42 @@ export default function RouteAnalysisPage() {
     if (result.stats.unmatched_length_m > 0) {
       entries.push({ color: NO_DATA, label: "Not matched to our data" });
     }
+    // Only when there is actually one on the screen. A row for a mark the map
+    // isn't making is the same lie as a missing row for one it is.
+    const legs = accessLegs(
+      {
+        origin: pins.origin?.at ?? null,
+        destination: pins.destination?.at ?? null,
+      },
+      result.snapped
+    );
+    if (legs.length > 0) {
+      entries.push({
+        color: ACCESS_LEG_COLOR,
+        dash: ACCESS_LEG_DASH,
+        label: "Pin to the road — on foot",
+      });
+    }
     return [
       {
         title: "This route · traffic stress",
         shape: "line",
         entries,
         hasNoData: false,
-        note: "The same scale as the network map's stress view. The path itself was chosen by a generic cycling profile, not by these colours.",
+        /**
+         * Which of these two sentences is true depends entirely on the active
+         * provider, and the distinction is the whole point of having more than
+         * one: `graph` minimises a cost function built from these colours,
+         * while `ors` and `brouter` have never seen them. Saying the wrong one
+         * would misrepresent what the map is showing.
+         */
+        note:
+          result.provider.id === "graph"
+            ? "The same scale as the network map's stress view — and on this provider, what the router minimised to choose the path."
+            : `The same scale as the network map's stress view. The path itself was chosen by ${result.provider.label}'s generic cycling profile, not by these colours.`,
       },
     ];
-  }, [result]);
+  }, [result, pins]);
 
   return (
     <>
@@ -271,6 +381,11 @@ export default function RouteAnalysisPage() {
         loading={loading}
         error={error}
         cached={result?.cached ?? false}
+        provider={result?.provider ?? lastProvider}
+        routeType={routeType}
+        onRouteTypeChange={changeRouteType}
+        alternative={alternative}
+        onAlternativeChange={changeAlternative}
       />
       <main className="flex-1 relative bg-[#F7F8FA]">
         <MapView
@@ -290,6 +405,7 @@ export default function RouteAnalysisPage() {
           origin={pins.origin?.at ?? null}
           destination={pins.destination?.at ?? null}
           route={result?.geometry ?? null}
+          snapped={result?.snapped ?? null}
           worstWayId={result?.stats.worst?.way_id ?? null}
           facilities={result?.facilities ?? []}
         />

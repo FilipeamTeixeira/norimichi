@@ -147,6 +147,44 @@ extract_other_tag <- function(other_tags, key) {
   out
 }
 
+#' Build a stable, namespaced OSM id for features that may be nodes or ways.
+#'
+#' GDAL's OSM driver splits an element's id across two columns depending on
+#' which layer it came from: the `points` layer fills `osm_id`, while the
+#' `multipolygons` layer fills `osm_way_id` and leaves `osm_id` NULL for
+#' anything built from a closed way (it reserves `osm_id` there for
+#' relation-derived polygons). A layer that binds both - as
+#' get_bike_facilities() does - therefore has a NULL `osm_id` on every
+#' polygon-derived row unless the two are merged here.
+#'
+#' Merged with the `node/`/`way/` prefix rather than by plain coalescing
+#' because node and way ids are independent OSM sequences: id 47969139 names
+#' both a node and a way, so a bare id is not unique across a bound layer.
+#' The frontend uses this value as the feature's identity - map hit-testing
+#' and highlight filters in MapView.tsx, React list keys in
+#' RouteResultPanel.tsx - so a collision is a real bug, not a cosmetic one.
+#'
+#' @param osm_id character vector from the points layer (NA for way rows)
+#' @param osm_way_id character vector from the multipolygons layer (NA for
+#'   node rows)
+#' @return character vector of `node/<id>` / `way/<id>` strings
+osm_canonical_id <- function(osm_id, osm_way_id) {
+  present <- function(x) !is.na(x) & nzchar(x)
+  is_node <- present(osm_id)
+  is_way <- !is_node & present(osm_way_id)
+
+  if (any(!is_node & !is_way)) {
+    stop(sum(!is_node & !is_way), " feature(s) have neither osm_id nor osm_way_id")
+  }
+
+  out <- ifelse(is_node, paste0("node/", osm_id), paste0("way/", osm_way_id))
+
+  if (anyDuplicated(out) > 0) {
+    stop("duplicate OSM ids after merge: ", paste(unique(out[duplicated(out)]), collapse = ", "))
+  }
+  out
+}
+
 #' Write the bike facilities layer for the frontend (parking + sharing points).
 #'
 #' @param bike_facilities sf POINT object with (at least) the columns below,
@@ -154,11 +192,13 @@ extract_other_tag <- function(other_tags, key) {
 #'   fee/brand/access/covered/supervised/note/operator/opening_hours from
 #' @param path output path, e.g. "../app/public/data/bike_facilities.geojson"
 export_bike_facilities_layer <- function(bike_facilities, path) {
-  source_cols <- c("osm_id", "name", "ref", "amenity", "capacity", "facility_type", "other_tags")
+  source_cols <- c("osm_id", "osm_way_id", "name", "ref", "amenity", "capacity", "facility_type", "other_tags")
   missing <- setdiff(source_cols, names(bike_facilities))
   if (length(missing) > 0) {
     stop("bike facilities layer is missing columns: ", paste(missing, collapse = ", "))
   }
+
+  bike_facilities$osm_id <- osm_canonical_id(bike_facilities$osm_id, bike_facilities$osm_way_id)
 
   other_tag_keys <- c(
     "fee", "brand", "access", "covered", "supervised",
@@ -168,7 +208,8 @@ export_bike_facilities_layer <- function(bike_facilities, path) {
     bike_facilities[[key]] <- extract_other_tag(bike_facilities$other_tags, key)
   }
 
-  required_cols <- c(setdiff(source_cols, "other_tags"), other_tag_keys)
+  # osm_way_id is folded into osm_id above, so it does not travel to the app.
+  required_cols <- c(setdiff(source_cols, c("other_tags", "osm_way_id")), other_tag_keys)
 
   if (file.exists(path)) file.remove(path)  # st_write won't overwrite by default
   sf::st_write(bike_facilities[, required_cols], path, driver = "GeoJSON", quiet = TRUE)

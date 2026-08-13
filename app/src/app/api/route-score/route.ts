@@ -1,43 +1,48 @@
 /**
  * Score one A→B cycling trip against this project's own segment data.
  *
- * The division of labour is the whole design: OpenRouteService supplies *only*
- * the path geometry, from its own generic cycling profile, and everything that
- * makes the answer worth reading — the stress breakdown, the sidewalk and
- * informal-parking exposure, the signal-aware travel time, the cost and CO₂
- * comparison — comes from segments.geojson via lib/route-matching.ts. See
- * PROJECT_STATUS.md C.3: this is the "V1" overlay path, not routing on our own
- * data. ORS has never seen `lts` and does not avoid a hostile road; this
- * endpoint reports what its route runs along, it does not look for a better
- * one.
+ * The division of labour is the whole design: a `RouteProvider` supplies *only*
+ * the path geometry, and everything that makes the answer worth reading — the
+ * stress breakdown, the sidewalk and informal-parking exposure, the
+ * signal-aware travel time, the cost and CO₂ comparison — comes from
+ * segments.geojson via lib/route-matching.ts. That split is what lets three
+ * different backends be compared: the scoring is identical whoever drew the
+ * line, so a difference between two routes is a difference in the routing.
  *
- * The key stays here. It is read from ORS_API_KEY, deliberately not prefixed
- * NEXT_PUBLIC_, and the client only ever talks to this handler.
+ * Which backend runs is `ROUTING_PROVIDER` — see lib/routing/index.ts. Two of
+ * the three (`ors`, `brouter`) route on generic profiles that have never seen
+ * `lts` and cannot avoid a hostile road; this endpoint reports what their route
+ * runs along, it does not look for a better one. The third (`graph`) routes on
+ * our own network with our own stress data as the cost function, which is the
+ * PROJECT_STATUS.md C.3 "V2" path.
+ *
+ * The ORS key stays server-side. It is read from ORS_API_KEY, deliberately not
+ * prefixed NEXT_PUBLIC_, and the client only ever talks to this handler.
  */
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import distance from "@turf/distance";
 import { point } from "@turf/helpers";
-import type { Feature, FeatureCollection, LineString, MultiLineString } from "geojson";
+import type { FeatureCollection } from "geojson";
+import { estimateCyclingTime, matchRoute } from "@/lib/route-matching";
 import {
-  buildSegmentIndex,
-  buildSignalJunctions,
-  estimateCyclingTime,
-  matchRoute,
-  type SegmentIndex,
-  type SignalJunctions,
-} from "@/lib/route-matching";
+  loadFacilities,
+  loadIndex,
+  loadJunctions,
+} from "@/lib/routing/data";
+import { activeProvider } from "@/lib/routing";
+import {
+  isRouteAlternative,
+  isRouteType,
+  type RouteAlternative,
+  type RouteType,
+} from "@/lib/routing/types";
 import type {
   NearbyFacility,
   RouteErrorKind,
   RouteScoreError,
   RouteScoreResponse,
 } from "@/lib/route-types";
-import type {
-  BikeFacilityProperties,
-  SegmentProperties,
-} from "@/lib/types";
+import type { BikeFacilityProperties } from "@/lib/types";
 import {
   CO2_KG_PER_CAR_KM,
   DESTINATION_FACILITY_RADIUS_M,
@@ -50,77 +55,63 @@ import {
 /** Reads GeoJSON off disk and holds a spatial index in memory. */
 export const runtime = "nodejs";
 
-const ORS_URL =
-  "https://api.openrouteservice.org/v2/directions/cycling-regular/geojson";
-
-// --- Data, loaded once per process -------------------------------------
-
-/**
- * segments.geojson is 3.2MB and 3,188 features, and the index over it costs
- * real time to build. Both are static for the life of a deployment, so this is
- * a module-level promise: the first request into a cold instance pays for it,
- * every later request on that instance gets it for free. Never per-request.
- */
-let indexPromise: Promise<SegmentIndex> | null = null;
-let junctionsPromise: Promise<SignalJunctions> | null = null;
-let facilitiesPromise: Promise<
-  FeatureCollection<GeoJSON.Point, BikeFacilityProperties>
-> | null = null;
-
-const dataPath = (name: string) =>
-  path.join(process.cwd(), "public", "data", name);
-
-function loadIndex(): Promise<SegmentIndex> {
-  indexPromise ??= readFile(dataPath("segments.geojson"), "utf8").then((raw) =>
-    buildSegmentIndex(
-      JSON.parse(raw) as FeatureCollection<MultiLineString, SegmentProperties>
-    )
-  );
-  return indexPromise;
-}
-
-function loadJunctions(): Promise<SignalJunctions> {
-  junctionsPromise ??= readFile(dataPath("traffic_signals.geojson"), "utf8").then(
-    (raw) =>
-      buildSignalJunctions(JSON.parse(raw) as FeatureCollection<GeoJSON.Point>)
-  );
-  return junctionsPromise;
-}
-
-function loadFacilities() {
-  facilitiesPromise ??= readFile(dataPath("bike_facilities.geojson"), "utf8").then(
-    (raw) =>
-      JSON.parse(raw) as FeatureCollection<GeoJSON.Point, BikeFacilityProperties>
-  );
-  return facilitiesPromise;
-}
-
 // --- Cache --------------------------------------------------------------
 
 /**
- * ~100m coordinate grid. Three decimal places is 111m of latitude and 91m of
- * longitude at Yokohama's latitude, and ORS snaps a request to the nearest road
- * within its own default radius anyway — so two clicks in the same block are
- * one route, and one request against a 2,000/day quota rather than two.
+ * ~10m coordinate grid. Four decimal places is 11m of latitude and 9m of
+ * longitude at Yokohama's latitude, so a click and a click a moment later on
+ * the same spot are one route and one upstream request.
  *
- * The rounded coordinates are what is sent to ORS, not just what is used as the
- * key. Keying on a rounded value while requesting an unrounded one would file
- * a whole block's worth of genuinely different routes under one entry.
+ * Three decimals — a ~100m cell — was the earlier choice, on the reasoning that
+ * the router snaps to the nearest road anyway. It does, but the *pin* doesn't:
+ * the marker sits where the reader clicked while the route starts wherever the
+ * rounded point landed, which showed up as a visible gap of up to ~78m between
+ * the two. The cache exists to save quota, and it still does for the case that
+ * actually spends it — flipping route type or alternative re-sends identical
+ * coordinates — so the coarser cell was buying very little at the price of
+ * putting the route somewhere the reader didn't ask for.
+ *
+ * The rounded coordinates are what is sent upstream, not just what is used as
+ * the key. Keying on a rounded value while requesting an unrounded one would
+ * file a whole cell's worth of genuinely different routes under one entry.
  */
-const GRID_DECIMALS = 3;
+const GRID_DECIMALS = 4;
 const snap = (v: number) => Number(v.toFixed(GRID_DECIMALS));
 
 /**
  * In-process only, so it empties whenever the instance is recycled and is not
  * shared between concurrent serverless instances. That is a real limit on how
- * much quota it saves in production, and the honest fix is a shared store (KV)
- * rather than pretending this is one — but it costs nothing and it covers the
- * case that actually burns quota, which is one person trying the same trip
- * repeatedly while reading the panel.
+ * much upstream traffic it saves in production, and the honest fix is a shared
+ * store (KV) rather than pretending this is one — but it costs nothing and it
+ * covers the case that actually burns quota, which is one person trying the
+ * same trip repeatedly while reading the panel.
  */
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 200;
 const cache = new Map<string, { at: number; payload: RouteScoreResponse }>();
+
+/**
+ * Provider, route type and alternative index are all part of the key, not just
+ * the coordinates.
+ *
+ * They have to be. The same O/D pair returns a different route from each of the
+ * three backends, from each of BRouter's three profiles, and from each of its
+ * four alternative indices — keying on coordinates alone would serve whichever
+ * answer happened to be cached first under every other combination's name,
+ * which is worse than not caching: the response says `provider.id` and
+ * `route_type` and would be lying about both. Every request-shaping parameter
+ * has to appear here; adding one without adding it to this key is the bug to
+ * watch for.
+ */
+function cacheKey(
+  providerId: string,
+  routeType: RouteType,
+  alternative: RouteAlternative,
+  from: [number, number],
+  to: [number, number]
+): string {
+  return `${providerId}|${routeType}|${alternative}|${from[0]},${from[1]}|${to[0]},${to[1]}`;
+}
 
 function cacheGet(key: string): RouteScoreResponse | null {
   const hit = cache.get(key);
@@ -147,14 +138,8 @@ function cacheSet(key: string, payload: RouteScoreResponse): void {
 
 // --- Helpers ------------------------------------------------------------
 
-function fail(
-  error: RouteErrorKind,
-  message: string,
-  status: number
-): Response {
-  return Response.json({ error, message } satisfies RouteScoreError, {
-    status,
-  });
+function fail(error: RouteErrorKind, message: string, status: number): Response {
+  return Response.json({ error, message } satisfies RouteScoreError, { status });
 }
 
 function isCoordinate(v: unknown): v is [number, number] {
@@ -187,71 +172,6 @@ function insideStudyArea(
   );
 }
 
-/**
- * Read ORS's failure back as one of our own states.
- *
- * The distinction that matters to a user is "come back tomorrow" versus
- * "something is broken", and ORS signals the first with both 429 (per-minute
- * throttle) and 403 (daily quota) — 403 is also what an invalid key returns,
- * so the body has to be looked at rather than the status alone.
- */
-function classifyOrsFailure(status: number, body: string): RouteErrorKind {
-  const text = body.toLowerCase();
-  if (status === 429) return "quota";
-  if (status === 403) {
-    if (text.includes("quota") || text.includes("rate limit")) return "quota";
-    return "not_configured";
-  }
-  if (status === 401) return "not_configured";
-  // 2009 = no route found between the points, 2010 = no road near a point.
-  if (text.includes('"code":2009') || text.includes('"code":2010')) {
-    return "no_route";
-  }
-  if (status === 404) return "no_route";
-  return "unavailable";
-}
-
-async function fetchOrsRoute(
-  origin: [number, number],
-  destination: [number, number],
-  apiKey: string
-): Promise<
-  | { ok: true; feature: Feature<LineString, { summary?: { distance: number; duration: number } }> }
-  | { ok: false; kind: RouteErrorKind }
-> {
-  let res: Response;
-  try {
-    res = await fetch(ORS_URL, {
-      method: "POST",
-      headers: {
-        Authorization: apiKey,
-        "Content-Type": "application/json",
-        Accept: "application/geo+json",
-      },
-      body: JSON.stringify({ coordinates: [origin, destination] }),
-      // Nothing here is cached by fetch; the coordinate-grid cache above is.
-      cache: "no-store",
-      signal: AbortSignal.timeout(15_000),
-    });
-  } catch {
-    return { ok: false, kind: "unavailable" };
-  }
-
-  if (!res.ok) {
-    return { ok: false, kind: classifyOrsFailure(res.status, await res.text()) };
-  }
-
-  const body = (await res.json()) as FeatureCollection<
-    LineString,
-    { summary?: { distance: number; duration: number } }
-  >;
-  const feature = body.features?.[0];
-  if (!feature || feature.geometry.coordinates.length < 2) {
-    return { ok: false, kind: "no_route" };
-  }
-  return { ok: true, feature };
-}
-
 function facilitiesNear(
   destination: [number, number],
   facilities: FeatureCollection<GeoJSON.Point, BikeFacilityProperties>
@@ -279,18 +199,31 @@ function facilitiesNear(
   return found.sort((a, b) => a.distance_m - b.distance_m);
 }
 
+/** One message per failure state, so every one of them reads as deliberate. */
+const MESSAGES: Record<RouteErrorKind, [string, number]> = {
+  quota: [
+    "The routing service has hit its daily request limit. Route scoring will work again tomorrow; everything else on the site is unaffected.",
+    503,
+  ],
+  not_configured: [
+    "The routing service rejected our API key. Check ORS_API_KEY on the server, or set ROUTING_PROVIDER=graph to route on our own network instead.",
+    503,
+  ],
+  no_route: [
+    "No cycling route could be found between those two points. Try moving one of them nearer a road.",
+    422,
+  ],
+  unavailable: [
+    "The routing service is temporarily unavailable. Try again in a moment.",
+    503,
+  ],
+  out_of_area: ["Outside the study area.", 400],
+  bad_request: ["Bad request.", 400],
+};
+
 // --- Handler ------------------------------------------------------------
 
 export async function POST(request: Request): Promise<Response> {
-  const apiKey = process.env.ORS_API_KEY;
-  if (!apiKey) {
-    return fail(
-      "not_configured",
-      "ORS_API_KEY is not set on the server. Add it to .env.local (never prefixed NEXT_PUBLIC_) and restart.",
-      503
-    );
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -298,7 +231,13 @@ export async function POST(request: Request): Promise<Response> {
     return fail("bad_request", "Expected a JSON body.", 400);
   }
 
-  const { origin, destination } = (body ?? {}) as Record<string, unknown>;
+  const {
+    origin,
+    destination,
+    route_type: requestedType,
+    alternative: requestedAlternative,
+  } = (body ?? {}) as Record<string, unknown>;
+
   if (!isCoordinate(origin) || !isCoordinate(destination)) {
     return fail(
       "bad_request",
@@ -306,6 +245,21 @@ export async function POST(request: Request): Promise<Response> {
       400
     );
   }
+  if (requestedType !== undefined && !isRouteType(requestedType)) {
+    return fail(
+      "bad_request",
+      'route_type must be one of "efficient", "relaxed" or "quick".',
+      400
+    );
+  }
+  if (
+    requestedAlternative !== undefined &&
+    !isRouteAlternative(requestedAlternative)
+  ) {
+    return fail("bad_request", "alternative must be 0, 1, 2 or 3.", 400);
+  }
+  const routeType: RouteType = requestedType ?? "efficient";
+  const alternative: RouteAlternative = requestedAlternative ?? 0;
 
   const from: [number, number] = [snap(origin[0]), snap(origin[1])];
   const to: [number, number] = [snap(destination[0]), snap(destination[1])];
@@ -324,41 +278,59 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  const key = `${from[0]},${from[1]}|${to[0]},${to[1]}`;
-  const cached = cacheGet(key);
-  if (cached) return Response.json({ ...cached, cached: true });
+  const provider = activeProvider();
+  /**
+   * A provider that has no alternatives returns the same route whatever is
+   * asked for, so folding the request down to 0 keeps four identical copies of
+   * one route out of a 200-entry cache — and keeps the echoed
+   * `provider.alternative` honest about what was actually served.
+   */
+  const effectiveAlternative: RouteAlternative = provider.supportsAlternatives
+    ? alternative
+    : 0;
 
-  const route = await fetchOrsRoute(from, to, apiKey);
-  if (!route.ok) {
-    const messages: Record<RouteErrorKind, [string, number]> = {
-      quota: [
-        "The routing service has hit its daily request limit. Route scoring will work again tomorrow; everything else on the site is unaffected.",
-        503,
-      ],
-      not_configured: [
-        "The routing service rejected our API key. Check ORS_API_KEY on the server.",
-        503,
-      ],
-      no_route: [
-        "No cycling route could be found between those two points. Try moving one of them nearer a road.",
-        422,
-      ],
-      unavailable: [
-        "The routing service is temporarily unavailable. Try again in a moment.",
-        503,
-      ],
-      out_of_area: ["Outside the study area.", 400],
-      bad_request: ["Bad request.", 400],
-    };
-    const [message, status] = messages[route.kind];
-    return fail(route.kind, message, status);
+  const key = cacheKey(provider.id, routeType, effectiveAlternative, from, to);
+  const hit = cacheGet(key);
+  if (hit) return Response.json({ ...hit, cached: true });
+
+  const result = await provider.route({
+    origin: from,
+    destination: to,
+    routeType,
+    alternative: effectiveAlternative,
+  });
+
+  if (!result.ok) {
+    if (result.detail) {
+      // Server-side only: the user gets the plain message, we get the reason.
+      console.warn(
+        `[route-score] ${provider.id}/${routeType}/alt${effectiveAlternative} failed (${result.kind}): ${result.detail}`
+      );
+    }
+    const [message, status] = MESSAGES[result.kind];
+    return fail(result.kind, message, status);
   }
 
-  const matched = matchRoute(route.feature, index, junctions);
-  const ours = estimateCyclingTime(matched.aggregate);
+  /**
+   * Where the router actually began and ended, as against where it was asked
+   * to. Every provider snaps the request onto its own network, and that snap
+   * can be tens of metres — a click in the middle of a block, a park, or the
+   * far side of a river barrier. The client draws the difference as an access
+   * leg rather than leaving the pin floating next to an unexplained gap.
+   */
+  const line = result.route.line.geometry.coordinates;
+  const first = line[0];
+  const last = line[line.length - 1];
+  const snapped =
+    first && last
+      ? {
+          origin: [first[0], first[1]] as [number, number],
+          destination: [last[0], last[1]] as [number, number],
+        }
+      : { origin: from, destination: to };
 
-  const summary = route.feature.properties?.summary;
-  const orsDistance = summary?.distance ?? matched.aggregate.total_length_m;
+  const matched = matchRoute(result.route.line, index, junctions);
+  const ours = estimateCyclingTime(matched.aggregate);
   const km = matched.aggregate.total_length_m / 1000;
 
   // The counterfactual, in the same units score_roi.R uses for the whole ward.
@@ -366,9 +338,18 @@ export async function POST(request: Request): Promise<Response> {
 
   const payload: RouteScoreResponse = {
     geometry: matched.geometry,
+    snapped,
     stats: matched.aggregate,
     ours,
-    ors: { distance_m: orsDistance, minutes: (summary?.duration ?? 0) / 60 },
+    provider: {
+      id: provider.id,
+      label: provider.label,
+      supports_route_types: provider.supportsRouteTypes,
+      supports_alternatives: provider.supportsAlternatives,
+      route_type: routeType,
+      alternative: effectiveAlternative,
+    },
+    reported: result.route.reported,
     car: {
       minutes: carMinutes,
       time_value_yen: carMinutes * TIME_VALUE_YEN_PER_CAR_MIN,
