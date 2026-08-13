@@ -24,6 +24,7 @@ import {
   BIKE_COLOR,
   CYCLEWAY_COLOR,
   RECOMMENDATION_COLOR,
+  SELECTION_COLOR,
 } from "@/lib/scales";
 import type { FeatureCollection } from "geojson";
 
@@ -37,6 +38,20 @@ export type Selection =
 /** What the page can ask the map to do. Deliberately narrow. */
 export interface MapControls {
   fitBounds: (bounds: LngLatBoundsLike) => void;
+}
+
+/**
+ * A set of ways to frame and highlight together — the corridor handed over from
+ * the Investment Ranking table.
+ *
+ * A prop rather than a method on MapControls because it has to survive arriving
+ * early: the highlight filter can only be set once the layer exists, which is
+ * after the segment source loads. As a prop it is applied when the map is
+ * ready, whenever that turns out to be.
+ */
+export interface MapFocus {
+  wayIds: number[];
+  bounds: [[number, number], [number, number]] | null;
 }
 
 interface MapViewProps {
@@ -54,6 +69,12 @@ interface MapViewProps {
   color: ExpressionSpecification | string;
   /** The bridge overlay says nothing outside the connectivity view. */
   showBridges: boolean;
+  /**
+   * A corridor to frame and highlight on arrival, from the Investment Ranking
+   * table. Applied once per distinct value, so a later map click replaces the
+   * highlight without this re-asserting it.
+   */
+  focus?: MapFocus | null;
   /** Populated once the map exists, so the panels can drive it. */
   controlRef?: React.RefObject<MapControls | null>;
   /**
@@ -174,6 +195,40 @@ const BIKE_RADIUS: ExpressionSpecification = [
  * (see the case_when in pipeline/scripts/11_export.R), so a way is in exactly
  * one of the two overlays, never both.
  */
+/**
+ * The selection casing — roughly 2.4x SEGMENT_WIDTH, for the same reason
+ * CYCLEWAY_WIDTH is 2x it: this layer and the score line are the *same
+ * geometry*, so a matched width is total occlusion.
+ *
+ * It used to run 3px at z13 to 7px at z18 against a score line of 2.5 to 7,
+ * i.e. no wider than the thing it was highlighting — at the z16 the ranking
+ * table's fly-to lands on, a 4.6px "highlight" sat on a 5px line. Under the
+ * traffic-stress ramp that still read as a distinct dark line, which is why it
+ * looked fine in isolation; under "Where to invest", where most of the network
+ * is pale grey, a same-width dark line is just another street and the
+ * selection was effectively invisible.
+ *
+ * Drawn *beneath* the score line (see the beforeId below) and rendered as a
+ * soft translucent glow rather than a hard band, so a selected segment keeps
+ * its own colour and gains a halo either side, instead of being painted over in
+ * flat black and losing the measurement the reader came for.
+ */
+const HIGHLIGHT_WIDTH: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  11,
+  3.5,
+  13,
+  8,
+  14,
+  11,
+  16,
+  16,
+  18,
+  22,
+];
+
 const CYCLEWAY_WIDTH: ExpressionSpecification = [
   "interpolate",
   ["linear"],
@@ -216,6 +271,7 @@ export default function MapView({
   coloredGeometry,
   color,
   showBridges,
+  focus,
   controlRef,
   onMapReady,
 }: MapViewProps) {
@@ -538,17 +594,29 @@ export default function MapView({
       },
     });
 
-    map.addLayer({
-      id: "segments-highlight",
-      type: "line",
-      source: "segments",
-      paint: {
-        "line-color": "#0b0b0b",
-        "line-width": ["interpolate", ["linear"], ["zoom"], 13, 3, 18, 7],
-        "line-opacity": 0.9,
+    // Inserted below "segments-layer" on purpose: this is a casing, so the
+    // score line has to draw on top of it. See HIGHLIGHT_WIDTH.
+    map.addLayer(
+      {
+        id: "segments-highlight",
+        type: "line",
+        source: "segments",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": SELECTION_COLOR,
+          "line-width": HIGHLIGHT_WIDTH,
+          // A glow, not a border: soft and semi-transparent, so it reads as
+          // emphasis on the street rather than as another value on a ramp.
+          // Opacity is higher than recommendations-glow's 0.35 because the
+          // colour is paler — the same alpha on a lighter blue disappears
+          // against the basemap.
+          "line-opacity": 0.55,
+          "line-blur": 4,
+        },
+        filter: ["==", ["get", "way_id"], -1],
       },
-      filter: ["==", ["get", "way_id"], -1],
-    });
+      "segments-layer"
+    );
 
     map.addLayer({
       id: "amenities-layer",
@@ -695,6 +763,38 @@ export default function MapView({
     if (showHex) map.setPaintProperty("hex-fill", "fill-color", color);
     if (showSegments) map.setPaintProperty("segments-layer", "line-color", color);
   }, [color, showHex, showSegments, dataReady]);
+
+  // --- A corridor arriving from the Investment Ranking table -------------
+  //
+  // Frames and highlights every member way, not just the one the info panel
+  // describes: the reader was sent here to look at a whole project, and
+  // lighting up one 119m fragment of it would understate what they asked for.
+  //
+  // Waits on `dataReady` because the highlight layer does not exist until the
+  // segment source has loaded, and on `showSegments` because it is hidden under
+  // an area view. Keyed on `focus` identity, so a subsequent map click replaces
+  // the highlight without this reinstating it.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !dataReady || !showSegments) return;
+    if (!map.getLayer("segments-highlight")) return;
+
+    // Clearing the focus clears the casing. Without this, dismissing the
+    // project banner left the whole corridor still outlined on the map.
+    if (!focus) {
+      map.setFilter("segments-highlight", ["==", ["get", "way_id"], -1]);
+      return;
+    }
+
+    map.setFilter("segments-highlight", [
+      "in",
+      ["get", "way_id"],
+      ["literal", focus.wayIds],
+    ]);
+    if (focus.bounds) {
+      map.fitBounds(focus.bounds, { padding: 96, maxZoom: 16, duration: 700 });
+    }
+  }, [focus, dataReady, showSegments]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 }

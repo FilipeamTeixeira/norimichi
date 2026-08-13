@@ -1,7 +1,137 @@
 import type { Feature, MultiLineString, Point, Polygon } from "geojson";
 
+/**
+ * The five intervention labels. Mirrors INTERVENTION_TYPES in
+ * pipeline/R/score_intervention.R — the pipeline emits exactly these
+ * strings, so a filter can match `recommendation` directly instead of
+ * pattern-matching free text.
+ */
+export type InterventionType =
+  | "Protected cycle lane"
+  | "Missing link"
+  | "Traffic calming"
+  | "Crossing improvement"
+  | "Bike parking";
+
+/**
+ * Whether a row's recommended intervention corresponds to an input the
+ * traffic-stress score actually models.
+ *
+ * This is the field that keeps the before/after honest, and it is not
+ * decorative. `score_lts()` has no crossing or junction term at all, so
+ * there is no edit to a way's tags meaning "the crossing got safer" — a
+ * `not_modelled` row therefore carries `suitability_after: null` and the UI
+ * must state its benefit in other terms. An earlier version of the pipeline
+ * applied the *cycle lane* counterfactual to every type uniformly and
+ * reported a mean 31 → 100 for crossing improvements: an intervention
+ * scored by pretending a different one had been built. Never render an
+ * arrow for a `not_modelled` row.
+ *
+ * See pipeline/R/score_intervention.R.
+ */
+export type BenefitKind = "lts_recalc" | "not_modelled";
+
+/**
+ * One fundable project — the Investment Ranking table's row.
+ *
+ * Contiguous segments sharing a name and a recommendation, grouped by
+ * pipeline/R/build_corridors.R. Deliberately not one row per OSM way: the
+ * median recommended way here is 119m, 57% are unnamed, and one street runs
+ * across dozens of rows, so a way-level table ranks fragments of the same
+ * few streets and labels more than half of them blank.
+ *
+ * Comes from `investment_ranking.json`, precomputed by
+ * pipeline/scripts/12_compute_investment_ranking.R. Every figure here is
+ * computed in R — nothing on this page re-derives scoring, so the
+ * classification and what-if logic lives next to score_lts.R rather than
+ * being duplicated in TypeScript.
+ */
+export interface CorridorProperties {
+  corridor_id: number;
+  /** OSM street name. Null for 193 of 372 corridors — use corridorLabel(). */
+  name: string | null;
+  /** Nearest station, always present. The only label an unnamed corridor has. */
+  nearest_station: string | null;
+  recommendation: InterventionType;
+  benefit_kind: BenefitKind;
+  /** Plain-language description of what was simulated to get the after-number. */
+  intervention_lever: string;
+  cost_tier: "Low" | "Medium" | "High" | null;
+  /** Dominant OSM highway class by length. */
+  highway: string | null;
+  segment_count: number;
+  length_m: number;
+  /** Member `way_id`s — internal row identities, for drill-down and map fly-to. */
+  way_ids: number[];
+  /** Real OSM way ids, for checking against openstreetmap.org/way/<id>. */
+  osm_ids: string[];
+  /** Lon/lat extent as [w, s, e, n], for flying the map to the whole corridor. */
+  bbox: [number, number, number, number];
+  lts_before: number;
+  suitability_before: number;
+  /** Null whenever `benefit_kind` is "not_modelled". Never fabricate one. */
+  suitability_after: number | null;
+  /**
+   * Residents within 500m of the whole corridor, recomputed from a single
+   * unioned buffer — never the sum of its segments' own values, whose 500m
+   * buffers overlap almost completely. On the largest corridor here the
+   * union gives 53,145 where the naive sum claims 790,407.
+   */
+  estimated_beneficiaries: number;
+  network_criticality_score: number | null;
+  bridges_islands: boolean;
+  islands_adjacent: number | null;
+  /** Benefit statements for the interventions the stress score cannot model. */
+  signalised_junctions: number;
+  informal_parking_length_m: number;
+  no_sidewalk_length_m: number;
+  /**
+   * Enclosing-hex figures. Neighbourhood *context*, not corridor-attributable
+   * — `gap_score` and the ROI model are computed from hex-level population
+   * for a whole ~0.1km² cell, so this is "what kind of area is this street
+   * in", not "what fixing this street is worth". Label it as context in any
+   * UI that shows it. See pipeline/R/join_hex_context.R.
+   */
+  context_hex_gap_score: number | null;
+  context_hex_daily_savings_yen: number | null;
+}
+
+/**
+ * The whole `investment_ranking.json` payload. The `notes` block ships with
+ * the data rather than living only in the UI, because three of these columns
+ * are honest only when read with their caveat.
+ */
+export interface InvestmentRanking {
+  study_area: string;
+  corridor_count: number;
+  total_length_km: number;
+  notes: Record<string, string>;
+  corridors: CorridorProperties[];
+}
+
+/**
+ * A corridor's display label. Falls back to location for the 52% of
+ * corridors OSM gives no name — including, in this study area, the corridor
+ * with the most residents within 500m.
+ */
+export function corridorLabel(p: CorridorProperties): string {
+  if (p.name) return p.name;
+  const kind = p.highway ? p.highway.replace(/_/g, " ") : "road";
+  return p.nearest_station
+    ? `Unnamed ${kind} near ${p.nearest_station}`
+    : `Unnamed ${kind}`;
+}
+
+export const COST_TIER_ORDER: Record<string, number> = {
+  Low: 0,
+  Medium: 1,
+  High: 2,
+};
+
 export interface SegmentProperties {
   way_id: number;
+  /** Real OSM way id, as a string. `way_id` is only a row index. */
+  osm_id?: string;
   name?: string | null;
   highway?: string;
   length_m: number;
@@ -27,10 +157,20 @@ export interface SegmentProperties {
   island_id?: number | null;
   display_category?: DisplayCategory;
   infra_gap: string;
-  recommendation: string | null;
-  cost_tier?: string | null;
+  recommendation: InterventionType | null;
+  cost_tier?: "Low" | "Medium" | "High" | null;
+  /** Null whenever `benefit_kind` is "not_modelled". See BenefitKind. */
   suitability_after?: number | null;
+  benefit_kind?: BenefitKind | null;
+  intervention_lever?: string | null;
+  /** Which corridor this segment rolls up into; null if not recommended. */
+  corridor_id?: number | null;
   estimated_beneficiaries: number | null;
+  /** Enclosing-hex context, not segment-attributable. See CorridorProperties. */
+  context_hex_gap_score?: number | null;
+  context_hex_demand_score?: number | null;
+  context_hex_population?: number | null;
+  context_hex_daily_savings_yen?: number | null;
 }
 
 /**

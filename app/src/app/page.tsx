@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FeatureCollection, Geometry } from "geojson";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
 import FilterSidebar from "@/components/layout/FilterSidebar";
 import MapView, {
   type MapControls,
@@ -15,7 +15,15 @@ import Legend, {
   type LegendNudge,
   type LegendSection,
 } from "@/components/panels/Legend";
-import { DEFAULT_TOGGLES, type ToggleState } from "@/lib/types";
+import {
+  DEFAULT_TOGGLES,
+  corridorLabel,
+  type CorridorProperties,
+  type InvestmentRanking,
+  type SegmentFeature,
+  type SegmentProperties,
+  type ToggleState,
+} from "@/lib/types";
 import {
   AREA_DETAIL_ZOOM,
   NETWORK_VIEW_ID,
@@ -28,6 +36,7 @@ import {
   BIKE_COLOR,
   CYCLEWAY_COLOR,
   RECOMMENDATION_COLOR,
+  SELECTION_COLOR,
   buildScale,
   collectValues,
 } from "@/lib/scales";
@@ -67,6 +76,42 @@ function featureBounds(
   return Number.isFinite(w) ? [[w, s], [e, n]] : null;
 }
 
+/** Merged extent of several features, for framing a whole corridor. */
+function combinedBounds(
+  features: Feature[]
+): [[number, number], [number, number]] | null {
+  let out: [[number, number], [number, number]] | null = null;
+  for (const f of features) {
+    const b = featureBounds(f.geometry);
+    if (!b) continue;
+    out = out
+      ? [
+          [Math.min(out[0][0], b[0][0]), Math.min(out[0][1], b[0][1])],
+          [Math.max(out[1][0], b[1][0]), Math.max(out[1][1], b[1][1])],
+        ]
+      : b;
+  }
+  return out;
+}
+
+/**
+ * The corridor id in `?corridor=<id>`, or null.
+ *
+ * Read straight off `window.location` rather than with `useSearchParams`,
+ * which cannot be used here without wrapping this whole page in a Suspense
+ * boundary — it opts the route out of static prerendering, and `next build`
+ * fails on it ("useSearchParams() should be wrapped in a suspense boundary").
+ * This is a one-shot deep-link handoff from the ranking table, not a value the
+ * page needs to stay subscribed to, so the hook buys nothing here anyway.
+ */
+function corridorFromUrl(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("corridor");
+  if (raw === null) return null;
+  const id = Number(raw);
+  return Number.isFinite(id) ? id : null;
+}
+
 export default function NetworkPage() {
   const [selected, setSelected] = useState<Selection>(null);
   const [toggles, setToggles] = useState<ToggleState>(DEFAULT_TOGGLES);
@@ -86,6 +131,37 @@ export default function NetworkPage() {
   const [segments, setSegments] = useState<FeatureCollection | null>(null);
   const [hexagons, setHexagons] = useState<FeatureCollection | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  /**
+   * F.6: the corridor handed over from the Investment Ranking table, as
+   * declarative props rather than an imperative call.
+   *
+   * It has to be declarative. The highlight filter and the camera can only be
+   * applied once the map has built its layers from the segment source, which
+   * happens strictly after this data arrives — an imperative call at handoff
+   * time would silently no-op against a layer that does not exist yet. Handing
+   * MapView the ids and the extent lets it apply both when it is ready.
+   */
+  const [focus, setFocus] = useState<{
+    wayIds: number[];
+    bounds: [[number, number], [number, number]] | null;
+  } | null>(null);
+
+  /**
+   * The corridor's own row, purely so the map can say *which project* it is
+   * showing. Without it the reader arrives from a row labelled "Unnamed
+   * tertiary near 元町・中華街 · Crossing improvement · 19 segments" and lands on
+   * a panel headed "Road segment · tertiary · 583 m · #2596", with no way to
+   * tell whether they are even looking at the right thing.
+   *
+   * Read from investment_ranking.json rather than reconstructed from the member
+   * segments, because the label has to be *the same string they clicked*:
+   * `nearest_station` only exists at corridor level, so deriving a label here
+   * would quietly disagree with the table for the 52% of corridors OSM does not
+   * name.
+   */
+  const [focusCorridor, setFocusCorridor] =
+    useState<CorridorProperties | null>(null);
 
   const view = activeView ? VIEW_BY_ID.get(activeView) : undefined;
   const coloredGeometry = view?.geometry ?? null;
@@ -107,6 +183,55 @@ export default function NetworkPage() {
         if (cancelled) return;
         setSegments(seg);
         setHexagons(hex);
+
+        // The corridor handoff is applied here, in the callback that receives
+        // the data it depends on, rather than in an effect watching `segments`.
+        // Both work, but a synchronous setState in an effect body is the
+        // cascading-render pattern React now lints against, and "when the
+        // network data arrives, act on the URL we were opened with" is the
+        // honest description of this anyway.
+        const corridorId = corridorFromUrl();
+        if (corridorId === null) return;
+
+        const members = seg.features.filter(
+          (f) => (f.properties as SegmentProperties | null)?.corridor_id === corridorId
+        );
+        if (members.length === 0) return;
+
+        // A street view has to be on: the segment layer and its highlight are
+        // hidden under an area view, and handleViewChange drops a segment
+        // selection whenever the active geometry is not "streets".
+        setActiveView(DEFAULT_STREET_VIEW);
+        setFocus({
+          wayIds: members.map((f) => (f.properties as SegmentProperties).way_id),
+          bounds: combinedBounds(members),
+        });
+
+        // The panel describes the corridor's longest member: with nothing
+        // better to go on the biggest piece is the most representative, where
+        // taking the first by id would surface an arbitrary 2m stub.
+        const longest = members.reduce((a, b) =>
+          ((b.properties as SegmentProperties).length_m ?? 0) >
+          ((a.properties as SegmentProperties).length_m ?? 0)
+            ? b
+            : a
+        );
+        setSelected({ kind: "segment", feature: longest as SegmentFeature });
+
+        // Fetched only on a corridor handoff — the network view itself has no
+        // use for the ranking, so it does not pay for it.
+        fetch("/data/investment_ranking.json")
+          .then((r) => (r.ok ? r.json() : null))
+          .then((ranking: InvestmentRanking | null) => {
+            if (cancelled || !ranking) return;
+            setFocusCorridor(
+              ranking.corridors.find((c) => c.corridor_id === corridorId) ??
+                null
+            );
+          })
+          .catch(() => {
+            /* The banner is an affordance, not the data — losing it is survivable. */
+          });
       })
       .catch((err: Error) => {
         if (!cancelled) setLoadError(err.message);
@@ -148,6 +273,21 @@ export default function NetworkPage() {
   const handleZoomChange = useCallback((z: number) => {
     const quantised = Math.round(z * 4) / 4;
     setZoom((prev) => (prev === quantised ? prev : quantised));
+  }, []);
+
+  /**
+   * Drop the project focus: the casing, the banner, the panel, and the query
+   * string, which would otherwise re-apply the whole thing on a reload.
+   * `replaceState` rather than a router navigation so dismissing a banner does
+   * not add a history entry the back button has to walk through.
+   */
+  const clearFocus = useCallback(() => {
+    setFocus(null);
+    setFocusCorridor(null);
+    setSelected(null);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
   }, []);
 
   const showStreetsHere = useCallback((geometry: Geometry) => {
@@ -295,8 +435,49 @@ export default function NetworkPage() {
           coloredGeometry={coloredGeometry}
           color={scale?.expression ?? "#9ca3af"}
           showBridges={activeView === NETWORK_VIEW_ID}
+          focus={focus}
           controlRef={mapControls}
         />
+
+        {/* Which project the map is showing. Sits top-centre over the map,
+            where the "Loading network data…" notice goes, because it answers
+            the same kind of question: what am I looking at right now. */}
+        {focusCorridor && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 bg-white rounded-lg border border-neutral-200 shadow-sm pl-3.5 pr-2 py-2 max-w-[min(560px,calc(100%-2rem))]">
+            {/* Matches the map's selection glow, so the banner and the
+                highlighted street are visibly the same thing. */}
+            <span
+              className="w-3.5 h-[5px] rounded-full shrink-0"
+              style={{ backgroundColor: SELECTION_COLOR }}
+            />
+            <div className="min-w-0">
+              <p className="text-[13px] text-neutral-900 leading-snug truncate">
+                {corridorLabel(focusCorridor)}
+              </p>
+              <p className="text-[11px] text-neutral-500 leading-snug">
+                {focusCorridor.recommendation} ·{" "}
+                {focusCorridor.segment_count === 1
+                  ? "1 segment"
+                  : `${focusCorridor.segment_count} segments outlined`}
+                {focusCorridor.segment_count > 1 && " · panel shows the longest"}
+              </p>
+            </div>
+            <button
+              onClick={clearFocus}
+              aria-label="Clear project selection"
+              className="ml-auto shrink-0 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded p-1 transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M3.5 3.5l7 7M10.5 3.5l-7 7"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {!segments && !loadError && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/95 rounded-lg border border-neutral-200 shadow-sm px-4 py-2 text-[13px] text-neutral-600">

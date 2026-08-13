@@ -106,6 +106,18 @@ export const RECOMMENDATION_COLOR = "#1baf7a";
  */
 export const CYCLEWAY_COLOR = "#b5379c";
 
+/**
+ * The selection glow — what marks the segment or corridor the reader is
+ * currently looking at.
+ *
+ * Deliberately paler than every blue that carries data (STRESS_LINE's lightest
+ * step is #5b9fe8, SEQ_LINE's is #6da7ec, BIKE_COLOR is #2a78d6). Selection is
+ * not a measurement, so it should not read as one; combined with a wide,
+ * blurred, semi-transparent stroke it reads as emphasis on the street rather
+ * than as another value on a ramp.
+ */
+export const SELECTION_COLOR = "#8ec5f0";
+
 /** Sentinel below any real value, so `step` can route nulls to the no-data bucket. */
 const NULL_SENTINEL = -1e9;
 

@@ -257,13 +257,29 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
             </div>
           </div>
           <div className="space-y-1.5 text-[13px]">
+            {/* N/A, not a bare current score. Two of the five intervention
+                types have no counterpart in the traffic-stress model (see
+                BenefitKind in lib/types.ts), and falling back to `score` here
+                printed today's number under a "Proposed intervention" heading —
+                which reads as the intervention delivering it. */}
             <div className="flex justify-between">
               <span className="text-emerald-700">Suitability</span>
-              <span className="font-semibold text-emerald-900">
-                {p.suitability_after != null
-                  ? `${score} → ${p.suitability_after}`
-                  : score}
-              </span>
+              {p.suitability_after != null ? (
+                <span className="font-semibold text-emerald-900">
+                  {score} → {p.suitability_after}
+                </span>
+              ) : (
+                <span
+                  className="font-semibold text-emerald-700/70 cursor-help border-b border-dotted border-emerald-300"
+                  title={
+                    p.intervention_lever
+                      ? `Not scored: ${p.intervention_lever}.`
+                      : "The traffic-stress score has no input for this intervention, so no after-score is computed."
+                  }
+                >
+                  N/A
+                </span>
+              )}
             </div>
             <div className="flex justify-between">
               <span className="text-emerald-700">Cost tier</span>

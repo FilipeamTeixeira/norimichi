@@ -1,11 +1,12 @@
 # export_geojson.R
-# Writes the two output layers the frontend consumes, matching the schema
+# Writes the output files the frontend consumes, matching the schema
 # in the build spec. Kept as its own file so the required field list lives
 # in exactly one place - if you add a field, add it to the required_cols
 # vector here AND to app/lib/types.ts on the frontend side.
 
 library(sf)
 library(dplyr)
+library(jsonlite)
 
 #' Drop hexes the study has nothing to say about.
 #'
@@ -63,7 +64,7 @@ export_hex_layer <- function(hexes, path) {
 #' @param path output path, e.g. "../app/public/data/segments.geojson"
 export_segment_layer <- function(segments, path) {
   required_cols <- c(
-    "way_id", "name", "highway", "length_m", "lts", "speed_kmh", "lanes_n",
+    "way_id", "osm_id", "name", "highway", "length_m", "lts", "speed_kmh", "lanes_n",
     "traffic_signals_count", "has_cycle_infra", "cycleway_type",
     "sidewalk_available", "likely_informal_parking",
     "school_nearby", "station_nearby", "existing_cycling",
@@ -72,7 +73,16 @@ export_segment_layer <- function(segments, path) {
     "suitability_score", "network_criticality_score",
     "bridges_islands", "islands_adjacent", "island_id", "display_category",
     "infra_gap", "recommendation", "cost_tier", "suitability_after",
-    "estimated_beneficiaries"
+    # F.3: what kind of benefit claim `suitability_after` supports, and
+    # which corridor the segment rolls up into. `benefit_kind` is not
+    # cosmetic - a row that is not "lts_recalc" has no honest before/after
+    # and carries NA in suitability_after (see R/score_intervention.R).
+    "benefit_kind", "intervention_lever", "corridor_id",
+    "estimated_beneficiaries",
+    # Neighbourhood context from the enclosing hex. NOT attributable to the
+    # segment - see R/join_hex_context.R's header note.
+    "context_hex_gap_score", "context_hex_demand_score",
+    "context_hex_population", "context_hex_daily_savings_yen"
   )
   missing <- setdiff(required_cols, names(segments))
   if (length(missing) > 0) {
@@ -81,6 +91,121 @@ export_segment_layer <- function(segments, path) {
 
   if (file.exists(path)) file.remove(path)
   sf::st_write(segments[, required_cols], path, driver = "GeoJSON", quiet = TRUE)
+}
+
+#' Write the Investment Ranking table's rows.
+#'
+#' JSON rather than GeoJSON, and deliberately so: this is a *table*, not a map
+#' layer. Its geometry would be a duplicate of the member ways already in
+#' segments.geojson, and the one thing the page needs geometry for - flying the
+#' map to a corridor - is served by the precomputed `bbox` at a fraction of the
+#' size (the equivalent GeoJSON was 487KB).
+#'
+#' One row per fundable project rather than per OSM way. See
+#' R/build_corridors.R for why the way is the wrong unit (median 119m, 57%
+#' unnamed, one street spread over dozens of rows).
+#'
+#' The `notes` block travels with the data on purpose. Three of these columns
+#' are honest only if read with a caveat - `suitability_after` is absent for
+#' some rows by design, and the two `context_hex_*` figures describe a
+#' neighbourhood rather than the corridor - so the caveats ship in the file
+#' rather than living only in whichever UI happens to render it.
+#'
+#' @param corridors sf object from aggregate_corridors()
+#' @param study_area study area name, for provenance
+#' @param path output path, e.g. "../app/public/data/investment_ranking.json"
+export_investment_ranking <- function(corridors, study_area, path) {
+  required_cols <- c(
+    "corridor_id", "name", "nearest_station", "recommendation", "benefit_kind",
+    "intervention_lever", "cost_tier", "highway",
+    "segment_count", "length_m", "way_ids", "osm_ids",
+    "lts_before", "suitability_before", "suitability_after",
+    "estimated_beneficiaries",
+    "network_criticality_score", "bridges_islands", "islands_adjacent",
+    "signalised_junctions", "informal_parking_length_m", "no_sidewalk_length_m",
+    "context_hex_gap_score", "context_hex_daily_savings_yen",
+    "bbox_w", "bbox_s", "bbox_e", "bbox_n"
+  )
+  missing <- setdiff(required_cols, names(corridors))
+  if (length(missing) > 0) {
+    stop("investment ranking is missing columns: ", paste(missing, collapse = ", "))
+  }
+
+  # A corridor whose intervention the stress score cannot model must not carry
+  # a before/after number. Checked at the boundary rather than trusted from
+  # upstream, because this is the one invariant the whole benefit_kind
+  # mechanism exists to protect.
+  leaked <- corridors$benefit_kind != "lts_recalc" & !is.na(corridors$suitability_after)
+  if (any(leaked)) {
+    stop(sum(leaked), " corridor(s) carry suitability_after despite an ",
+         "unmodelled benefit_kind - see R/score_intervention.R")
+  }
+
+  df <- sf::st_drop_geometry(corridors)[, required_cols]
+
+  # Street and station names come back from the GeoPackage with their encoding
+  # unmarked, which jsonlite then serialises as "<U+307F>" escapes rather than
+  # characters - every Japanese name in the file arrives mojibake'd. Marking
+  # them UTF-8 explicitly is the fix; nearly every name in this study area is
+  # Japanese, so this is not an edge case.
+  for (col in names(df)) {
+    if (is.character(df[[col]])) df[[col]] <- enc2utf8(df[[col]])
+  }
+
+  rows <- lapply(seq_len(nrow(df)), function(i) {
+    r <- as.list(df[i, ])
+    # I() keeps these as JSON arrays. Without it `auto_unbox` collapses a
+    # length-1 vector to a scalar, so the 1-segment corridors - a third of them
+    # here - would arrive with `way_ids: 42` instead of `[42]` and break any
+    # consumer that iterates it.
+    r$way_ids <- I(as.integer(strsplit(r$way_ids, ",", fixed = TRUE)[[1]]))
+    r$osm_ids <- I(strsplit(r$osm_ids, ",", fixed = TRUE)[[1]])
+    r$bbox <- I(c(r$bbox_w, r$bbox_s, r$bbox_e, r$bbox_n))
+    r[c("bbox_w", "bbox_s", "bbox_e", "bbox_n")] <- NULL
+    r
+  })
+
+  out <- list(
+    study_area = study_area,
+    corridor_count = nrow(df),
+    total_length_km = round(sum(df$length_m) / 1000, 1),
+    notes = list(
+      unit = paste(
+        "One row is a corridor: contiguous segments sharing a street name and",
+        "a recommended intervention. Not one OSM way - the median recommended",
+        "way here is 119m and 57% are unnamed."
+      ),
+      suitability_after = paste(
+        "Null wherever benefit_kind is 'not_modelled'. The traffic-stress",
+        "score has no input representing a crossing treatment or bike",
+        "parking, so no before/after is computed for those rather than",
+        "borrowing another intervention's number. Render as N/A, never as a",
+        "guess."
+      ),
+      context_hex_fields = paste(
+        "Properties of the ~0.1km2 hex the corridor sits in, computed from",
+        "hex-level population - not savings attributable to fixing this",
+        "corridor. Two corridors crossing the same cell carry the same",
+        "figures. Label as context in any UI."
+      ),
+      estimated_beneficiaries = paste(
+        "Residents within 500m of the whole corridor, from a single unioned",
+        "buffer - never the sum of its segments' own values, whose buffers",
+        "overlap almost entirely."
+      ),
+      signalised_junctions = paste(
+        "A count of OSM signal nodes near the member ways. OSM tags signals",
+        "per approach, so this over-counts real junctions ~1.6x. Usable as a",
+        "relative sort key, wrong as 'this project treats N junctions'."
+      )
+    ),
+    corridors = rows
+  )
+
+  jsonlite::write_json(out, path, auto_unbox = TRUE, digits = 4,
+                       null = "null", na = "null", pretty = TRUE)
+  message(sprintf("Wrote %s (%d corridors)", path, nrow(df)))
+  invisible(out)
 }
 
 #' Write the existing-cycling-network layer for the frontend.
