@@ -9,3 +9,4 @@ pipeline.Rproj
 CLAUDE.md
 docs/
 app/.env.local
+pipeline/config/study_area.yml

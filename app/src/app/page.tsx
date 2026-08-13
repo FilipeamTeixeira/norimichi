@@ -121,7 +121,7 @@ export default function NetworkPage() {
    * layer the reader thought they had dismissed.
    */
   const [activeView, setActiveView] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(14);
+  const [zoom, setZoom] = useState(13);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
 
   const mapControls = useRef<MapControls | null>(null);

@@ -398,10 +398,15 @@ export default function MapView({
           },
         ],
       },
-      center: [139.6567, 35.4305],
-      zoom: 14,
+      // Centre of the merged Naka-ku + Isogo-ku region, which spans
+      // 139.588–139.697 / 35.354–35.461. z13 puts its ~12km north-south extent
+      // at roughly 770px, so both wards land on screen at once; the old
+      // [139.6567, 35.4305] / z14 was Naka-ku's own centre and left Isogo
+      // entirely below the viewport.
+      center: [139.6423, 35.4075],
+      zoom: 13,
       maxZoom: 18,
-      // The study area is ~4.6km across, which is 147px at z11 and 74px at z10
+      // The study area is ~12km across, which is 193px at z11 and 96px at z10
       // — the two levels below this showed a blob, not a map.
       minZoom: 11,
     });

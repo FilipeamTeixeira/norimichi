@@ -78,7 +78,7 @@ segments$estimated_beneficiaries <- vapply(hex_hits, function(idx) {
   as.integer(round(sum(hexes_m$population[idx], na.rm = TRUE)))
 }, integer(1))
 
-message(sprintf("Beneficiary estimates: median %d, max %d",
+message(sprintf("Beneficiary estimates: median %.0f, max %d",
                 median(segments$estimated_beneficiaries),
                 max(segments$estimated_beneficiaries)))
 

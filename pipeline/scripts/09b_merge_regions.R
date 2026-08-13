@@ -11,14 +11,14 @@
 # run order, which the pipeline's numbering no longer tracks anyway (05d runs
 # after 10b). Everything relative is recomputed downstream of it:
 #
-#   per city:   01 .. 04, 05, 05b, 06, 07, 08, 09      (stop there)
-#   once:       09b_merge_regions.R
-#               -> flip `name:` in config/study_area.yml to the region
-#   region:     05c -> 10 -> 10b -> 05d -> 10c -> 11 -> 12
+#   per city:   01 .. 04, 05, 05b, 06, 07, 08, 09      (stop there)  run_ward.R
+#   once:       09b_merge_regions.R                                  ┐
+#   region:     05c -> 10 -> 10b -> 05d -> 10c -> 11 -> 12           ┘ run_region.R
 #
-# Only 01-04 and 06 read the boundary via study_area_bbox_sf(), so after the
-# merge `osm_relation_id` in the config is unused and can stay pointed at
-# whichever ward it was - only `name:` has to change.
+# Only 01-04 and 06 read the boundary via study_area_bbox_sf(), so nothing
+# from 09b on needs one - which is why use_region() sets an output prefix and
+# no relation ID at all. There is no config edit between the two passes: the
+# runners derive both from `wards:` and `region:`.
 #
 # WHY THE MERGE IS HERE AND NOT LATER
 # Three fields are computed by ranking or rescaling across whatever features
@@ -53,11 +53,14 @@ library(dplyr)
 
 # --- What to merge -------------------------------------------------------
 #
-# Edit these two, the same way you would edit config/study_area.yml. CITIES
-# are the `name:` values the per-ward runs used, i.e. the output/ file prefixes.
+# Both come from config/study_area.yml: `region:`, and the ward names listed
+# under `wards:` - which are also the `name:` values run_ward.R used, i.e. the
+# output/ file prefixes. Reading them rather than taking arguments means a
+# standalone `Rscript scripts/09b_merge_regions.R` merges the same set
+# run_region.R would.
 
-REGION <- "Naka-Isogo"
-CITIES <- c("Naka-ku", "Isogo-ku")
+REGION <- study_region()
+CITIES <- names(study_wards())
 
 # --- Columns that must NOT survive the merge ------------------------------
 #
@@ -248,7 +251,7 @@ for (layer in POINT_LAYERS) {
 
 message(sprintf("\nWrote output/%s_{segments,hexgrid,%s}.gpkg",
                 REGION, paste(POINT_LAYERS, collapse = ",")))
-message("Next:")
-message(sprintf("  1. set  name: \"%s\"  in config/study_area.yml", REGION))
-message("  2. run 05c -> 10 -> 10b -> 05d -> 10c -> 11 -> 12")
-message("     (05d after 10b: it reads the roi_* columns 10b adds)")
+message("Next: 05c -> 10 -> 10b -> 05d -> 10c -> 11 -> 12, with name: set to")
+message(sprintf("  \"%s\". run_region.R does both, and sources this script", REGION))
+message("  as its first stage - run that rather than these by hand.")
+message("  (05d after 10b: it reads the roi_* columns 10b adds)")
