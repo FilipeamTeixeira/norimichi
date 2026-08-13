@@ -122,7 +122,8 @@ export_investment_ranking <- function(corridors, study_area, path) {
     "lts_before", "suitability_before", "suitability_after",
     "estimated_beneficiaries",
     "network_criticality_score", "bridges_islands", "islands_adjacent",
-    "signalised_junctions", "informal_parking_length_m", "no_sidewalk_length_m",
+    "signalised_junctions", "signals_per_km",
+    "informal_parking_length_m", "no_sidewalk_length_m",
     "context_hex_gap_score", "context_hex_daily_savings_yen",
     "bbox_w", "bbox_s", "bbox_e", "bbox_n"
   )
@@ -171,9 +172,12 @@ export_investment_ranking <- function(corridors, study_area, path) {
     total_length_km = round(sum(df$length_m) / 1000, 1),
     notes = list(
       unit = paste(
-        "One row is a corridor: contiguous segments sharing a street name and",
-        "a recommended intervention. Not one OSM way - the median recommended",
-        "way here is 119m and 57% are unnamed."
+        "One row is a corridor: segments that share a street name (or are all",
+        "unnamed), run end to end into one another, and are all worth",
+        "spending money on. Not one OSM way - the median recommended way here",
+        "is 119m and 57% are unnamed. The recommendation is a property of the",
+        "corridor, decided once from its aggregate and inherited by its",
+        "members, so it is never part of what groups them."
       ),
       suitability_after = paste(
         "Null wherever benefit_kind is 'not_modelled'. The traffic-stress",
@@ -194,9 +198,13 @@ export_investment_ranking <- function(corridors, study_area, path) {
         "overlap almost entirely."
       ),
       signalised_junctions = paste(
-        "A count of OSM signal nodes near the member ways. OSM tags signals",
-        "per approach, so this over-counts real junctions ~1.6x. Usable as a",
-        "relative sort key, wrong as 'this project treats N junctions'."
+        "Distinct signalised junctions within 15m of the whole corridor, with",
+        "OSM's per-approach signal nodes clustered at 30m so a crossroads",
+        "counts once (465 nodes -> 294 junctions here). Not the sum of the",
+        "members' own signal counts, which double-counted every junction",
+        "between two members. `signals_per_km` is the same count as a rate:",
+        "how often a cyclist would expect to stop, which is a cost of riding",
+        "the street whatever its traffic-stress score says."
       )
     ),
     corridors = rows

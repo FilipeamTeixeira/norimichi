@@ -24,6 +24,17 @@ const INTERVENTION_TYPES: InterventionType[] = [
   "Bike parking",
 ];
 
+/**
+ * Shortest corridor for which a per-kilometre rate is worth showing. Below
+ * this the rate is dominated by the length rather than the street: the two
+ * shortest crossing corridors here are a 59m stub and a 34m bridge, whose two
+ * junctions each work out at 33.9 and 58.6 stops/km — arithmetic, not a ride.
+ * Every corridor from 182m up lands in a sane 8–17 stops/km, so this cuts
+ * exactly the degenerate tail. The junction count is still shown at any
+ * length; that one is a plain fact.
+ */
+const RATE_MEANINGFUL_ABOVE_M = 150;
+
 const TYPE_COLORS: Record<InterventionType, string> = {
   "Protected cycle lane": "#1baf7a",
   "Missing link": "#ef4444",
@@ -114,8 +125,15 @@ function AfterCell({ c }: { c: CorridorProperties }) {
 
   const alt =
     c.recommendation === "Crossing improvement"
-      ? `${c.signalised_junctions} signalised approach${
-          c.signalised_junctions === 1 ? "" : "es"
+      ? `${c.signalised_junctions} signalised junction${
+          c.signalised_junctions === 1 ? "" : "s"
+        }${
+          // The rate is only worth printing on a corridor long enough for a
+          // per-km figure to describe a ride. Two junctions on a 34m bridge is
+          // 58.6/km, which is true and tells the reader nothing.
+          c.length_m >= RATE_MEANINGFUL_ABOVE_M
+            ? ` · ${c.signals_per_km.toFixed(1)} stops/km`
+            : ""
         }`
       : c.informal_parking_length_m > 0
         ? `${formatLength(c.informal_parking_length_m)} kerbside pressure`

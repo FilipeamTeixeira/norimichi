@@ -34,11 +34,16 @@ export type BenefitKind = "lts_recalc" | "not_modelled";
 /**
  * One fundable project — the Investment Ranking table's row.
  *
- * Contiguous segments sharing a name and a recommendation, grouped by
- * pipeline/R/build_corridors.R. Deliberately not one row per OSM way: the
- * median recommended way here is 119m, 57% are unnamed, and one street runs
- * across dozens of rows, so a way-level table ranks fragments of the same
- * few streets and labels more than half of them blank.
+ * Segments that share a name (or are all unnamed) and run end to end into one
+ * another, grouped by pipeline/R/build_corridors.R. Deliberately not one row
+ * per OSM way: the median recommended way here is 119m, 57% are unnamed, and
+ * one street runs across dozens of rows, so a way-level table ranks fragments
+ * of the same few streets and labels more than half of them blank.
+ *
+ * `recommendation` is a property *of the corridor*, decided once from its
+ * aggregate and inherited by its members — never part of what groups them.
+ * It used to be, and that split streets wherever a mapping artefact moved one
+ * way across a classification threshold.
  *
  * Comes from `investment_ranking.json`, precomputed by
  * pipeline/scripts/12_compute_investment_ranking.R. Every figure here is
@@ -48,7 +53,14 @@ export type BenefitKind = "lts_recalc" | "not_modelled";
  */
 export interface CorridorProperties {
   corridor_id: number;
-  /** OSM street name. Null for 193 of 372 corridors — use corridorLabel(). */
+  /**
+   * The street name covering most of the corridor's length — not necessarily
+   * every member's, since a named stretch absorbs the unnamed ones it runs
+   * straight into. Null where no member names a street, which is most of them;
+   * use corridorLabel(). A route designation like 横浜市道82号山下本牧磯子線 is
+   * not treated as a street name upstream (it belongs in `ref`), so it appears
+   * here only when a corridor has nothing better.
+   */
   name: string | null;
   /** Nearest station, always present. The only label an unnamed corridor has. */
   nearest_station: string | null;
@@ -81,8 +93,23 @@ export interface CorridorProperties {
   network_criticality_score: number | null;
   bridges_islands: boolean;
   islands_adjacent: number | null;
-  /** Benefit statements for the interventions the stress score cannot model. */
+  /**
+   * Benefit statements for the interventions the stress score cannot model.
+   *
+   * `signalised_junctions` counts *distinct* junctions within 15m of the whole
+   * corridor, with OSM's per-approach signal nodes clustered at 30m — not the
+   * sum of the members' own signal counts, which double-counted every junction
+   * between two members (the worst row claimed 77 against 20 real nodes).
+   */
   signalised_junctions: number;
+  /**
+   * The same junctions as a rate: how often a cyclist would expect to stop.
+   * A cost of riding the street in its own right, not only the sizing for a
+   * crossing scheme — a signal every 100m is a bad ride whatever the
+   * traffic-stress score says. Also what the classifier tests, since an
+   * absolute count scales with how long a way happens to be.
+   */
+  signals_per_km: number;
   informal_parking_length_m: number;
   no_sidewalk_length_m: number;
   /**

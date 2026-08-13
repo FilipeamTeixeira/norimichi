@@ -66,9 +66,10 @@ export default function RankingPage() {
           Investment Ranking
         </h1>
         <p className="text-sm text-neutral-500 mb-5 max-w-2xl leading-relaxed">
-          Fundable projects, ranked. Each row is a corridor — contiguous
-          stretches of one street sharing one recommended intervention — not a
-          single OSM way, so a row is something that can actually be built.
+          Fundable projects, ranked. Each row is a corridor — stretches of one
+          street that run end to end into each other and are all worth
+          spending money on — not a single OSM way, so a row is something that
+          can actually be built.
         </p>
 
         <div className="flex items-center gap-1 mb-5 border-b border-neutral-200">

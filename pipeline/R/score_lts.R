@@ -104,10 +104,27 @@ classify_cycleway_type <- function(highway, bicycle, segregated,
   )
 }
 
+#' Speed assumed for a trunk road with no `maxspeed` tag.
+#'
+#' The 30km/h fallback below is written for residential streets and would be a
+#' bad guess on an arterial: it puts an untagged trunk road at LTS 3, treating
+#' a national route as a back street. Half the trunk ways around this study
+#' area carry no `maxspeed` at all, and of those that do the median is 50
+#' (60: 14, 50: 59, 40: 10) - so an untagged one is assumed to be like its
+#' tagged neighbours rather than like a cul-de-sac. Only trunk is treated this
+#' way; every other class keeps the fallback it has always had, because
+#' re-tuning the speed assumptions for classes already in the network is a
+#' different question from admitting a new one (see CYCLABLE_HIGHWAY_TYPES in
+#' fetch_osm.R for why trunk is now in it).
+UNSIGNED_TRUNK_SPEED_KMH <- 50
+
+TRUNK_HIGHWAY_TYPES <- c("trunk", "trunk_link")
+
 #' Parse an OSM maxspeed tag ("30", "30 mph", NA, "japan:urban") to km/h.
 #' Falls back to a default when missing/unparseable: Japanese residential
 #' streets without a posted sign are commonly 30km/h even when OSM
-#' contributors haven't tagged it explicitly.
+#' contributors haven't tagged it explicitly. `default_kmh` may be a vector,
+#' which is how the trunk case above is applied per row.
 parse_maxspeed_kmh <- function(maxspeed, default_kmh = 30) {
   x <- tolower(trimws(as.character(maxspeed)))
   is_mph <- grepl("mph", x)
@@ -187,7 +204,13 @@ score_lts <- function(roads) {
 
   roads |>
     mutate(
-      speed_kmh  = parse_maxspeed_kmh(maxspeed),
+      speed_kmh  = parse_maxspeed_kmh(
+        maxspeed,
+        default_kmh = ifelse(
+          normalise_tag(highway) %in% TRUNK_HIGHWAY_TYPES,
+          UNSIGNED_TRUNK_SPEED_KMH, 30
+        )
+      ),
       .lanes_n   = parse_lanes(lanes),
       .has_cycle_infra = has_cycle_infra(
         cycleway, cycleway_left, cycleway_right, cycleway_both,

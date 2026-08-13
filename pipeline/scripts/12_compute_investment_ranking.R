@@ -24,6 +24,10 @@ cfg <- load_study_area()
 segments <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TRUE)
 hexes    <- sf::st_read(sprintf("output/%s_hexgrid_scored.gpkg", cfg$name), quiet = TRUE)
 stations <- sf::st_read(sprintf("output/%s_stations.gpkg", cfg$name), quiet = TRUE)
+# Signals are counted against the merged corridor geometry here, the same way
+# 05d counts them to classify - summing the members' `traffic_signals_count`
+# would double-count every junction between two members.
+signals  <- sf::st_read(sprintf("output/%s_traffic_signals.gpkg", cfg$name), quiet = TRUE)
 
 # Must match BENEFICIARY_BUFFER_M in 05d - a corridor's figure is otherwise not
 # comparable with its own members'.
@@ -38,9 +42,23 @@ if (length(missing) > 0) {
 }
 
 corridors <- aggregate_corridors(
-  segments, hexes,
+  segments, hexes, signals,
   buffer_m = BENEFICIARY_BUFFER_M,
   stations = stations
 )
+
+# One label per corridor is now guaranteed by construction (05d classifies the
+# corridor, not the way), so a member disagreeing with its corridor means the
+# two stages have drifted apart - exactly what this split-out was meant to
+# make impossible. Cheap to check, so check it.
+mixed <- vapply(
+  split(segments$recommendation[!is.na(segments$corridor_id)],
+        segments$corridor_id[!is.na(segments$corridor_id)]),
+  function(r) length(unique(r)) > 1, logical(1)
+)
+if (any(mixed)) {
+  stop(sum(mixed), " corridor(s) contain more than one recommendation - ",
+       "re-run scripts/05d_score_interventions.R")
+}
 
 export_investment_ranking(corridors, cfg$name, "output/investment_ranking.json")

@@ -223,29 +223,70 @@ simulate_interventions <- function(segments, recommendation) {
   )
 }
 
-#' Classify each segment into one of the five intervention types.
+#' Signal density at which a corridor's problem is its crossings.
 #'
-#' Rule-based on segment attributes, per the design's requirement that this
-#' be a typed category rather than free text. `bridges_islands` is tested
-#' first: when the network analysis says upgrading a segment would merge two
-#' low-stress islands, "missing link" is the most important thing to say
-#' about it, ahead of whatever its lane count happens to be.
+#' A stop every 200m or worse. Replaces the old per-segment
+#' `traffic_signals_count >= 2`, which was an absolute count inside a 15m
+#' buffer and so scaled with how long a way happened to be: it fired on a 47m
+#' stub with one signal at each end and not on the 192m street the stub
+#' continued into, splitting one corridor in two. Starting guess, tuned only
+#' against the shape of this study area's distribution - see the corridor mix
+#' 05d prints.
+CROSSING_SIGNALS_PER_KM <- 5
+
+#' Below this a corridor is too short for a density to mean anything, so it is
+#' classified on its roadway instead. One signal on a 40m stub is 25/km and
+#' says nothing about the ride.
+MIN_CROSSING_JUNCTIONS <- 2
+
+#' Whether a segment is worth spending money on at all.
 #'
-#' Returns NA where there is nothing to recommend - the segment already has
-#' cycle infrastructure, or is not stressful enough to be worth money.
+#' The two conditions that used to be the first two branches of
+#' classify_recommendation(): a street that already has cycle infrastructure
+#' needs nothing, and one below LTS 3 is not stressful enough to be worth
+#' money. Both are physical facts about the street rather than artefacts of
+#' where OSM cut it, so unlike the intervention *type* they stay per-segment -
+#' and they are what assign_corridor_ids() groups on.
 #'
-#' @param segments data frame with `has_cycle_infra`, `lts`, `bridges_islands`,
-#'   `lanes_n`, `speed_kmh`, `likely_informal_parking`, `traffic_signals_count`
-#' @return character vector of INTERVENTION_TYPES values, NA where none
-classify_recommendation <- function(segments) {
-  s <- segments
+#' @param segments data frame with `has_cycle_infra` and `lts`
+#' @return logical vector, TRUE where the segment deserves a recommendation
+is_recommendable <- function(segments) {
+  !dplyr::coalesce(segments$has_cycle_infra, FALSE) &
+    dplyr::coalesce(segments$lts >= 3, FALSE)
+}
+
+#' Classify each corridor into one of the intervention types.
+#'
+#' Rule-based, per the design's requirement that this be a typed category
+#' rather than free text, and applied to the corridor rather than the way.
+#' WHY THE CORRIDOR: every input here is scale-free - an any(), a share of
+#' length, a rate per km - so the label does not change when OSM splits a
+#' street, which is what used to break corridors apart. See the header of
+#' R/build_corridors.R for the case that forced the move.
+#'
+#' The branch order is the old per-segment one, and says what matters most
+#' about a street when several things are true at once. Island-bridging
+#' first: when the network analysis says upgrading this would merge two
+#' low-stress islands, "missing link" is the headline whatever the lane count.
+#' Crossings last: a signalised street that is also wide, fast or choked with
+#' kerbside parking needs the roadway fixed, and the crossing count rides
+#' along as `signalised_junctions` on the corridor either way.
+#'
+#' The three share tests all ask the same question - is this most of the
+#' street? - because a corridor is a mixed thing and its label should describe
+#' the majority of it, not its most unusual 40 metres.
+#'
+#' @param agg data frame from corridor_classification_inputs()
+#' @return character vector of INTERVENTION_TYPES values, one per corridor
+classify_corridor_recommendation <- function(agg) {
   dplyr::case_when(
-    dplyr::coalesce(s$has_cycle_infra, FALSE)        ~ NA_character_,
-    s$lts < 3                                        ~ NA_character_,
-    dplyr::coalesce(s$bridges_islands, FALSE)        ~ "Missing link",
-    s$lanes_n >= 3 | s$speed_kmh > 40                ~ "Protected cycle lane",
-    dplyr::coalesce(s$likely_informal_parking, FALSE) ~ "Traffic calming",
-    s$traffic_signals_count >= 2                     ~ "Crossing improvement",
-    TRUE                                             ~ "Protected cycle lane"
+    agg$bridges_islands_share >= 0.5       ~ "Missing link",
+    # Majority of the corridor's length is wide or fast. A single 3-lane
+    # stretch in an otherwise 2-lane street is not what the street is.
+    agg$wide_or_fast_share >= 0.5          ~ "Protected cycle lane",
+    agg$informal_parking_share >= 0.5      ~ "Traffic calming",
+    agg$signalised_junctions >= MIN_CROSSING_JUNCTIONS &
+      agg$signals_per_km >= CROSSING_SIGNALS_PER_KM ~ "Crossing improvement",
+    TRUE                                   ~ "Protected cycle lane"
   )
 }

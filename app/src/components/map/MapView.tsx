@@ -208,10 +208,11 @@ const BIKE_RADIUS: ExpressionSpecification = [
  * is pale grey, a same-width dark line is just another street and the
  * selection was effectively invisible.
  *
- * Drawn *beneath* the score line (see the beforeId below) and rendered as a
- * soft translucent glow rather than a hard band, so a selected segment keeps
- * its own colour and gains a halo either side, instead of being painted over in
- * flat black and losing the measurement the reader came for.
+ * Rendered as a soft translucent glow rather than a hard band, and drawn over
+ * the street layers so nothing cuts into it. Being translucent, the selected
+ * segment's own score colour still reads through the middle of the glow rather
+ * than being replaced by it — which was the other half of the original problem,
+ * a flat opaque stroke that hid the measurement the reader came for.
  */
 const HIGHLIGHT_WIDTH: ExpressionSpecification = [
   "interpolate",
@@ -594,29 +595,32 @@ export default function MapView({
       },
     });
 
-    // Inserted below "segments-layer" on purpose: this is a casing, so the
-    // score line has to draw on top of it. See HIGHLIGHT_WIDTH.
-    map.addLayer(
-      {
-        id: "segments-highlight",
-        type: "line",
-        source: "segments",
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": SELECTION_COLOR,
-          "line-width": HIGHLIGHT_WIDTH,
-          // A glow, not a border: soft and semi-transparent, so it reads as
-          // emphasis on the street rather than as another value on a ramp.
-          // Opacity is higher than recommendations-glow's 0.35 because the
-          // colour is paler — the same alpha on a lighter blue disappears
-          // against the basemap.
-          "line-opacity": 0.55,
-          "line-blur": 4,
-        },
-        filter: ["==", ["get", "way_id"], -1],
+    // Drawn *above* the street layers rather than as a casing beneath them, so
+    // nothing competes with it — at this width and blur the glow was still
+    // being cut into by the score line and the bridge dashes on top of it.
+    //
+    // No beforeId, so it lands here in insertion order: over "segments-layer"
+    // and "islands-bridges", but under the amenity and bike-facility points
+    // added below. Those are small circles a reader clicks; burying them under
+    // a 16px translucent stroke would cost more than the glow gains.
+    map.addLayer({
+      id: "segments-highlight",
+      type: "line",
+      source: "segments",
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: {
+        "line-color": SELECTION_COLOR,
+        "line-width": HIGHLIGHT_WIDTH,
+        // A glow, not a band: soft and semi-transparent, so it reads as
+        // emphasis on the street rather than as another value on a ramp.
+        // Opacity is higher than recommendations-glow's 0.35 because the colour
+        // is paler — the same alpha on a lighter blue disappears against the
+        // basemap.
+        "line-opacity": 0.55,
+        "line-blur": 4,
       },
-      "segments-layer"
-    );
+      filter: ["==", ["get", "way_id"], -1],
+    });
 
     map.addLayer({
       id: "amenities-layer",

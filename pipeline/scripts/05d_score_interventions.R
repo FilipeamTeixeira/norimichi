@@ -40,6 +40,10 @@ cfg <- load_study_area()
 segments_path <- sprintf("output/%s_segments.gpkg", cfg$name)
 segments <- sf::st_read(segments_path, quiet = TRUE)
 hexes    <- sf::st_read(sprintf("output/%s_hexgrid_scored.gpkg", cfg$name), quiet = TRUE)
+# The signal layer, not the per-segment `traffic_signals_count` - the corridor
+# classification needs distinct junctions along a whole corridor, which cannot
+# be recovered by summing a per-way count. See corridor_signal_junctions().
+signals  <- sf::st_read(sprintf("output/%s_traffic_signals.gpkg", cfg$name), quiet = TRUE)
 
 METRIC_CRS <- 6677
 
@@ -78,12 +82,45 @@ message(sprintf("Beneficiary estimates: median %d, max %d",
                 median(segments$estimated_beneficiaries),
                 max(segments$estimated_beneficiaries)))
 
+# --- Corridor membership -------------------------------------------------
+#
+# BEFORE the recommendation, not after, which is the opposite of how this used
+# to run. Grouping first is what stops one street becoming several projects
+# because a mapping split moved it across a classification threshold; the full
+# argument is in R/build_corridors.R's header. Assignment only - the rollup
+# into one row per corridor is 12's job.
+
+segments$corridor_id <- assign_corridor_ids(segments)
+message(sprintf("Corridor membership: %d segments in %d corridors",
+                sum(!is.na(segments$corridor_id)),
+                length(unique(na.omit(segments$corridor_id)))))
+
 # --- Recommendation, cost tier, and the intervention simulation ----------
+#
+# Decided once per corridor from scale-free inputs, then written down onto
+# every member segment. So segments.geojson and the ranking cannot disagree
+# about what is proposed for a street, and no corridor contains two
+# recommendations - which is what let a 47m stub and the 192m street it
+# continues into be typed as two different projects.
 
-segments$recommendation <- classify_recommendation(segments)
+corridors_class <- corridor_classification_inputs(segments, signals)
+corridors_class$recommendation <- classify_corridor_recommendation(corridors_class)
 
-message("Recommendation distribution:")
+segments$recommendation <- corridors_class$recommendation[
+  match(segments$corridor_id, corridors_class$corridor_id)
+]
+
+message("Recommendation distribution (corridors):")
+print(table(corridors_class$recommendation, useNA = "no"))
+message("Recommendation distribution (segments):")
 print(table(segments$recommendation, useNA = "no"))
+message(sprintf(
+  "Signalised junctions per corridor: median %.1f/km, max %.1f/km (%d corridors at %d+ junctions and %g+/km)",
+  median(corridors_class$signals_per_km), max(corridors_class$signals_per_km),
+  sum(corridors_class$signalised_junctions >= MIN_CROSSING_JUNCTIONS &
+        corridors_class$signals_per_km >= CROSSING_SIGNALS_PER_KM),
+  MIN_CROSSING_JUNCTIONS, CROSSING_SIGNALS_PER_KM
+))
 
 segments$cost_tier <- score_cost_tier(
   segments$recommendation, segments$lanes_n, segments$speed_kmh
@@ -120,15 +157,6 @@ for (type in INTERVENTION_TYPES) {
 # --- Neighbourhood context from the enclosing hex (labelled, not attributed) ---
 
 segments <- join_hex_context(segments, hexes)
-
-# --- Corridor membership -------------------------------------------------
-#
-# Assignment only. The rollup into one row per corridor is 12's job.
-
-segments$corridor_id <- assign_corridor_ids(segments)
-message(sprintf("Corridor membership: %d segments in %d corridors",
-                sum(!is.na(segments$corridor_id)),
-                length(unique(na.omit(segments$corridor_id)))))
 
 sf::st_write(segments, segments_path, delete_dsn = TRUE, quiet = TRUE)
 message(sprintf("Updated %s with intervention scoring and corridor membership",

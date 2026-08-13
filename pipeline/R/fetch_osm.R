@@ -18,13 +18,43 @@ library(dplyr)
 source("R/osm_cycling_tags.R")
 
 # Way types a cyclist could plausibly use *by default*, i.e. without
-# needing a bicycle=* tag to say so. Excludes motorways/trunk roads
-# (illegal or unsafe to cycle on).
+# needing a bicycle=* tag to say so. Excludes motorways, which in Japan are
+# 自動車専用道路 and genuinely closed to bicycles.
+#
+# TRUNK IS INCLUDED, and was not until a reported gap forced the question.
+# `highway=trunk` in Japan marks a road's place in the national/prefectural
+# route hierarchy, not the kind of facility it is: of the 167 trunk/trunk_link
+# ways around this study area, none is `motorroad=yes`, 160 carry an ordinary
+# street name, and the modal one is 2 lanes at 40-50km/h. Cycling them is
+# legal - Japan bars bicycles from 自動車専用道路, which OSM tags
+# `highway=motorway` or `motorroad=yes`, not from trunk roads. Excluding the
+# class dropped 42km of ridable street, and dropped it invisibly: way
+# 222974803 is 海岸通り, 40km/h, 2 lanes, `access=yes`, and sat in the middle
+# of a corridor whose two halves then had nothing between them. Exactly the
+# streets a cycling study most needs to see - busy, direct, unprovided for -
+# were the ones it could not see.
+#
+# What actually makes a way uncyclable is tagged on the way; see
+# CYCLING_PROHIBITED_* below.
 CYCLABLE_HIGHWAY_TYPES <- c(
+  "trunk", "trunk_link",
   "primary", "primary_link", "secondary", "secondary_link",
   "tertiary", "tertiary_link", "residential", "living_street",
   "unclassified", "cycleway", "path", "service"
 )
+
+# `bicycle=*` values that bar riding, whatever the highway class says. The
+# safety valve that makes including trunk defensible: 14 of the 167 trunk ways
+# here carry one of these - the elevated and ramp sections - and they are now
+# excluded for the reason that actually applies to them rather than by a class
+# rule that also caught 海岸通り.
+CYCLING_PROHIBITED_BICYCLE <- c("no", "dismount")
+
+# `motorroad=yes` is OSM's tag for a road with motorway-like access
+# restrictions that is not tagged as a motorway - 自動車専用道路 in Japan.
+# None in this study area, but a class-based exclusion cannot be relied on to
+# catch them in the next one.
+CYCLING_PROHIBITED_MOTORROAD <- "yes"
 
 # Tags osmextract should keep. Listing them explicitly (rather than
 # reading all tags) keeps the vectortranslate step faster on a big extract.
@@ -36,6 +66,9 @@ CYCLABLE_HIGHWAY_TYPES <- c(
 OSM_EXTRA_TAGS <- c(
   "highway", "cycleway", "cycleway:left", "cycleway:right", "cycleway:both",
   "bicycle", "foot", "segregated",
+  # Needed to exclude 自動車専用道路 by the tag that says so, now that trunk
+  # roads are no longer excluded by class - see CYCLABLE_HIGHWAY_TYPES.
+  "motorroad",
   "maxspeed", "lanes", "oneway",
   "parking:lane:left", "parking:lane:right", "parking:lane:both",
   "surface", "lit", "name", "sidewalk"
@@ -95,12 +128,23 @@ get_osm_roads <- function(pbf_path, boundary) {
   )
 
   bicycle_val <- tolower(trimws(as.character(roads$bicycle)))
+  motorroad_val <- if ("motorroad" %in% names(roads))
+    tolower(trimws(as.character(roads$motorroad))) else rep(NA_character_, nrow(roads))
+
+  # Prohibition is checked after inclusion, not folded into it, because the two
+  # rules answer different questions: the class list says what kind of way is
+  # worth looking at, and this says where a rider may not legally go. A
+  # `bicycle=no` residential street is excluded too - it was not before, and
+  # the network claimed a link no rider is allowed to use.
+  prohibited <- (!is.na(bicycle_val) & bicycle_val %in% CYCLING_PROHIBITED_BICYCLE) |
+    (!is.na(motorroad_val) & motorroad_val %in% CYCLING_PROHIBITED_MOTORROAD)
 
   roads |>
     dplyr::filter(
-      highway %in% CYCLABLE_HIGHWAY_TYPES |
-        (highway %in% SHARED_PATH_HIGHWAY_TYPES &
-           !is.na(bicycle_val) & bicycle_val %in% BICYCLE_ROUTABLE)
+      !prohibited &
+        (highway %in% CYCLABLE_HIGHWAY_TYPES |
+           (highway %in% SHARED_PATH_HIGHWAY_TYPES &
+              !is.na(bicycle_val) & bicycle_val %in% BICYCLE_ROUTABLE))
     ) |>
     sf::st_cast("MULTILINESTRING")
 }
