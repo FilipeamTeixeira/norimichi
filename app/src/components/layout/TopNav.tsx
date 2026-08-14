@@ -8,6 +8,7 @@ const tabs = [
   { label: "Network", href: "/" },
   { label: "Route Analysis", href: "/route" },
   { label: "Investment Ranking", href: "/ranking" },
+  { label: "About", href: "/about" },
 ] as const;
 
 export default function TopNav() {
