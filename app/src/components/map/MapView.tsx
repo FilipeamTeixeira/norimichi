@@ -126,6 +126,33 @@ const SEGMENT_WIDTH: ExpressionSpecification = [
 ];
 
 /**
+ * The score line is the answer, so it stays dominant — but it is drawn over the
+ * street the reader is trying to identify, and at z16+ it is 5-7px of solid
+ * colour on a road casing about that wide. A little of the basemap showing
+ * through is what tells them *which* street scored: the kink, the junction, the
+ * railway it crosses. Slight at the scales where the line is thin enough to lose
+ * (0.9 at z11-13), more generous where it is wide enough to bury its own street.
+ *
+ * Same reasoning as HEX_FILL_OPACITY below, at a smaller amplitude: a line is a
+ * few px of the screen where a hex is a fifth of it, so it can afford far less.
+ */
+const SEGMENT_OPACITY: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  11,
+  0.7,
+  13,
+  0.66,
+  14,
+  0.62,
+  16,
+  0.55,
+  18,
+  0.5,
+];
+
+/**
  * Hexes stay readable but step back as they grow: one is ~302 m across, so it
  * covers 78px at z15 and 155px at z16, by which point a solid fill is shouting
  * over a basemap the reader is trying to use for orientation.
@@ -565,7 +592,7 @@ export default function MapView({
       paint: {
         "line-color": color,
         "line-width": SEGMENT_WIDTH,
-        "line-opacity": 0.9,
+        "line-opacity": SEGMENT_OPACITY,
       },
     });
 

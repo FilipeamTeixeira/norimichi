@@ -30,8 +30,32 @@ const SEQ_FILL = ["#cde2fb", "#9ec5f4", "#5598e7", "#256abf", "#0d366b"];
  */
 const SEQ_LINE = ["#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"];
 
-/** Blue <-> red, grey midpoint, lightness-symmetric arms. Signed values only. */
-const DIVERGING = ["#256abf", "#9ec5f4", "#f0efec", "#f1aea8", "#b13f3c"];
+/**
+ * Blue <-> red for signed values only, with a pale *green* midpoint.
+ *
+ * The midpoint used to be #f0efec, an off-white grey. Against the OSM raster's
+ * land colour (#f2efe9) that is dE 1.7 before opacity and ~1.1 after the hex
+ * fill's own — below the threshold where anyone can see it. "Balanced" is the
+ * modal class on `gap_score` (109 of 695 hexes, and the widest band of the
+ * ramp), so the single most common answer the map gives was rendering as a
+ * hole: the reader clicked a hex, got numbers, and saw no fill.
+ *
+ * Grey cannot be recovered by darkening it, because grey already means
+ * something else here — NO_DATA is #d8d8d6, and a visible grey midpoint would
+ * read as "no value" rather than "value, and it is zero". Green is the hue the
+ * midpoint can afford: unclaimed on this ramp, and "balanced" is the one place
+ * the diverging scale and CATEGORY_COLORS' green agree about what they mean.
+ *
+ * The light red arm moved with it (#f1aea8 -> #e89287). A light green next to
+ * the old light red collapsed under deuteranopia — dE 13.8, where the grey it
+ * replaced managed 21.6 — and deepening the red arm buys that back rather than
+ * shipping a regression for the sake of a visible midpoint. Re-validated
+ * against the basemap surface, all pairs: worst adjacent pair is 24.6 (deutan)
+ * / 24.2 (protan) / 21.3 (tritan) / 30.9 normal, every one of them at or above
+ * what this ramp had before. The midpoint now clears the basemap at dE 8.2
+ * after opacity, and sits 15.0 from NO_DATA.
+ */
+const DIVERGING = ["#256abf", "#9ec5f4", "#c3e3cf", "#e89287", "#b13f3c"];
 
 /**
  * LTS 1-4. Ordered, so it gets steadily darker and more saturated, but the hue
