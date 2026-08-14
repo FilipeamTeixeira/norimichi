@@ -8,6 +8,7 @@ import {
   type GeocodeResponse,
   type GeocodeResult,
 } from "@/lib/geocode-types";
+import { useT } from "@/i18n/context";
 
 /**
  * One end of the trip: a text field that searches addresses, over a value the
@@ -58,6 +59,7 @@ export default function AddressSearch({
   onPick,
   onClear,
 }: Props) {
+  const t = useT();
   const listId = useId();
   /**
    * What the reader has typed since focusing, or null when they haven't — in
@@ -86,43 +88,43 @@ export default function AddressSearch({
     []
   );
 
-  const run = useCallback(async (query: string) => {
-    abort.current?.abort();
-    const controller = new AbortController();
-    abort.current = controller;
+  const run = useCallback(
+    async (query: string) => {
+      abort.current?.abort();
+      const controller = new AbortController();
+      abort.current = controller;
 
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-        signal: controller.signal,
-      });
-      const body = (await res.json()) as GeocodeResponse | GeocodeError;
-      if (controller.signal.aborted) return;
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const body = (await res.json()) as GeocodeResponse | GeocodeError;
+        if (controller.signal.aborted) return;
 
-      if (isGeocodeError(body)) {
-        setResults([]);
-        setMessage(body.message);
+        if (isGeocodeError(body)) {
+          setResults([]);
+          // The kind, not the server's sentence: see the errors block in en.ts.
+          setMessage(t.errors.geocode[body.error] ?? body.message);
+          setOpen(true);
+          return;
+        }
+        const found = body.results;
+        setResults(found);
+        setHighlight(0);
+        setMessage(found.length ? null : t.route.search.nothingFound);
         setOpen(true);
-        return;
+      } catch (err) {
+        if ((err as Error).name === "AbortError") return;
+        setResults([]);
+        setMessage(t.route.search.unreachable);
+        setOpen(true);
+      } finally {
+        if (!controller.signal.aborted) setLoading(false);
       }
-      const found = body.results;
-      setResults(found);
-      setHighlight(0);
-      setMessage(
-        found.length
-          ? null
-          : "Nothing found inside the study area. Try a landmark or station name, or click the map."
-      );
-      setOpen(true);
-    } catch (err) {
-      if ((err as Error).name === "AbortError") return;
-      setResults([]);
-      setMessage("Address search is unreachable. Click the map to set this end.");
-      setOpen(true);
-    } finally {
-      if (!controller.signal.aborted) setLoading(false);
-    }
-  }, []);
+    },
+    [t]
+  );
 
   const onChange = (next: string) => {
     setDraft(next);
@@ -221,7 +223,7 @@ export default function AddressSearch({
           <button
             type="button"
             onClick={onClear}
-            aria-label={`Clear ${label.toLowerCase()}`}
+            aria-label={t.route.input.clearEnd(label)}
             className="p-1 text-neutral-300 hover:text-neutral-600 shrink-0"
           >
             <X className="w-3.5 h-3.5" />

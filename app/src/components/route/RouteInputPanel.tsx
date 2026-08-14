@@ -3,6 +3,7 @@
 import AddressSearch, { type Endpoint } from "@/components/route/AddressSearch";
 import type { ProviderInfo, RouteErrorKind } from "@/lib/route-types";
 import type { RouteAlternative, RouteType } from "@/lib/routing/types";
+import { useT } from "@/i18n/context";
 
 /**
  * The left rail on the Route Analysis page, in the slot FilterSidebar occupies
@@ -52,19 +53,6 @@ interface Props {
  * offered here because two is what a reader will actually compare — the other
  * two are a one-line addition to this array if they ever earn their place.
  */
-const ALTERNATIVE_OPTIONS: {
-  value: RouteAlternative;
-  label: string;
-  hint: string;
-}[] = [
-  { value: 0, label: "Original", hint: "The best route under this preference" },
-  {
-    value: 1,
-    label: "1st alternative",
-    hint: "A different way round, costlier by the router's own reckoning",
-  },
-];
-
 /**
  * The second opinion, where there is one.
  *
@@ -86,19 +74,25 @@ function AlternativeSelector({
   disabled: boolean;
   provider: ProviderInfo | null;
 }) {
+  const t = useT();
+  const options = [
+    { value: 0 as RouteAlternative, ...t.route.input.alternatives.original },
+    { value: 1 as RouteAlternative, ...t.route.input.alternatives.first },
+  ];
+
   if (!provider?.supports_alternatives) return null;
 
   return (
     <div className="px-5 pb-4">
       <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-500 mb-1.5">
-        Which route
+        {t.route.input.whichRoute}
       </p>
       <div
         role="radiogroup"
-        aria-label="Which route"
+        aria-label={t.route.input.whichRoute}
         className="flex rounded-lg border border-neutral-200 p-0.5 gap-0.5"
       >
-        {ALTERNATIVE_OPTIONS.map((option) => {
+        {options.map((option) => {
           const selected = option.value === value;
           return (
             <button
@@ -123,7 +117,7 @@ function AlternativeSelector({
         })}
       </div>
       <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">
-        {ALTERNATIVE_OPTIONS.find((o) => o.value === value)?.hint}
+        {options.find((o) => o.value === value)?.hint}
       </p>
     </div>
   );
@@ -136,15 +130,7 @@ function AlternativeSelector({
  * "relaxed" on its own tells nobody that it will lengthen the trip, which is
  * the only thing worth knowing before picking it.
  */
-const ROUTE_TYPE_OPTIONS: {
-  value: RouteType;
-  label: string;
-  hint: string;
-}[] = [
-  { value: "relaxed", label: "Calm", hint: "Avoids stressful roads, accepts a longer trip" },
-  { value: "efficient", label: "Balanced", hint: "A sane compromise — the default" },
-  { value: "quick", label: "Quick", hint: "Shortest time, accepts traffic" },
-];
+const ROUTE_TYPE_ORDER = ["relaxed", "efficient", "quick"] as const;
 
 /**
  * Three cost models over one network, not three vehicles.
@@ -166,19 +152,24 @@ function RouteTypeSelector({
   disabled: boolean;
   provider: ProviderInfo | null;
 }) {
+  const t = useT();
+  const options = ROUTE_TYPE_ORDER.map((key) => ({
+    value: key as RouteType,
+    ...t.route.input.routeTypes[key],
+  }));
   const inert = provider !== null && !provider.supports_route_types;
 
   return (
     <div className="px-5 pb-4">
       <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-500 mb-1.5">
-        Route preference
+        {t.route.input.routePreference}
       </p>
       <div
         role="radiogroup"
-        aria-label="Route preference"
+        aria-label={t.route.input.routePreference}
         className="flex rounded-lg border border-neutral-200 p-0.5 gap-0.5"
       >
-        {ROUTE_TYPE_OPTIONS.map((option) => {
+        {options.map((option) => {
           const selected = option.value === value;
           return (
             <button
@@ -203,15 +194,11 @@ function RouteTypeSelector({
         })}
       </div>
       <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">
-        {inert ? (
-          <>
-            {provider?.label} routes on one generic profile and ignores this —
-            the line will not change. Switch to the graph or BRouter provider to
-            make it count.
-          </>
-        ) : (
-          ROUTE_TYPE_OPTIONS.find((o) => o.value === value)?.hint
-        )}
+        {inert
+          ? t.route.input.routeTypeInert(
+              provider?.label ?? t.route.input.disclosure.externalFallback
+            )
+          : options.find((o) => o.value === value)?.hint}
       </p>
     </div>
   );
@@ -228,8 +215,11 @@ function ErrorNote({
   message,
 }: {
   kind: RouteErrorKind;
+  /** The server's own wording, used only where the kind has none of its own. */
   message: string;
 }) {
+  const t = useT();
+  const copy = t.errors.route[kind];
   const amber = kind === "quota" || kind === "unavailable";
   return (
     <div
@@ -239,18 +229,10 @@ function ErrorNote({
           : "bg-red-50 border-red-200 text-red-900"
       }`}
     >
-      <p className="text-[12px] font-semibold leading-snug">
-        {kind === "quota"
-          ? "Route service out of quota"
-          : kind === "unavailable"
-            ? "Route service unavailable"
-            : kind === "not_configured"
-              ? "Route service not configured"
-              : kind === "out_of_area"
-                ? "Outside the study area"
-                : "No route found"}
+      <p className="text-[12px] font-semibold leading-snug">{copy.title}</p>
+      <p className="text-[11px] leading-relaxed mt-1 opacity-80">
+        {copy?.message ?? message}
       </p>
-      <p className="text-[11px] leading-relaxed mt-1 opacity-80">{message}</p>
     </div>
   );
 }
@@ -273,6 +255,8 @@ export default function RouteInputPanel({
   alternative,
   onAlternativeChange,
 }: Props) {
+  const t = useT();
+  const ti = t.route.input;
   // Before the first result there is no provider to describe, and the ORS
   // fallback is the honest thing to assume least about — so the text below
   // falls back to the generic wording rather than naming anything.
@@ -281,20 +265,18 @@ export default function RouteInputPanel({
     <aside className="w-[268px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
       <div className="px-5 pt-5 pb-3">
         <h2 className="text-base font-bold text-neutral-900 leading-tight">
-          Score a trip
+          {ti.title}
         </h2>
         <p className="text-[11px] text-neutral-400 mt-1.5 leading-relaxed">
-          Search for an address or click the map to set A, then B. The route
-          comes back coloured by this project&rsquo;s own traffic-stress data,
-          not by a generic bike layer.
+          {ti.caption}
         </p>
       </div>
 
       <div className="px-5 pb-4 flex flex-col gap-1.5">
         <AddressSearch
-          label="Start"
+          label={ti.start}
           letter="A"
-          placeholder="Search or click the map"
+          placeholder={ti.searchPlaceholder}
           value={origin}
           active={next === "origin"}
           onFocus={() => onNextChange("origin")}
@@ -302,9 +284,9 @@ export default function RouteInputPanel({
           onClear={() => onClearOne("origin")}
         />
         <AddressSearch
-          label="Destination"
+          label={ti.destination}
           letter="B"
-          placeholder="Search or click the map"
+          placeholder={ti.searchPlaceholder}
           value={destination}
           active={next === "destination"}
           onFocus={() => onNextChange("destination")}
@@ -318,7 +300,7 @@ export default function RouteInputPanel({
             disabled={!origin || !destination}
             className="text-[11px] font-medium text-neutral-600 hover:text-neutral-900 disabled:text-neutral-300 disabled:hover:text-neutral-300"
           >
-            Reverse
+            {ti.reverse}
           </button>
           <button
             type="button"
@@ -326,19 +308,19 @@ export default function RouteInputPanel({
             disabled={!origin && !destination}
             className="text-[11px] text-neutral-400 hover:text-neutral-600 disabled:text-neutral-300 disabled:hover:text-neutral-300"
           >
-            Clear
+            {ti.clear}
           </button>
           {loading && (
             <span className="text-[11px] text-neutral-500 ml-auto">
-              Scoring…
+              {ti.scoring}
             </span>
           )}
           {!loading && cached && (
             <span
               className="text-[11px] text-neutral-400 ml-auto"
-              title="Nearby start and end points share one cached route, so repeating a trip costs no quota."
+              title={ti.cachedHelp}
             >
-              cached
+              {ti.cached}
             </span>
           )}
         </div>
@@ -372,38 +354,22 @@ export default function RouteInputPanel({
           other. */}
       <div className="px-5 py-4 border-t border-neutral-200">
         <h3 className="text-sm font-semibold text-neutral-900 mb-1">
-          What this does and does not do
+          {ti.disclosure.title}
         </h3>
         <p className="text-[11px] text-neutral-500 leading-relaxed">
-          {routesOnOurData ? (
-            <>
-              The path is chosen on this project&rsquo;s own network, using its
-              traffic-stress classification as the routing cost — so it does
-              route around a hostile road where a calmer way exists. That
-              classification is modelled from OSM tags, not surveyed, and the
-              detour it is willing to make is a tuned constant. Read the
-              breakdown, not just the total.
-            </>
-          ) : (
-            <>
-              The path is chosen by {provider?.label ?? "an external router"}
-              &rsquo;s generic cycling profile, which has never seen this
-              project&rsquo;s stress, sidewalk or parking data and does not
-              route around a hostile road. This page scores the route it
-              returns — it does not search for a more comfortable one. Read the
-              breakdown, not just the total.
-            </>
-          )}
+          {routesOnOurData
+            ? ti.disclosure.onOurData
+            : ti.disclosure.external(
+                provider?.label ?? ti.disclosure.externalFallback
+              )}
         </p>
       </div>
 
       <p className="text-[11px] leading-relaxed text-neutral-400 px-5 py-4 border-t border-neutral-200 italic mt-auto">
-        Address search: Photon, over OpenStreetMap, restricted to the study
-        area. Geometry: {provider?.label ?? "routing provider"}
-        {provider ? ` (${provider.route_type})` : ""}. Everything scored on it:
-        segments.geojson and bike_facilities.geojson from
-        pipeline/scripts/11_export.R. Cost and CO&#8322; units: see
-        lib/scoring-constants.ts.
+        {ti.sources(
+          provider?.label ?? ti.sourcesProviderFallback,
+          provider ? ` (${provider.route_type})` : ""
+        )}
       </p>
     </aside>
   );

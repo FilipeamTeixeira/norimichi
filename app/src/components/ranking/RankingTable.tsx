@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import type { CorridorProperties, InterventionType } from "@/lib/types";
 import { corridorLabel, COST_TIER_ORDER } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/context";
+import type { Dict } from "@/i18n/en";
 
 /**
  * The five intervention labels, in the order the design's sidebar lists them.
@@ -60,37 +62,25 @@ interface Column {
   help?: string;
 }
 
-const COLUMNS: Column[] = [
-  {
-    key: "lts",
-    label: "LTS now",
-    help: "Level of Traffic Stress, 1–4. Length-weighted across the corridor's segments.",
-  },
-  {
-    key: "after",
-    label: "Score after",
-    help: "Suitability (0–100) after the recommended intervention, re-scored by the same function that produced the current score. N/A where the intervention is not one the stress model has an input for.",
-  },
-  {
-    key: "beneficiaries",
-    label: "Residents within 500m",
-    help: "From a single unioned buffer around the whole corridor, not summed across its segments.",
-  },
-  { key: "length", label: "Length" },
-  { key: "cost", label: "Cost tier" },
-  {
-    key: "gap",
-    label: "Area gap",
-    context: true,
-    help: "The missed-opportunity score of the ~0.1km² hex this corridor sits in, from hex-level population. Two corridors crossing the same cell show the same figure — it ranks neighbourhoods, not projects.",
-  },
-  {
-    key: "savings",
-    label: "Area ¥/day",
-    context: true,
-    help: "The enclosing hex's modelled daily benefit under score_roi.R's illustrative 20% mode-shift scenario, for the whole cell. Not attributable to this corridor. Order-of-magnitude only.",
-  },
+/** Order and which two are context; the words come from the dictionary. */
+const COLUMN_KEYS: { key: SortKey; context?: boolean }[] = [
+  { key: "lts" },
+  { key: "after" },
+  { key: "beneficiaries" },
+  { key: "length" },
+  { key: "cost" },
+  { key: "gap", context: true },
+  { key: "savings", context: true },
 ];
+
+function columns(t: Dict): Column[] {
+  return COLUMN_KEYS.map(({ key, context }) => ({
+    key,
+    context,
+    label: t.ranking.table.columns[key].label,
+    help: t.ranking.table.columns[key].help || undefined,
+  }));
+}
 
 function formatLength(m: number): string {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
@@ -108,6 +98,9 @@ function formatLength(m: number): string {
  * of building a cycle lane nobody proposed.
  */
 function AfterCell({ c }: { c: CorridorProperties }) {
+  const t = useT();
+  const tt = t.ranking.table;
+
   if (c.benefit_kind === "lts_recalc" && c.suitability_after !== null) {
     const gain = c.suitability_after - c.suitability_before;
     return (
@@ -125,27 +118,25 @@ function AfterCell({ c }: { c: CorridorProperties }) {
 
   const alt =
     c.recommendation === "Crossing improvement"
-      ? `${c.signalised_junctions} signalised junction${
-          c.signalised_junctions === 1 ? "" : "s"
-        }${
+      ? `${tt.junctions(c.signalised_junctions)}${
           // The rate is only worth printing on a corridor long enough for a
           // per-km figure to describe a ride. Two junctions on a 34m bridge is
           // 58.6/km, which is true and tells the reader nothing.
           c.length_m >= RATE_MEANINGFUL_ABOVE_M
-            ? ` · ${c.signals_per_km.toFixed(1)} stops/km`
+            ? ` · ${tt.stopsPerKm(c.signals_per_km.toFixed(1))}`
             : ""
         }`
       : c.informal_parking_length_m > 0
-        ? `${formatLength(c.informal_parking_length_m)} kerbside pressure`
+        ? tt.kerbsidePressure(formatLength(c.informal_parking_length_m))
         : null;
 
   return (
     <div className="text-right">
       <span
         className="text-neutral-400 cursor-help border-b border-dotted border-neutral-300"
-        title={`Not scored: ${c.intervention_lever}. The traffic-stress model has no input for this intervention, so no after-score is shown rather than borrowing another intervention's number.`}
+        title={tt.naHelp(c.intervention_lever)}
       >
-        N/A
+        {t.panels.segment.proposal.na}
       </span>
       {alt && (
         <div className="text-[10px] text-neutral-400 mt-0.5 leading-tight">
@@ -163,6 +154,8 @@ interface Props {
 }
 
 export default function RankingTable({ corridors, onSelect }: Props) {
+  const t = useT();
+  const tt = t.ranking.table;
   const [types, setTypes] = useState<Set<InterventionType>>(new Set());
   /**
    * Default: the enclosing hex's gap score, descending — the number the whole
@@ -173,6 +166,8 @@ export default function RankingTable({ corridors, onSelect }: Props) {
    */
   const [sortKey, setSortKey] = useState<SortKey>("gap");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
+
+  const cols = useMemo(() => columns(t), [t]);
 
   const availableTypes = useMemo(() => {
     const present = new Set<string>();
@@ -244,21 +239,17 @@ export default function RankingTable({ corridors, onSelect }: Props) {
     <>
       <div className="flex flex-wrap items-center gap-1.5 mb-4">
         <span className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider mr-1.5">
-          Intervention
+          {tt.interventionFilter}
         </span>
-        {INTERVENTION_TYPES.map((t) => {
-          const on = types.has(t);
-          const available = availableTypes.has(t);
+        {INTERVENTION_TYPES.map((type) => {
+          const on = types.has(type);
+          const available = availableTypes.has(type);
           return (
             <button
-              key={t}
+              key={type}
               disabled={!available}
-              onClick={() => toggleType(t)}
-              title={
-                available
-                  ? undefined
-                  : "No corridor carries this type — bike parking is a point facility, not a stretch of street."
-              }
+              onClick={() => toggleType(type)}
+              title={available ? undefined : tt.unavailableType}
               className={cn(
                 "text-[12px] px-2.5 py-1 rounded-full border transition-colors flex items-center gap-1.5",
                 !available && "opacity-40 cursor-not-allowed",
@@ -269,9 +260,9 @@ export default function RankingTable({ corridors, onSelect }: Props) {
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: TYPE_COLORS[t] }}
+                style={{ backgroundColor: TYPE_COLORS[type] }}
               />
-              {t}
+              {t.interventions[type]}
             </button>
           );
         })}
@@ -280,20 +271,17 @@ export default function RankingTable({ corridors, onSelect }: Props) {
             onClick={() => setTypes(new Set())}
             className="text-[12px] text-neutral-400 hover:text-neutral-700 ml-1"
           >
-            Clear
+            {t.common.clear}
           </button>
         )}
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-neutral-400">
-          No corridors match that filter.
-        </p>
+        <p className="text-sm text-neutral-400">{tt.noMatch}</p>
       ) : (
         <>
           <p className="text-[12px] text-neutral-400 mb-2.5 tabular-nums">
-            {rows.length} corridors · {totalKm.toFixed(1)} km · click a row to
-            see it on the map
+            {tt.summary(rows.length, totalKm.toFixed(1))}
           </p>
 
           <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-x-auto">
@@ -304,9 +292,9 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                     #
                   </th>
                   <th className="px-4 py-3 text-[11px] font-medium text-neutral-400 uppercase tracking-wider text-left">
-                    Project
+                    {tt.project}
                   </th>
-                  {COLUMNS.map((col) => {
+                  {cols.map((col) => {
                     const active = sortKey === col.key;
                     return (
                       <th
@@ -327,7 +315,7 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                           {col.label}
                           {col.context && (
                             <span className="normal-case text-[10px] text-neutral-300">
-                              (context)
+                              {tt.context}
                             </span>
                           )}
                           <span
@@ -356,7 +344,7 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                     </td>
                     <td className="px-4 py-3 max-w-[280px]">
                       <div className="text-[13px] text-neutral-900 leading-snug">
-                        {corridorLabel(c)}
+                        {corridorLabel(c, t)}
                       </div>
                       <div className="text-[11px] text-neutral-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                         <span
@@ -369,21 +357,18 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                               backgroundColor: TYPE_COLORS[c.recommendation],
                             }}
                           />
-                          {c.recommendation}
+                          {t.interventions[c.recommendation]}
                         </span>
                         <span className="text-neutral-300">·</span>
-                        <span>
-                          {c.segment_count} segment
-                          {c.segment_count === 1 ? "" : "s"}
-                        </span>
+                        <span>{tt.segments(c.segment_count)}</span>
                         {c.bridges_islands && (
                           <>
                             <span className="text-neutral-300">·</span>
                             <span
                               className="text-red-500"
-                              title="Upgrading this would join two otherwise-disconnected low-stress areas."
+                              title={tt.joinsSeveredHelp}
                             >
-                              joins severed areas
+                              {tt.joinsSevered}
                             </span>
                           </>
                         )}
@@ -412,7 +397,7 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                               : "bg-neutral-100 text-neutral-500"
                         )}
                       >
-                        {c.cost_tier ?? "—"}
+                        {c.cost_tier ? t.costTiers[c.cost_tier] : "—"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-neutral-400 tabular-nums">
@@ -433,40 +418,26 @@ export default function RankingTable({ corridors, onSelect }: Props) {
 
           {rows.length > 100 && (
             <p className="text-[11px] text-neutral-400 mt-2">
-              Showing the top 100 of {rows.length}.
+              {tt.showingTop(rows.length)}
             </p>
           )}
 
           <div className="mt-5 space-y-2 text-[11px] leading-relaxed text-neutral-400 max-w-3xl">
             <p>
-              <span className="text-neutral-500">
-                No blended &ldquo;investment score&rdquo;, deliberately.
-              </span>{" "}
-              Cost is only ever a rough tier, so a single ranking number would
-              be fake precision. Sort by whichever column matters to the
-              decision you are making and weigh cost against benefit yourself.
+              <span className="text-neutral-500">{tt.notes.noScoreLead}</span>{" "}
+              {tt.notes.noScoreBody}
             </p>
             {unmodelled > 0 && (
               <p>
                 <span className="text-neutral-500">
-                  {unmodelled} corridors show N/A for the after-score.
+                  {tt.notes.unmodelledLead(unmodelled)}
                 </span>{" "}
-                The traffic-stress model has no input representing a crossing
-                treatment, so there is no honest way to compute one — those rows
-                state what the intervention does address instead. Traffic calming
-                is scored as a 30km/h zone plus kerbside management, because a
-                speed cap alone moves 195 of 196 of those segments by zero
-                points: they are already posted at 30.
+                {tt.notes.unmodelledBody}
               </p>
             )}
             <p>
-              <span className="text-neutral-500">
-                The two &ldquo;area&rdquo; columns are context, not corridor
-                values.
-              </span>{" "}
-              Both come from the ~0.1km² hex the corridor sits in, computed from
-              hex-level population, so two corridors crossing the same cell show
-              the same figures.
+              <span className="text-neutral-500">{tt.notes.contextLead}</span>{" "}
+              {tt.notes.contextBody}
             </p>
           </div>
         </>

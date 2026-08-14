@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useT } from "@/i18n/context";
 
 /**
  * The shared chrome for the three click-through panels. They all sit in the
@@ -21,6 +22,7 @@ export default function PanelShell({
   onClose: () => void;
   children: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="absolute top-3 right-3 w-[340px] max-h-[calc(100%-1.5rem)] bg-white rounded-xl border border-neutral-200 shadow-xl overflow-y-auto z-10">
       <div className="px-5 pt-4 pb-2 flex items-start justify-between gap-2">
@@ -37,7 +39,7 @@ export default function PanelShell({
         </div>
         <button
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.common.close}
           className="text-neutral-400 hover:text-neutral-600 p-0.5 mt-0.5 shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

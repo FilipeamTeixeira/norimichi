@@ -1,18 +1,19 @@
 "use client";
 
 import type { HexFeature } from "@/lib/types";
-import {
-  HEX_AMENITY_COUNTS,
-  HEX_BIKE_COUNTS,
-  HEX_INPUTS,
-  HEX_ROAD_SUMMARY,
-  HEX_SUBSCORES,
-  ROI_SHIFTED,
-  ROI_TODAY,
-  formatValue,
-  type MetricDef,
-} from "@/lib/metrics";
+import { formatValue, type MetricDef } from "@/lib/metrics";
 import PanelShell from "./PanelShell";
+import { useT } from "@/i18n/context";
+import {
+  useFormatValue,
+  useHexAmenityCounts,
+  useHexBikeCounts,
+  useHexInputs,
+  useHexRoadSummary,
+  useHexSubscores,
+  useRoiShifted,
+  useRoiToday,
+} from "@/i18n/metrics";
 
 /**
  * The two halves of the demand score, side by side. A single "demand: 0.62"
@@ -20,6 +21,7 @@ import PanelShell from "./PanelShell";
  * that distinction changes what you'd build.
  */
 function SubScoreBar({ metric, value }: { metric: MetricDef; value: unknown }) {
+  const fallbacks = useFormatValue();
   const v = typeof value === "number" ? value : null;
   const pct = v == null ? 0 : Math.max(0, Math.min(1, v)) * 100;
 
@@ -28,7 +30,7 @@ function SubScoreBar({ metric, value }: { metric: MetricDef; value: unknown }) {
       <div className="flex items-baseline justify-between mb-1">
         <span className="text-[12px] text-neutral-600">{metric.label}</span>
         <span className="text-[12px] font-semibold text-neutral-900 tabular-nums">
-          {formatValue(metric, value)}
+          {formatValue(metric, value, fallbacks)}
         </span>
       </div>
       <div className="h-[6px] rounded-full bg-neutral-100 overflow-hidden">
@@ -42,6 +44,7 @@ function SubScoreBar({ metric, value }: { metric: MetricDef; value: unknown }) {
 }
 
 function Row({ metric, value }: { metric: MetricDef; value: unknown }) {
+  const fallbacks = useFormatValue();
   return (
     <div
       title={metric.hint}
@@ -51,7 +54,7 @@ function Row({ metric, value }: { metric: MetricDef; value: unknown }) {
         {metric.label}
       </span>
       <span className="text-[12px] font-medium text-neutral-900 shrink-0 tabular-nums">
-        {formatValue(metric, value)}
+        {formatValue(metric, value, fallbacks)}
       </span>
     </div>
   );
@@ -91,13 +94,23 @@ export default function HexInfoPanel({
   onShowStreets: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
+  const fallbacks = useFormatValue();
+  const roadSummary = useHexRoadSummary();
+  const subscores = useHexSubscores();
+  const inputs = useHexInputs();
+  const amenityCounts = useHexAmenityCounts();
+  const bikeCounts = useHexBikeCounts();
+  const roiToday = useRoiToday();
+  const roiShifted = useRoiShifted();
+
   const p = hex.properties as unknown as Record<string, unknown>;
   const isFlat = p.flat_terrain === true;
   const hasTerrain = p.flat_terrain != null;
 
   return (
     <PanelShell
-      title="Neighbourhood"
+      title={t.panels.hex.title}
       subtitle={String(p.hex_id)}
       onClose={onClose}
       badge={
@@ -110,7 +123,7 @@ export default function HexInfoPanel({
             }`}
           >
             <SlopeIcon />
-            {isFlat ? "Flat terrain" : "Hilly"}
+            {isFlat ? t.panels.hex.flat : t.panels.hex.hilly}
           </div>
         ) : undefined
       }
@@ -121,7 +134,7 @@ export default function HexInfoPanel({
             {viewLabel ?? metric.label}
           </p>
           <p className="text-3xl font-bold text-neutral-900 mt-0.5 leading-none">
-            {formatValue(metric, p[metric.key])}
+            {formatValue(metric, p[metric.key], fallbacks)}
           </p>
           {(viewHint ?? metric.hint) && (
             <p className="text-[11.5px] text-neutral-500 mt-1.5 leading-relaxed">
@@ -140,49 +153,49 @@ export default function HexInfoPanel({
           className="w-full text-left rounded-lg border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 px-3 py-2 transition-colors group"
         >
           <span className="text-[12px] font-semibold text-neutral-900">
-            See the streets here →
+            {t.panels.hex.seeStreets.label}
           </span>
           <span className="block text-[11px] text-neutral-500 leading-relaxed mt-0.5">
-            Zooms in and switches the map to per-street scoring.
+            {t.panels.hex.seeStreets.hint}
           </span>
         </button>
       </div>
 
-      <Section title="Roads in this area">
+      <Section title={t.panels.hex.sections.roads}>
         <div className="flex flex-col">
-          {HEX_ROAD_SUMMARY.map((m) => (
+          {roadSummary.map((m) => (
             <Row key={m.key} metric={m} value={p[m.key]} />
           ))}
         </div>
       </Section>
 
-      <Section title="Why demand is what it is">
+      <Section title={t.panels.hex.sections.demand}>
         <div className="flex flex-col gap-2.5">
-          {HEX_SUBSCORES.map((m) => (
+          {subscores.map((m) => (
             <SubScoreBar key={m.key} metric={m} value={p[m.key]} />
           ))}
         </div>
       </Section>
 
-      <Section title="Inputs">
+      <Section title={t.panels.hex.sections.inputs}>
         <div className="flex flex-col">
-          {HEX_INPUTS.map((m) => (
+          {inputs.map((m) => (
             <Row key={m.key} metric={m} value={p[m.key]} />
           ))}
         </div>
       </Section>
 
-      <Section title="Destinations within reach">
+      <Section title={t.panels.hex.sections.destinations}>
         <div className="flex flex-col">
-          {HEX_AMENITY_COUNTS.map((m) => (
+          {amenityCounts.map((m) => (
             <Row key={m.key} metric={m} value={p[m.key]} />
           ))}
         </div>
       </Section>
 
-      <Section title="Bike facilities within reach">
+      <Section title={t.panels.hex.sections.bikeFacilities}>
         <div className="flex flex-col">
-          {HEX_BIKE_COUNTS.map((m) => (
+          {bikeCounts.map((m) => (
             <Row key={m.key} metric={m} value={p[m.key]} />
           ))}
         </div>
@@ -194,25 +207,25 @@ export default function HexInfoPanel({
       <div className="mx-4 mb-4 rounded-xl border border-neutral-200 overflow-hidden">
         <div className="px-3.5 py-2 bg-neutral-50 border-b border-neutral-200">
           <p className="text-[12px] font-bold text-neutral-900">
-            Return on investment
+            {t.panels.hex.roi.title}
           </p>
           <p className="text-[11px] text-neutral-500 leading-relaxed">
-            Modelled for this hex, per day.
+            {t.panels.hex.roi.caption}
           </p>
         </div>
         <div className="grid grid-cols-2 divide-x divide-neutral-200">
           <div className="p-3">
             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-              Today
+              {t.panels.hex.roi.today}
             </p>
             <div className="flex flex-col gap-1">
-              {ROI_TODAY.map((m) => (
+              {roiToday.map((m) => (
                 <div key={m.key} className="flex flex-col">
                   <span className="text-[11px] text-neutral-500 leading-tight">
                     {m.label}
                   </span>
                   <span className="text-[13px] font-semibold text-neutral-900 tabular-nums">
-                    {formatValue(m, p[m.key])}
+                    {formatValue(m, p[m.key], fallbacks)}
                   </span>
                 </div>
               ))}
@@ -220,16 +233,16 @@ export default function HexInfoPanel({
           </div>
           <div className="p-3 bg-emerald-50/40">
             <p className="text-[10.5px] font-semibold uppercase tracking-wider text-emerald-700 mb-1.5">
-              If shifted
+              {t.panels.hex.roi.ifShifted}
             </p>
             <div className="flex flex-col gap-1">
-              {ROI_SHIFTED.map((m) => (
+              {roiShifted.map((m) => (
                 <div key={m.key} className="flex flex-col">
                   <span className="text-[11px] text-emerald-700/80 leading-tight">
                     {m.label}
                   </span>
                   <span className="text-[13px] font-semibold text-emerald-900 tabular-nums">
-                    {formatValue(m, p[m.key])}
+                    {formatValue(m, p[m.key], fallbacks)}
                   </span>
                 </div>
               ))}

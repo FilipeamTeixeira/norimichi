@@ -15,8 +15,9 @@
 
 import type { ExpressionSpecification } from "maplibre-gl";
 import type { MetricDef } from "./metrics";
-import { CATEGORY_COLORS, CATEGORY_LABELS } from "./types";
+import { CATEGORY_COLORS } from "./types";
 import type { DisplayCategory } from "./types";
+import type { Dict } from "@/i18n/en";
 
 /**
  * Continuous magnitude on the hex fills. The lightest step is deliberately
@@ -227,7 +228,8 @@ function rangeLabel(metric: MetricDef, lo: number, hi: number | null): string {
 function sequentialScale(
   metric: MetricDef,
   values: RawValue[],
-  ramp: string[]
+  ramp: string[],
+  t: Dict
 ): Scale {
   const nums = values.filter((v): v is number => typeof v === "number");
   const hasNoData = nums.length < values.length;
@@ -235,7 +237,7 @@ function sequentialScale(
   if (nums.length === 0) {
     return {
       expression: NO_DATA as unknown as ExpressionSpecification,
-      entries: [{ color: NO_DATA, label: "No data" }],
+      entries: [{ color: NO_DATA, label: t.scales.noData }],
       hasNoData: true,
     };
   }
@@ -273,14 +275,14 @@ function sequentialScale(
  * Symmetric around zero so that "no gap" always sits on the neutral midpoint
  * and the two signs stay comparable in width.
  */
-function divergingScale(metric: MetricDef, values: RawValue[]): Scale {
+function divergingScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
   const nums = values.filter((v): v is number => typeof v === "number");
   const hasNoData = nums.length < values.length;
 
   if (nums.length === 0) {
     return {
       expression: NO_DATA as unknown as ExpressionSpecification,
-      entries: [{ color: NO_DATA, label: "No data" }],
+      entries: [{ color: NO_DATA, label: t.scales.noData }],
       hasNoData: true,
     };
   }
@@ -299,11 +301,11 @@ function divergingScale(metric: MetricDef, values: RawValue[]): Scale {
   breaks.forEach((b, i) => expr.push(b, DIVERGING[i]));
 
   const entries: LegendEntry[] = [
-    { color: DIVERGING[0], label: `Well served (≤ ${formatNumber(metric, -half)})` },
-    { color: DIVERGING[1], label: "Slightly ahead of demand" },
-    { color: DIVERGING[2], label: "Balanced" },
-    { color: DIVERGING[3], label: "Slightly underserved" },
-    { color: DIVERGING[4], label: `Underserved (≥ ${formatNumber(metric, half)})` },
+    { color: DIVERGING[0], label: t.scales.wellServed(formatNumber(metric, -half)) },
+    { color: DIVERGING[1], label: t.scales.slightlyAhead },
+    { color: DIVERGING[2], label: t.scales.balanced },
+    { color: DIVERGING[3], label: t.scales.slightlyUnderserved },
+    { color: DIVERGING[4], label: t.scales.underserved(formatNumber(metric, half)) },
   ];
 
   return {
@@ -313,8 +315,8 @@ function divergingScale(metric: MetricDef, values: RawValue[]): Scale {
   };
 }
 
-function booleanScale(metric: MetricDef, values: RawValue[]): Scale {
-  const [noLabel, yesLabel] = metric.boolLabels ?? ["No", "Yes"];
+function booleanScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
+  const [noLabel, yesLabel] = metric.boolLabels ?? [t.common.no, t.common.yes];
   const hasNoData = values.some((v) => v == null);
 
   // to-string keeps null out of the comparison: it becomes "" and falls through
@@ -388,7 +390,7 @@ function ordinalScale(metric: MetricDef, values: RawValue[]): Scale {
  * the rest into "Other" rather than cycling hues, which would make unrelated
  * groups look related.
  */
-function nominalScale(metric: MetricDef, values: RawValue[]): Scale {
+function nominalScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
   const hasNoData = values.some((v) => v == null);
 
   // display_category keeps the project's established semantic colours: green
@@ -402,7 +404,7 @@ function nominalScale(metric: MetricDef, values: RawValue[]): Scale {
       expression: expr as unknown as ExpressionSpecification,
       entries: domain.map((d) => ({
         color: CATEGORY_COLORS[d],
-        label: CATEGORY_LABELS[d],
+        label: t.categories[d],
       })),
       hasNoData,
     };
@@ -436,9 +438,9 @@ function nominalScale(metric: MetricDef, values: RawValue[]): Scale {
     color: colors[i],
     label:
       metric.domainLabels?.[i] ??
-      (metric.key === "island_id" ? `Island #${d}` : d),
+      (metric.key === "island_id" ? t.scales.island(d) : d),
   }));
-  if (foldedRest) entries.push({ color: OTHER, label: "Other islands" });
+  if (foldedRest) entries.push({ color: OTHER, label: t.scales.otherIslands });
 
   return {
     expression: expr as unknown as ExpressionSpecification,
@@ -456,23 +458,25 @@ function nominalScale(metric: MetricDef, values: RawValue[]): Scale {
 export function buildScale(
   metric: MetricDef,
   values: RawValue[],
-  target: "fill" | "line"
+  target: "fill" | "line",
+  t: Dict
 ): Scale {
   switch (metric.scale) {
     case "diverging":
-      return divergingScale(metric, values);
+      return divergingScale(metric, values, t);
     case "boolean":
-      return booleanScale(metric, values);
+      return booleanScale(metric, values, t);
     case "ordinal":
       return ordinalScale(metric, values);
     case "nominal":
-      return nominalScale(metric, values);
+      return nominalScale(metric, values, t);
     case "sequential":
     default:
       return sequentialScale(
         metric,
         values,
-        target === "fill" ? SEQ_FILL : SEQ_LINE
+        target === "fill" ? SEQ_FILL : SEQ_LINE,
+        t
       );
   }
 }

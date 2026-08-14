@@ -28,9 +28,9 @@ import {
   AREA_DETAIL_ZOOM,
   NETWORK_VIEW_ID,
   STREET_DETAIL_ZOOM,
-  VIEW_BY_ID,
-  type ViewGeometry,
 } from "@/lib/metrics";
+import { useT } from "@/i18n/context";
+import { useViewById } from "@/i18n/metrics";
 import {
   AMENITY_COLORS,
   BIKE_COLOR,
@@ -40,11 +40,6 @@ import {
   buildScale,
   collectValues,
 } from "@/lib/scales";
-
-const GEOMETRY_LABEL: Record<ViewGeometry, string> = {
-  areas: "Areas",
-  streets: "Streets",
-};
 
 /** Where the nudge and the hex panel's jump send you. */
 const DEFAULT_STREET_VIEW = "display_category";
@@ -113,6 +108,8 @@ function corridorFromUrl(): number | null {
 }
 
 export default function NetworkPage() {
+  const t = useT();
+  const viewById = useViewById();
   const [selected, setSelected] = useState<Selection>(null);
   const [toggles, setToggles] = useState<ToggleState>(DEFAULT_TOGGLES);
   /**
@@ -163,7 +160,7 @@ export default function NetworkPage() {
   const [focusCorridor, setFocusCorridor] =
     useState<CorridorProperties | null>(null);
 
-  const view = activeView ? VIEW_BY_ID.get(activeView) : undefined;
+  const view = activeView ? viewById.get(activeView) : undefined;
   const coloredGeometry = view?.geometry ?? null;
 
   useEffect(() => {
@@ -250,7 +247,7 @@ export default function NetworkPage() {
   const handleViewChange = useCallback(
     (id: string) => {
       const next = activeView === id ? null : id;
-      const geometry = next ? VIEW_BY_ID.get(next)?.geometry : undefined;
+      const geometry = next ? viewById.get(next)?.geometry : undefined;
       setNudgeDismissed(false);
       setActiveView(next);
       setSelected((s) => {
@@ -259,7 +256,7 @@ export default function NetworkPage() {
         return s;
       });
     },
-    [activeView]
+    [activeView, viewById]
   );
 
   /**
@@ -305,9 +302,10 @@ export default function NetworkPage() {
     return buildScale(
       view.metric,
       collectValues(source.features, view.metric.key),
-      view.geometry === "areas" ? "fill" : "line"
+      view.geometry === "areas" ? "fill" : "line",
+      t
     );
-  }, [view, hexagons, segments]);
+  }, [view, hexagons, segments, t]);
 
   /**
    * Zoom gets to make a suggestion; it does not get to make the decision. The
@@ -318,22 +316,20 @@ export default function NetworkPage() {
     if (!view || nudgeDismissed) return null;
     if (view.geometry === "areas" && zoom >= STREET_DETAIL_ZOOM) {
       return {
-        text: "Hexagons cover most of the screen at this zoom.",
-        action: "Show street detail",
+        ...t.network.nudge.tooZoomedForAreas,
         onAct: () => setActiveView(DEFAULT_STREET_VIEW),
         onDismiss: () => setNudgeDismissed(true),
       };
     }
     if (view.geometry === "streets" && zoom <= AREA_DETAIL_ZOOM) {
       return {
-        text: "Individual streets are barely a few pixels at this zoom.",
-        action: "Show the area view",
+        ...t.network.nudge.tooZoomedForStreets,
         onAct: () => setActiveView(DEFAULT_AREA_VIEW),
         onDismiss: () => setNudgeDismissed(true),
       };
     }
     return null;
-  }, [view, zoom, nudgeDismissed]);
+  }, [view, zoom, nudgeDismissed, t]);
 
   const legendSections = useMemo<LegendSection[]>(() => {
     const sections: LegendSection[] = [];
@@ -345,11 +341,11 @@ export default function NetworkPage() {
       if (view.id === NETWORK_VIEW_ID) {
         entries.push({
           color: "#0b0b0b",
-          label: "Missing link between two networks",
+          label: t.network.legend.missingLink,
         });
       }
       sections.push({
-        title: `${GEOMETRY_LABEL[view.geometry]} · ${view.label}`,
+        title: `${t.network.geometry[view.geometry]} · ${view.label}`,
         shape: view.geometry === "areas" ? "fill" : "line",
         entries,
         hasNoData: scale.hasNoData,
@@ -359,44 +355,51 @@ export default function NetworkPage() {
 
     if (toggles.recommendations) {
       sections.push({
-        title: "Recommendations",
+        title: t.network.legend.recommendations.title,
         shape: "line",
         entries: [
-          { color: RECOMMENDATION_COLOR, label: "Intervention proposed" },
+          {
+            color: RECOMMENDATION_COLOR,
+            label: t.network.legend.recommendations.entry,
+          },
         ],
         hasNoData: false,
-        note: "Click the street for what to build, its cost tier and who benefits.",
+        note: t.network.legend.recommendations.note,
       });
     }
 
     if (toggles.cycleways) {
       sections.push({
-        title: "Existing cycleways",
+        title: t.network.legend.cycleways.title,
         shape: "line",
         // Same order and dashes as CYCLEWAY_KINDS in MapView, most complete
         // provision first — the map draws them in the reverse of this.
         entries: [
-          { color: CYCLEWAY_COLOR, label: "Dedicated cycleway" },
+          { color: CYCLEWAY_COLOR, label: t.cyclewayTypes.dedicated },
           {
             color: CYCLEWAY_COLOR,
-            label: "Shared with pedestrians",
+            label: t.cyclewayTypes.shared_path,
             dash: [2.5, 1.4],
           },
-          { color: CYCLEWAY_COLOR, label: "On-road lane", dash: [0.6, 1.2] },
+          {
+            color: CYCLEWAY_COLOR,
+            label: t.cyclewayTypes.on_road,
+            dash: [0.6, 1.2],
+          },
         ],
         hasNoData: false,
-        note: "Most of what exists is shared with people on foot (自転車歩行者道), which is why it is not summed with dedicated provision.",
+        note: t.network.legend.cycleways.note,
       });
     }
 
     if (toggles.amenities) {
       sections.push({
-        title: "Amenities",
+        title: t.network.legend.amenities.title,
         shape: "fill",
         entries: [
-          { color: AMENITY_COLORS.school, label: "School" },
-          { color: AMENITY_COLORS.station, label: "Station" },
-          { color: AMENITY_COLORS.shop, label: "Shop or restaurant" },
+          { color: AMENITY_COLORS.school, label: t.network.legend.amenities.school },
+          { color: AMENITY_COLORS.station, label: t.network.legend.amenities.station },
+          { color: AMENITY_COLORS.shop, label: t.network.legend.amenities.shop },
         ],
         hasNoData: false,
       });
@@ -404,18 +407,18 @@ export default function NetworkPage() {
 
     if (toggles.bike_facilities) {
       sections.push({
-        title: "Bike facilities",
+        title: t.network.legend.bikeFacilities.title,
         shape: "fill",
         entries: [
-          { color: BIKE_COLOR, label: "Sharing dock (filled)" },
-          { color: "#ffffff", label: "Parking (outlined)" },
+          { color: BIKE_COLOR, label: t.network.legend.bikeFacilities.sharing },
+          { color: "#ffffff", label: t.network.legend.bikeFacilities.parking },
         ],
         hasNoData: false,
       });
     }
 
     return sections;
-  }, [toggles, view, scale]);
+  }, [toggles, view, scale, t]);
 
   return (
     <>
@@ -452,19 +455,18 @@ export default function NetworkPage() {
             />
             <div className="min-w-0">
               <p className="text-[13px] text-neutral-900 leading-snug truncate">
-                {corridorLabel(focusCorridor)}
+                {corridorLabel(focusCorridor, t)}
               </p>
               <p className="text-[11px] text-neutral-500 leading-snug">
-                {focusCorridor.recommendation} ·{" "}
-                {focusCorridor.segment_count === 1
-                  ? "1 segment"
-                  : `${focusCorridor.segment_count} segments outlined`}
-                {focusCorridor.segment_count > 1 && " · panel shows the longest"}
+                {t.interventions[focusCorridor.recommendation]} ·{" "}
+                {t.network.focus.segments(focusCorridor.segment_count)}
+                {focusCorridor.segment_count > 1 &&
+                  t.network.focus.panelShowsLongest}
               </p>
             </div>
             <button
               onClick={clearFocus}
-              aria-label="Clear project selection"
+              aria-label={t.network.focus.clear}
               className="ml-auto shrink-0 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded p-1 transition-colors"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -481,13 +483,12 @@ export default function NetworkPage() {
 
         {!segments && !loadError && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/95 rounded-lg border border-neutral-200 shadow-sm px-4 py-2 text-[13px] text-neutral-600">
-            Loading network data…
+            {t.network.loading}
           </div>
         )}
         {loadError && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-red-50 rounded-lg border border-red-200 shadow-sm px-4 py-2 text-[13px] text-red-800">
-            Could not load map data ({loadError}). Re-run
-            pipeline/scripts/11_export.R.
+            {t.network.loadError(loadError)}
           </div>
         )}
 

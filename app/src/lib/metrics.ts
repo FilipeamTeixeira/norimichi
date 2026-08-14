@@ -9,7 +9,15 @@
  * across the sidebar, the map and three panels.
  *
  * The field names mirror pipeline/R/export_geojson.R.
+ *
+ * Every group is a function of the dictionary rather than a module constant,
+ * because the labels are the half of a MetricDef that has a language. The
+ * structure — which key, which scale, which domain, how to format — does not,
+ * and stays here where it can be read next to the comment explaining it. Client
+ * components take these through the memoised hooks in `@/i18n/metrics`.
  */
+
+import type { Dict } from "@/i18n/en";
 
 export type MetricScale =
   | "sequential"
@@ -74,132 +82,139 @@ export interface ViewDef {
   metric: MetricDef;
 }
 
-export const VIEW_GROUPS: {
+export interface ViewGroup {
   id: ViewGroupId;
   title: string;
   caption: string;
-}[] = [
-  {
-    id: "areas",
-    title: "Areas",
-    caption: "Per neighbourhood hexagon — quantities that only exist over an area.",
-  },
-  {
-    id: "streets",
-    title: "Streets",
-    caption: "Per road segment. Zoom changes how legible these are, never which is shown.",
-  },
-  {
-    id: "network",
-    title: "Connectivity",
-    caption: "Identities rather than measurements — which calm routes are cut off from which.",
-  },
-];
+}
+
+export function viewGroups(t: Dict): ViewGroup[] {
+  const g = t.metrics.viewGroups;
+  return [
+    { id: "areas", title: g.areas.title, caption: g.areas.caption },
+    { id: "streets", title: g.streets.title, caption: g.streets.caption },
+    { id: "network", title: g.network.title, caption: g.network.caption },
+  ];
+}
 
 /**
- * The LTS classes in words, indexed 0-3 for LTS 1-4. The map legend below and
- * the Route Analysis panel's stacked bar both read these rather than writing
- * their own, so the two cannot end up describing LTS 3 differently.
+ * The LTS classes in words, indexed 0-3 for LTS 1-4. The map legend, the route
+ * legend and the Route Analysis panel's stacked bar all read these rather than
+ * writing their own, so they cannot end up describing LTS 3 differently.
  */
-export const LTS_LABELS = [
-  "Comfortable for anyone",
-  "Most adults",
-  "Confident riders only",
-  "Hostile",
-] as const;
+export function ltsLabels(t: Dict): readonly string[] {
+  return t.metrics.ltsLabels;
+}
+
+/**
+ * The `<n> — <class>` form the LTS classes are listed in, in three places.
+ *
+ * `toLowerCase()` is a no-op on Japanese and does the sentence-casing English
+ * wants, which is why it is applied here rather than baked into the dictionary:
+ * the four class names are also shown capitalised, in the route panel's
+ * tooltip, and one dictionary entry has to serve both.
+ */
+export function ltsBandLabel(t: Dict, lts: number): string {
+  return `${lts} — ${t.metrics.ltsLabels[lts - 1].toLowerCase()}`;
+}
 
 /**
  * No variable appears twice. `stress_score` and `infra_quality_score` used to
  * sit here as area layers, but they are aggregates of the segment data, so
  * offering them alongside `lts` presented one measurement as two rival views.
- * They are panel rows now — see HEX_ROAD_SUMMARY.
+ * They are panel rows now — see hexRoadSummary().
  */
-export const VIEWS: ViewDef[] = [
-  {
-    id: "gap_score",
-    label: "Demand / supply gap",
-    geometry: "areas",
-    group: "areas",
-    hint: "Demand minus infrastructure quality. Positive means people want to cycle here and can't.",
-    metric: {
-      key: "gap_score",
-      label: "Demand / supply gap",
-      scale: "diverging",
-      format: dec2,
+export function views(t: Dict): ViewDef[] {
+  const v = t.metrics.views;
+  return [
+    {
+      id: "gap_score",
+      label: v.gap_score.label,
+      geometry: "areas",
+      group: "areas",
+      hint: v.gap_score.hint,
+      metric: {
+        key: "gap_score",
+        label: v.gap_score.label,
+        scale: "diverging",
+        format: dec2,
+      },
     },
-  },
-  {
-    id: "demand_score",
-    label: "Cycling demand",
-    geometry: "areas",
-    group: "areas",
-    hint: "Trips this area should generate and attract, before asking whether the roads allow it.",
-    metric: {
-      key: "demand_score",
-      label: "Cycling demand",
-      scale: "sequential",
-      format: dec2,
+    {
+      id: "demand_score",
+      label: v.demand_score.label,
+      geometry: "areas",
+      group: "areas",
+      hint: v.demand_score.hint,
+      metric: {
+        key: "demand_score",
+        label: v.demand_score.label,
+        scale: "sequential",
+        format: dec2,
+      },
     },
-  },
-  {
-    id: "display_category",
-    label: "Where to invest",
-    geometry: "streets",
-    group: "streets",
-    hint: "The pipeline's own classification: suitability band, upgraded to 'bottleneck' where the network analysis says the segment unlocks connectivity.",
-    note: "Red marks a strategic bottleneck — upgrading it would connect otherwise-separated calm areas — not necessarily an unsafe road.",
-    metric: {
-      key: "display_category",
-      label: "Where to invest",
-      scale: "nominal",
-      domain: ["high", "moderate", "bottleneck", "low_priority"],
+    {
+      id: "display_category",
+      label: v.display_category.label,
+      geometry: "streets",
+      group: "streets",
+      hint: v.display_category.hint,
+      note: v.display_category.note,
+      metric: {
+        key: "display_category",
+        label: v.display_category.label,
+        scale: "nominal",
+        domain: ["high", "moderate", "bottleneck", "low_priority"],
+      },
     },
-  },
-  {
-    id: "lts",
-    label: "Traffic stress",
-    geometry: "streets",
-    group: "streets",
-    hint: "1 = comfortable for anyone, 4 = hostile to all but the confident.",
-    note: "Blue turns to red at the LTS 2/3 break — the point where a road stops being usable by most people.",
-    metric: {
-      key: "lts",
-      label: "Level of traffic stress",
-      scale: "ordinal",
-      domain: [1, 2, 3, 4],
-      domainLabels: LTS_LABELS.map((l, i) => `${i + 1} — ${l.toLowerCase()}`),
+    {
+      id: "lts",
+      label: v.lts.label,
+      geometry: "streets",
+      group: "streets",
+      hint: v.lts.hint,
+      note: v.lts.note,
+      metric: {
+        key: "lts",
+        label: v.lts.metricLabel,
+        scale: "ordinal",
+        domain: [1, 2, 3, 4],
+        domainLabels: [1, 2, 3, 4].map((n) => ltsBandLabel(t, n)),
+      },
     },
-  },
-  {
-    id: "infra_gap",
-    label: "Infrastructure gap",
-    geometry: "streets",
-    group: "streets",
-    hint: "High wherever traffic stress reaches LTS 3 or above — the coarse view of the stress score.",
-    metric: {
-      key: "infra_gap",
-      label: "Infrastructure gap",
-      scale: "nominal",
-      domain: ["low", "high"],
-      domainLabels: ["Adequate", "Gap"],
+    {
+      id: "infra_gap",
+      label: v.infra_gap.label,
+      geometry: "streets",
+      group: "streets",
+      hint: v.infra_gap.hint,
+      metric: {
+        key: "infra_gap",
+        label: v.infra_gap.label,
+        scale: "nominal",
+        domain: ["low", "high"],
+        domainLabels: [v.infra_gap.adequate, v.infra_gap.gap],
+      },
     },
-  },
-  {
-    id: "island_id",
-    label: "Disconnected networks",
-    geometry: "streets",
-    group: "network",
-    hint: "Each colour is one cluster of low-stress streets that connect to each other but not to the next cluster.",
-    note: "Dashed black marks the specific links that would join two clusters into one network.",
-    metric: {
-      key: "island_id",
-      label: "Safe network",
-      scale: "nominal",
+    {
+      id: "island_id",
+      label: v.island_id.label,
+      geometry: "streets",
+      group: "network",
+      hint: v.island_id.hint,
+      note: v.island_id.note,
+      metric: {
+        key: "island_id",
+        label: v.island_id.metricLabel,
+        scale: "nominal",
+      },
     },
-  },
-];
+  ];
+}
 
-export const VIEW_BY_ID = new Map(VIEWS.map((v) => [v.id, v]));
+export function viewById(t: Dict): Map<string, ViewDef> {
+  return new Map(views(t).map((v) => [v.id, v]));
+}
 
 /** The only view the bridge overlay says anything about. */
 export const NETWORK_VIEW_ID = "island_id";
@@ -211,65 +226,86 @@ export const NETWORK_VIEW_ID = "island_id";
  * segment data, so as map layers they duplicated `lts` on a second geometry;
  * as panel rows they read as what they actually are.
  */
-export const HEX_ROAD_SUMMARY: MetricDef[] = [
-  {
-    key: "stress_score",
-    label: "Mean traffic stress",
-    scale: "sequential",
-    hint: "Mean level of traffic stress across the roads in the hex (1 calm – 4 hostile).",
-    format: dec2,
-  },
-  {
-    key: "infra_quality_score",
-    label: "Infrastructure quality",
-    scale: "sequential",
-    hint: "Share of the hex's road length that is actually comfortable to cycle.",
-    format: dec2,
-  },
-];
+export function hexRoadSummary(t: Dict): MetricDef[] {
+  const m = t.metrics.hexRoadSummary;
+  return [
+    {
+      key: "stress_score",
+      label: m.stress_score.label,
+      scale: "sequential",
+      hint: m.stress_score.hint,
+      format: dec2,
+    },
+    {
+      key: "infra_quality_score",
+      label: m.infra_quality_score.label,
+      scale: "sequential",
+      hint: m.infra_quality_score.hint,
+      format: dec2,
+    },
+  ];
+}
 
 /** The two halves of demand, shown as a breakdown rather than as layers. */
-export const HEX_SUBSCORES: MetricDef[] = [
-  {
-    key: "production_score",
-    label: "Production",
-    scale: "sequential",
-    hint: "Trip-generating potential — people starting journeys here.",
-    format: dec2,
-  },
-  {
-    key: "attraction_score",
-    label: "Attraction",
-    scale: "sequential",
-    hint: "Trip-drawing potential — shops, schools and stations pulling journeys in.",
-    format: dec2,
-  },
-];
+export function hexSubscores(t: Dict): MetricDef[] {
+  const m = t.metrics.hexSubscores;
+  return [
+    {
+      key: "production_score",
+      label: m.production_score.label,
+      scale: "sequential",
+      hint: m.production_score.hint,
+      format: dec2,
+    },
+    {
+      key: "attraction_score",
+      label: m.attraction_score.label,
+      scale: "sequential",
+      hint: m.attraction_score.hint,
+      format: dec2,
+    },
+  ];
+}
 
-export const HEX_INPUTS: MetricDef[] = [
-  { key: "population", label: "Population", scale: "sequential", unit: "people", format: int },
-  {
-    key: "flat_terrain",
-    label: "Flat terrain",
-    scale: "boolean",
-    boolLabels: ["Hilly", "Flat"],
-  },
-];
+export function hexInputs(t: Dict): MetricDef[] {
+  const m = t.metrics.hexInputs;
+  return [
+    {
+      key: "population",
+      label: m.population,
+      scale: "sequential",
+      unit: t.units.people,
+      format: int,
+    },
+    {
+      key: "flat_terrain",
+      label: m.flat_terrain.label,
+      scale: "boolean",
+      boolLabels: [m.flat_terrain.hilly, m.flat_terrain.flat],
+    },
+  ];
+}
 
 /** Destination counts behind the amenities toggle. */
-export const HEX_AMENITY_COUNTS: MetricDef[] = [
-  { key: "schools_nearby", label: "Schools", scale: "sequential", format: int },
-  { key: "stations_nearby", label: "Stations", scale: "sequential", format: int },
-  { key: "shops_nearby", label: "Shops & restaurants", scale: "sequential", format: int },
-];
+export function hexAmenityCounts(t: Dict): MetricDef[] {
+  const m = t.metrics.hexAmenityCounts;
+  return [
+    { key: "schools_nearby", label: m.schools_nearby, scale: "sequential", format: int },
+    { key: "stations_nearby", label: m.stations_nearby, scale: "sequential", format: int },
+    { key: "shops_nearby", label: m.shops_nearby, scale: "sequential", format: int },
+  ];
+}
 
 /** Counts behind the bike facilities toggle. */
-export const HEX_BIKE_COUNTS: MetricDef[] = [
-  { key: "bike_parking_nearby", label: "Parking sites", scale: "sequential", format: int },
-  { key: "bike_parking_capacity_nearby", label: "Parking spaces", scale: "sequential", format: int },
-  { key: "bike_sharing_nearby", label: "Sharing docks", scale: "sequential", format: int },
-  { key: "bike_sharing_capacity_nearby", label: "Sharing capacity", scale: "sequential", format: int },
-];
+export function hexBikeCounts(t: Dict): MetricDef[] {
+  const m = t.metrics.hexBikeCounts;
+  return [
+    { key: "bike_parking_nearby", label: m.bike_parking_nearby, scale: "sequential", format: int },
+    { key: "bike_parking_capacity_nearby", label: m.bike_parking_capacity_nearby, scale: "sequential", format: int },
+    { key: "bike_sharing_nearby", label: m.bike_sharing_nearby, scale: "sequential", format: int },
+    { key: "bike_sharing_capacity_nearby", label: m.bike_sharing_capacity_nearby, scale: "sequential", format: int },
+  ];
+}
 
 /**
  * The ROI card. Twelve overlapping money and emissions choropleths would be
@@ -277,114 +313,145 @@ export const HEX_BIKE_COUNTS: MetricDef[] = [
  * selection-triggered report: what driving costs here now, and what shifting
  * a share of it to bikes would return.
  */
-export const ROI_TODAY: MetricDef[] = [
-  { key: "roi_car_trips_per_day", label: "Car trips", scale: "sequential", unit: "/day", format: int },
-  { key: "roi_congestion_cost_yen_day", label: "Congestion cost", scale: "sequential", unit: "/day", format: yen },
-  { key: "roi_operating_cost_yen_day", label: "Operating cost", scale: "sequential", unit: "/day", format: yen },
-  { key: "roi_emissions_kg_day", label: "CO₂ emitted", scale: "sequential", unit: "kg/day", format: dec1 },
-];
+export function roiToday(t: Dict): MetricDef[] {
+  const m = t.metrics.roiToday;
+  const { perDay, kgPerDay } = t.units;
+  return [
+    { key: "roi_car_trips_per_day", label: m.roi_car_trips_per_day, scale: "sequential", unit: perDay, format: int },
+    { key: "roi_congestion_cost_yen_day", label: m.roi_congestion_cost_yen_day, scale: "sequential", unit: perDay, format: yen },
+    { key: "roi_operating_cost_yen_day", label: m.roi_operating_cost_yen_day, scale: "sequential", unit: perDay, format: yen },
+    { key: "roi_emissions_kg_day", label: m.roi_emissions_kg_day, scale: "sequential", unit: kgPerDay, format: dec1 },
+  ];
+}
 
-export const ROI_SHIFTED: MetricDef[] = [
-  { key: "roi_shifted_trips_per_day", label: "Trips shifted", scale: "sequential", unit: "/day", format: int },
-  { key: "roi_congestion_savings_yen_day", label: "Congestion saved", scale: "sequential", unit: "/day", format: yen },
-  { key: "roi_operating_savings_yen_day", label: "Operating saved", scale: "sequential", unit: "/day", format: yen },
-  { key: "roi_emissions_avoided_kg_day", label: "CO₂ avoided", scale: "sequential", unit: "kg/day", format: dec1 },
-  { key: "roi_health_benefit_yen_day", label: "Health benefit", scale: "sequential", unit: "/day", format: yen },
-  { key: "roi_parking_spaces_freed", label: "Parking freed", scale: "sequential", unit: "spaces", format: dec1 },
-];
+export function roiShifted(t: Dict): MetricDef[] {
+  const m = t.metrics.roiShifted;
+  const { perDay, kgPerDay, spaces } = t.units;
+  return [
+    { key: "roi_shifted_trips_per_day", label: m.roi_shifted_trips_per_day, scale: "sequential", unit: perDay, format: int },
+    { key: "roi_congestion_savings_yen_day", label: m.roi_congestion_savings_yen_day, scale: "sequential", unit: perDay, format: yen },
+    { key: "roi_operating_savings_yen_day", label: m.roi_operating_savings_yen_day, scale: "sequential", unit: perDay, format: yen },
+    { key: "roi_emissions_avoided_kg_day", label: m.roi_emissions_avoided_kg_day, scale: "sequential", unit: kgPerDay, format: dec1 },
+    { key: "roi_health_benefit_yen_day", label: m.roi_health_benefit_yen_day, scale: "sequential", unit: perDay, format: yen },
+    { key: "roi_parking_spaces_freed", label: m.roi_parking_spaces_freed, scale: "sequential", unit: spaces, format: dec1 },
+  ];
+}
 
 /** "Why is this specific 400 m red" — the raw inputs to the segment score. */
-export const SEGMENT_INPUTS: MetricDef[] = [
-  { key: "speed_kmh", label: "Speed limit", scale: "sequential", unit: "km/h", format: int },
-  { key: "lanes_n", label: "Lanes", scale: "ordinal", domain: [1, 2, 3, 4, 5] },
-  { key: "traffic_signals_count", label: "Traffic signals", scale: "sequential", format: int },
-  {
-    key: "has_cycle_infra",
-    label: "Cycle infrastructure",
-    scale: "boolean",
-    boolLabels: ["None", "Present"],
-  },
-  {
-    key: "cycleway_type",
-    label: "Existing provision",
-    scale: "nominal",
-    domain: ["dedicated", "shared_path", "on_road"],
-    domainLabels: [
-      "Dedicated cycleway",
-      "Shared with pedestrians",
-      "On-road lane",
-    ],
-    hint: "What is already built here. Shared paths are the common Japanese 自転車歩行者道 — legal provision, but shared with people on foot.",
-  },
-  {
-    key: "sidewalk_available",
-    label: "Sidewalk fallback",
-    scale: "boolean",
-    boolLabels: ["None", "Available"],
-  },
-  {
-    key: "likely_informal_parking",
-    label: "Informal parking",
-    scale: "boolean",
-    boolLabels: ["Unlikely", "Likely"],
-    hint: "Kerbside parking that pushes riders into traffic — often the deciding factor in the stress score.",
-  },
-  { key: "mean_slope_deg", label: "Mean slope", scale: "sequential", unit: "°", format: dec1 },
-  {
-    key: "flat_terrain",
-    label: "Flat terrain",
-    scale: "boolean",
-    boolLabels: ["Hilly", "Flat"],
-  },
-];
+export function segmentInputs(t: Dict): MetricDef[] {
+  const m = t.metrics.segmentInputs;
+  const c = t.cyclewayTypes;
+  return [
+    { key: "speed_kmh", label: m.speed_kmh, scale: "sequential", unit: t.units.kmh, format: int },
+    { key: "lanes_n", label: m.lanes_n, scale: "ordinal", domain: [1, 2, 3, 4, 5] },
+    { key: "traffic_signals_count", label: m.traffic_signals_count, scale: "sequential", format: int },
+    {
+      key: "has_cycle_infra",
+      label: m.has_cycle_infra.label,
+      scale: "boolean",
+      boolLabels: [m.has_cycle_infra.none, m.has_cycle_infra.present],
+    },
+    {
+      key: "cycleway_type",
+      label: m.cycleway_type.label,
+      scale: "nominal",
+      domain: ["dedicated", "shared_path", "on_road"],
+      domainLabels: [c.dedicated, c.shared_path, c.on_road],
+      hint: m.cycleway_type.hint,
+    },
+    {
+      key: "sidewalk_available",
+      label: m.sidewalk_available.label,
+      scale: "boolean",
+      boolLabels: [m.sidewalk_available.none, m.sidewalk_available.available],
+    },
+    {
+      key: "likely_informal_parking",
+      label: m.likely_informal_parking.label,
+      scale: "boolean",
+      boolLabels: [
+        m.likely_informal_parking.unlikely,
+        m.likely_informal_parking.likely,
+      ],
+      hint: m.likely_informal_parking.hint,
+    },
+    { key: "mean_slope_deg", label: m.mean_slope_deg, scale: "sequential", unit: t.units.degrees, format: dec1 },
+    {
+      key: "flat_terrain",
+      label: m.flat_terrain.label,
+      scale: "boolean",
+      boolLabels: [m.flat_terrain.hilly, m.flat_terrain.flat],
+    },
+  ];
+}
 
 /** The proposal: what to build, what it costs, who benefits. */
-export const SEGMENT_ACTION: MetricDef[] = [
-  {
-    key: "recommendation",
-    label: "Intervention",
-    scale: "nominal",
-    domain: [
-      "Missing link",
-      "Protected cycle lane",
-      "Traffic calming",
-      "Crossing improvement",
-    ],
-  },
-  { key: "cost_tier", label: "Cost tier", scale: "ordinal", domain: ["Low", "Medium", "High"] },
-  {
-    key: "estimated_beneficiaries",
-    label: "Residents within 500 m",
-    scale: "sequential",
-    unit: "people",
-    format: int,
-  },
-];
+export function segmentAction(t: Dict): MetricDef[] {
+  const m = t.metrics.segmentAction;
+  const i = t.interventions;
+  const c = t.costTiers;
+  return [
+    {
+      key: "recommendation",
+      label: m.recommendation,
+      scale: "nominal",
+      domain: [
+        "Missing link",
+        "Protected cycle lane",
+        "Traffic calming",
+        "Crossing improvement",
+      ],
+      domainLabels: [
+        i["Missing link"],
+        i["Protected cycle lane"],
+        i["Traffic calming"],
+        i["Crossing improvement"],
+      ],
+    },
+    {
+      key: "cost_tier",
+      label: m.cost_tier,
+      scale: "ordinal",
+      domain: ["Low", "Medium", "High"],
+      domainLabels: [c.Low, c.Medium, c.High],
+    },
+    {
+      key: "estimated_beneficiaries",
+      label: m.estimated_beneficiaries,
+      scale: "sequential",
+      unit: t.units.people,
+      format: int,
+    },
+  ];
+}
 
 /** Connectivity analysis — its own view, not another colour on the gap map. */
-export const SEGMENT_NETWORK: MetricDef[] = [
-  {
-    key: "network_criticality_score",
-    label: "Network criticality",
-    scale: "sequential",
-    unit: "/ 100",
-    hint: "How much connectivity the network gains if this segment is upgraded. Best used to rank, not to colour.",
-    format: int,
-  },
-  {
-    key: "bridges_islands",
-    label: "Bridges two networks",
-    scale: "boolean",
-    boolLabels: ["No", "Yes"],
-  },
-  {
-    key: "islands_adjacent",
-    label: "Adjacent safe networks",
-    scale: "ordinal",
-    domain: [0, 1, 2, 3, 4, 5],
-  },
-  { key: "island_id", label: "Safe network", scale: "nominal" },
-];
+export function segmentNetwork(t: Dict): MetricDef[] {
+  const m = t.metrics.segmentNetwork;
+  return [
+    {
+      key: "network_criticality_score",
+      label: m.network_criticality_score.label,
+      scale: "sequential",
+      unit: t.units.perHundred,
+      hint: m.network_criticality_score.hint,
+      format: int,
+    },
+    {
+      key: "bridges_islands",
+      label: m.bridges_islands,
+      scale: "boolean",
+      boolLabels: [t.common.no, t.common.yes],
+    },
+    {
+      key: "islands_adjacent",
+      label: m.islands_adjacent,
+      scale: "ordinal",
+      domain: [0, 1, 2, 3, 4, 5],
+    },
+    { key: "island_id", label: m.island_id, scale: "nominal" },
+  ];
+}
 
 // --- Zoom -------------------------------------------------------------
 
@@ -408,15 +475,23 @@ export const AREA_DETAIL_ZOOM = 12.5;
  * only by buildScale, so a panel row on an ordinal or nominal field printed
  * the pipeline's raw enum — a segment's provision read "shared_path" rather
  * than "Shared with pedestrians". Labels a reader is shown should not depend
- * on whether the field is currently also a map layer.
+ * on whether the field is currently also a map layer. It is also what
+ * translates the pipeline's closed vocabularies, so a `domain` without a
+ * matching `domainLabels` now leaves an English enum inside a Japanese panel.
  */
 export function formatValue(
   metric: MetricDef | undefined,
-  value: unknown
+  value: unknown,
+  /** For the `—` placeholder and the boolean fallback. */
+  fallbacks: { noValue: string; no: string; yes: string } = {
+    noValue: "—",
+    no: "No",
+    yes: "Yes",
+  }
 ): string {
-  if (value == null || value === "") return "—";
+  if (value == null || value === "") return fallbacks.noValue;
   if (typeof value === "boolean") {
-    const [no, yes] = metric?.boolLabels ?? ["No", "Yes"];
+    const [no, yes] = metric?.boolLabels ?? [fallbacks.no, fallbacks.yes];
     return value ? yes : no;
   }
 

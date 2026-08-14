@@ -7,9 +7,16 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Inter carries no CJK, so the Japanese stack sits behind it in the same
+     chain rather than behind a :lang() switch. Per-glyph fallback then does
+     the work for free: Latin renders in Inter in both languages, and the
+     Japanese place and route names already present in the English UI
+     (元町・中華街, 自転車歩行者道) stop depending on whatever the OS happens to
+     reach for after 'Segoe UI'. */
+  --font-japanese: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Noto Sans CJK JP', 'Yu Gothic UI', 'Yu Gothic', Meiryo;
+  --font-sans: var(--font-inter), var(--font-japanese), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
-  --font-heading: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: var(--font-inter), var(--font-japanese), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);

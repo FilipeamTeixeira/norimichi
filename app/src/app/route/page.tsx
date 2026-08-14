@@ -15,7 +15,7 @@ import {
   ACCESS_LEG_DASH,
   accessLegs,
 } from "@/lib/access-leg";
-import { LTS_LABELS } from "@/lib/metrics";
+import { ltsBandLabel } from "@/lib/metrics";
 import { NO_DATA, STRESS_LINE, type LegendEntry } from "@/lib/scales";
 import {
   isRouteError,
@@ -25,6 +25,8 @@ import {
   type RouteScoreResponse,
 } from "@/lib/route-types";
 import type { RouteAlternative, RouteType } from "@/lib/routing/types";
+import { useT } from "@/i18n/context";
+import type { Dict } from "@/i18n/en";
 
 /**
  * Route Analysis — the personal A→B half of the project, as against the
@@ -73,10 +75,11 @@ function routeBounds(
  * geocoding would spend a request to relabel a point the reader placed
  * themselves and can see on the screen.
  */
-const pinLabel = ([lon, lat]: Point) =>
-  `Map pin · ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+const pinLabel = ([lon, lat]: Point, t: Dict) =>
+  t.route.pinLabel(lat.toFixed(4), lon.toFixed(4));
 
 export default function RouteAnalysisPage() {
+  const t = useT();
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [pins, setPins] = useState<{
     origin: Endpoint | null;
@@ -140,6 +143,17 @@ export default function RouteAnalysisPage() {
    */
   const requestId = useRef(0);
 
+  /**
+   * The dictionary as a ref, for the same reason the pins are: `score` and the
+   * map click handler are registered once and outlive the render that made
+   * them, so a captured `t` would keep producing the language that was active
+   * when the map mounted.
+   */
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
+
   const score = useCallback(async (from: Point, to: Point) => {
     const id = ++requestId.current;
     setLoading(true);
@@ -175,9 +189,9 @@ export default function RouteAnalysisPage() {
       setResult(null);
       setError({
         kind: "unavailable",
-        message: `Could not reach the scoring endpoint (${
-          err instanceof Error ? err.message : "unknown error"
-        }).`,
+        message: tRef.current.errors.unreachable(
+          err instanceof Error ? err.message : tRef.current.errors.unknown
+        ),
       });
     } finally {
       if (id === requestId.current) setLoading(false);
@@ -248,7 +262,7 @@ export default function RouteAnalysisPage() {
     if (!map) return;
     const onClick = (e: MapMouseEvent) => {
       const at: Point = [e.lngLat.lng, e.lngLat.lat];
-      setPin(nextRef.current, at, pinLabel(at));
+      setPin(nextRef.current, at, pinLabel(at, tRef.current));
     };
 
     map.on("click", onClick);
@@ -325,10 +339,10 @@ export default function RouteAnalysisPage() {
       .filter((b) => b.length_m > 0)
       .map((b) => ({
         color: STRESS_LINE[b.lts - 1],
-        label: `${b.lts} — ${LTS_LABELS[b.lts - 1].toLowerCase()}`,
+        label: ltsBandLabel(t, b.lts),
       }));
     if (result.stats.unmatched_length_m > 0) {
-      entries.push({ color: NO_DATA, label: "Not matched to our data" });
+      entries.push({ color: NO_DATA, label: t.route.legend.notMatched });
     }
     // Only when there is actually one on the screen. A row for a mark the map
     // isn't making is the same lie as a missing row for one it is.
@@ -343,12 +357,12 @@ export default function RouteAnalysisPage() {
       entries.push({
         color: ACCESS_LEG_COLOR,
         dash: ACCESS_LEG_DASH,
-        label: "Pin to the road — on foot",
+        label: t.route.legend.accessLeg,
       });
     }
     return [
       {
-        title: "This route · traffic stress",
+        title: t.route.legend.title,
         shape: "line",
         entries,
         hasNoData: false,
@@ -361,11 +375,11 @@ export default function RouteAnalysisPage() {
          */
         note:
           result.provider.id === "graph"
-            ? "The same scale as the network map's stress view — and on this provider, what the router minimised to choose the path."
-            : `The same scale as the network map's stress view. The path itself was chosen by ${result.provider.label}'s generic cycling profile, not by these colours.`,
+            ? t.route.legend.noteGraph
+            : t.route.legend.noteExternal(result.provider.label),
       },
     ];
-  }, [result, pins]);
+  }, [result, pins, t]);
 
   return (
     <>
@@ -412,8 +426,7 @@ export default function RouteAnalysisPage() {
 
         {!pins.origin && !pins.destination && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 bg-white/95 rounded-lg border border-neutral-200 shadow-sm px-4 py-2 text-[13px] text-neutral-600">
-            Click anywhere on the map to set the start of the trip, or search
-            for an address on the left.
+            {t.route.hint}
           </div>
         )}
 

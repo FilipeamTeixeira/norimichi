@@ -9,8 +9,10 @@ import type {
   InvestmentRanking,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/context";
 
 export default function RankingPage() {
+  const t = useT();
   const router = useRouter();
   const [ranking, setRanking] = useState<InvestmentRanking | null>(null);
   const [hexes, setHexes] = useState<HexProperties[] | null>(null);
@@ -63,20 +65,17 @@ export default function RankingPage() {
     <main className="flex-1 bg-[#F7F8FA] overflow-auto">
       <div className="max-w-6xl mx-auto px-6 py-6">
         <h1 className="text-lg font-semibold text-neutral-900 mb-1">
-          Investment Ranking
+          {t.ranking.title}
         </h1>
         <p className="text-sm text-neutral-500 mb-5 max-w-2xl leading-relaxed">
-          Fundable projects, ranked. Each row is a corridor — stretches of one
-          street that run end to end into each other and are all worth
-          spending money on — not a single OSM way, so a row is something that
-          can actually be built.
+          {t.ranking.lede}
         </p>
 
         <div className="flex items-center gap-1 mb-5 border-b border-neutral-200">
           {(
             [
-              ["corridors", "Corridors"],
-              ["areas", "Areas"],
+              ["corridors", t.ranking.tabs.corridors],
+              ["areas", t.ranking.tabs.areas],
             ] as const
           ).map(([id, label]) => (
             <button
@@ -97,12 +96,10 @@ export default function RankingPage() {
         {tab === "corridors" ? (
           error ? (
             <p className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              Could not load investment_ranking.json ({error}). Run
-              pipeline/scripts/05d_score_interventions.R then
-              12_compute_investment_ranking.R.
+              {t.ranking.loadError(error)}
             </p>
           ) : !ranking ? (
-            <p className="text-sm text-neutral-400">Loading…</p>
+            <p className="text-sm text-neutral-400">{t.common.loading}</p>
           ) : (
             <RankingTable
               corridors={ranking.corridors}
@@ -112,25 +109,22 @@ export default function RankingPage() {
         ) : (
           <>
             <p className="text-sm text-neutral-500 mb-4 max-w-2xl leading-relaxed">
-              The strategic overview: areas ranked by missed-opportunity score —
-              the gap between cycling demand and infrastructure quality. Useful
-              for deciding where to look; the Corridors tab is where the fundable
-              items are.
+              {t.ranking.areas.lede}
             </p>
             {hexes === null ? (
-              <p className="text-sm text-neutral-400">Loading…</p>
+              <p className="text-sm text-neutral-400">{t.common.loading}</p>
             ) : (
               <div className="bg-white rounded-xl border border-[#E5E7EB] overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-[#E5E7EB] text-left">
                       {[
-                        "Rank",
-                        "Area",
-                        "Gap score",
-                        "Population",
-                        "Stress",
-                        "Est. daily savings",
+                        t.ranking.areas.columns.rank,
+                        t.ranking.areas.columns.area,
+                        t.ranking.areas.columns.gap,
+                        t.ranking.areas.columns.population,
+                        t.ranking.areas.columns.stress,
+                        t.ranking.areas.columns.savings,
                       ].map((h, i) => (
                         <th
                           key={h}
@@ -180,10 +174,7 @@ export default function RankingPage() {
               </div>
             )}
             <p className="text-[11px] leading-relaxed text-neutral-400 mt-4 max-w-3xl">
-              Yen figures come from score_roi.R&rsquo;s illustrative 20%
-              mode-shift scenario. Two constants are from MLIT&rsquo;s official
-              cost-benefit manual; the rest are labelled defaults. Treat them as
-              order-of-magnitude.
+              {t.ranking.areas.footnote}
             </p>
           </>
         )}

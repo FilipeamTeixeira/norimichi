@@ -1,8 +1,10 @@
 "use client";
 
 import type { ToggleKey, ToggleState } from "@/lib/types";
-import { VIEWS, VIEW_GROUPS, type ViewDef } from "@/lib/metrics";
+import type { ViewDef } from "@/lib/metrics";
 import { CYCLEWAY_COLOR } from "@/lib/scales";
+import { useT } from "@/i18n/context";
+import { useViewGroups, useViews } from "@/i18n/metrics";
 
 interface Props {
   /** `null` = no view is on and the map is basemap only. */
@@ -12,36 +14,12 @@ interface Props {
   onTogglesChange: (next: ToggleState) => void;
 }
 
-const TOGGLE_ROWS: {
-  key: ToggleKey;
-  label: string;
-  description: string;
-  swatch: string;
-}[] = [
-  {
-    key: "recommendations",
-    label: "Recommendations",
-    description: "Segments with a proposed intervention",
-    swatch: "#1baf7a",
-  },
-  {
-    key: "cycleways",
-    label: "Existing cycleways",
-    description: "Cycling provision already on the ground",
-    swatch: CYCLEWAY_COLOR,
-  },
-  {
-    key: "amenities",
-    label: "Amenities",
-    description: "Schools, stations, shops",
-    swatch: "#eb6834",
-  },
-  {
-    key: "bike_facilities",
-    label: "Bike facilities",
-    description: "Parking and sharing docks",
-    swatch: "#6366f1",
-  },
+/** Order and swatch only — the words come from the dictionary. */
+const TOGGLE_ROWS: { key: ToggleKey; swatch: string }[] = [
+  { key: "recommendations", swatch: "#1baf7a" },
+  { key: "cycleways", swatch: CYCLEWAY_COLOR },
+  { key: "amenities", swatch: "#eb6834" },
+  { key: "bike_facilities", swatch: "#6366f1" },
 ];
 
 function Switch({ on }: { on: boolean }) {
@@ -108,6 +86,10 @@ export default function FilterSidebar({
   toggles,
   onTogglesChange,
 }: Props) {
+  const t = useT();
+  const views = useViews();
+  const viewGroups = useViewGroups();
+
   const toggle = (key: ToggleKey) =>
     onTogglesChange({ ...toggles, [key]: !toggles[key] });
 
@@ -115,22 +97,21 @@ export default function FilterSidebar({
     <aside className="w-[268px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
       <div className="px-5 pt-5 pb-3">
         <h2 className="text-base font-bold text-neutral-900 leading-tight">
-          What do you want
+          {t.sidebar.heading[0]}
           <br />
-          to analyse?
+          {t.sidebar.heading[1]}
         </h2>
         <p className="text-[11px] text-neutral-400 mt-1.5 leading-relaxed">
-          One at a time — each colours the map its own way. Nothing here changes
-          on its own as you move around.
+          {t.sidebar.caption}
         </p>
       </div>
 
       {/* Every view is listed at every zoom. The list used to swap itself out
           when the map crossed z15, so navigating silently replaced the
           question being asked. */}
-      {VIEW_GROUPS.map((group) => {
-        const views = VIEWS.filter((v) => v.group === group.id);
-        if (views.length === 0) return null;
+      {viewGroups.map((group) => {
+        const groupViews = views.filter((v) => v.group === group.id);
+        if (groupViews.length === 0) return null;
         return (
           <div key={group.id} className="px-5 pb-4">
             <h3 className="text-sm font-semibold text-neutral-900 mb-0.5">
@@ -140,7 +121,7 @@ export default function FilterSidebar({
               {group.caption}
             </p>
             <div className="flex flex-col gap-0.5">
-              {views.map((v) => (
+              {groupViews.map((v) => (
                 <ViewOption
                   key={v.id}
                   view={v}
@@ -155,11 +136,10 @@ export default function FilterSidebar({
 
       <div className="px-5 py-4 border-t border-neutral-200">
         <h3 className="text-sm font-semibold text-neutral-900 mb-0.5">
-          Overlays
+          {t.sidebar.overlays.title}
         </h3>
         <p className="text-[11px] text-neutral-400 mb-2.5 leading-relaxed">
-          Drawn on top of any view without taking its colours, so these combine
-          freely. Click anything for detail.
+          {t.sidebar.overlays.caption}
         </p>
         <div className="flex flex-col gap-1">
           {TOGGLE_ROWS.map((row) => (
@@ -187,11 +167,11 @@ export default function FilterSidebar({
                       toggles[row.key] ? "text-neutral-900" : "text-neutral-600"
                     }`}
                   >
-                    {row.label}
+                    {t.sidebar.toggles[row.key].label}
                   </span>
                 </div>
                 <p className="text-[11px] text-neutral-400 leading-relaxed mt-0.5">
-                  {row.description}
+                  {t.sidebar.toggles[row.key].description}
                 </p>
               </div>
             </label>
@@ -200,8 +180,7 @@ export default function FilterSidebar({
       </div>
 
       <p className="text-[11px] leading-relaxed text-neutral-400 px-5 py-4 border-t border-neutral-200 italic mt-auto">
-        Sources: hexagons, segments, cycleways, bike_facilities and amenities GeoJSON
-        (exported by pipeline/scripts/11_export.R).
+        {t.sidebar.sources}
       </p>
     </aside>
   );

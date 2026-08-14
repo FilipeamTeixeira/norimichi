@@ -2,6 +2,7 @@
 
 import type { LegendEntry } from "@/lib/scales";
 import { NO_DATA } from "@/lib/scales";
+import { useT } from "@/i18n/context";
 
 export interface LegendSection {
   title: string;
@@ -35,6 +36,7 @@ export default function Legend({
   sections: LegendSection[];
   nudge?: LegendNudge | null;
 }) {
+  const t = useT();
   if (sections.length === 0 && !nudge) return null;
 
   return (
@@ -57,7 +59,7 @@ export default function Legend({
             {section.hasNoData && (
               <LegendItem
                 color={NO_DATA}
-                label="No data"
+                label={t.common.noData}
                 shape={section.shape}
               />
             )}
@@ -94,7 +96,7 @@ export default function Legend({
               onClick={nudge.onDismiss}
               className="text-[11px] text-neutral-400 hover:text-neutral-600"
             >
-              Dismiss
+              {t.legend.dismiss}
             </button>
           </div>
         </div>

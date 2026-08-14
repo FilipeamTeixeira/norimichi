@@ -1,9 +1,16 @@
 # 07_join_population.R
 #
-# Joins e-Stat 500m mesh population onto the H3 hex grid.
+# Joins e-Stat 250m mesh population onto the H3 hex grid.
 #
 # Population is distributed to H3 hexes according to the proportion
-# of each 500m mesh cell overlapping each hex.
+# of each 250m mesh cell overlapping each hex. The area weighting is
+# unchanged from when the source was 1km, but it means something
+# different now: a 250m cell is smaller than a res-9 hex, so most cells
+# fall entirely within one hex and the weighting mostly just aggregates.
+#
+# The category column is identical across the 1km/500m/250m tables
+# (年齢別人口、世帯の種類別世帯数等　, value 　人口（総数）), so the filter
+# below needs no change if the mesh level in 02 changes again.
 
 source("R/utils_config.R")
 

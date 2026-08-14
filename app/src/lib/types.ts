@@ -1,4 +1,5 @@
 import type { Feature, MultiLineString, Point, Polygon } from "geojson";
+import type { Dict } from "@/i18n/en";
 
 /**
  * The five intervention labels. Mirrors INTERVENTION_TYPES in
@@ -140,13 +141,18 @@ export interface InvestmentRanking {
  * A corridor's display label. Falls back to location for the 52% of
  * corridors OSM gives no name — including, in this study area, the corridor
  * with the most residents within 500m.
+ *
+ * `p.name` and `p.nearest_station` are passed through in whatever language OSM
+ * carries them: they are the thing being named, not text about it.
  */
-export function corridorLabel(p: CorridorProperties): string {
+export function corridorLabel(p: CorridorProperties, t: Dict): string {
   if (p.name) return p.name;
-  const kind = p.highway ? p.highway.replace(/_/g, " ") : "road";
+  const kind = p.highway
+    ? p.highway.replace(/_/g, " ")
+    : t.corridor.fallbackKind;
   return p.nearest_station
-    ? `Unnamed ${kind} near ${p.nearest_station}`
-    : `Unnamed ${kind}`;
+    ? t.corridor.unnamedNear(kind, p.nearest_station)
+    : t.corridor.unnamed(kind);
 }
 
 export const COST_TIER_ORDER: Record<string, number> = {
@@ -225,12 +231,6 @@ export type DisplayCategory =
  * into one number in the UI for that reason.
  */
 export type CyclewayType = "dedicated" | "shared_path" | "on_road";
-
-export const CYCLEWAY_TYPE_LABELS: Record<CyclewayType, string> = {
-  dedicated: "Dedicated cycleway",
-  shared_path: "Shared with pedestrians",
-  on_road: "On-road lane",
-};
 
 export interface CyclewayProperties {
   way_id: number;
@@ -358,12 +358,6 @@ export function suitabilityColor(score: number): string {
   return "#ef4444"; // red
 }
 
-export function suitabilityLabel(score: number): string {
-  if (score >= 67) return "Good";
-  if (score >= 34) return "Moderate";
-  return "Bottleneck";
-}
-
 /**
  * Colours keyed to display_category rather than raw score, so that a
  * low-scoring road that connects nothing reads as de-prioritised (neutral
@@ -410,13 +404,6 @@ export interface AmenityProperties {
 }
 
 export type AmenityFeature = Feature<Point, AmenityProperties>;
-
-export const CATEGORY_LABELS: Record<DisplayCategory, string> = {
-  high: "High suitability",
-  moderate: "Moderate",
-  bottleneck: "Strategic bottleneck",
-  low_priority: "Low priority",
-};
 
 /**
  * Resolve a segment's category, falling back to its LTS-derived score for

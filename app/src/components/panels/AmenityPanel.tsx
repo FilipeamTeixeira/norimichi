@@ -1,20 +1,9 @@
 "use client";
 
-import type { AmenityFeature, AmenityProperties } from "@/lib/types";
+import type { AmenityFeature } from "@/lib/types";
 import { AMENITY_COLORS } from "@/lib/scales";
 import PanelShell from "./PanelShell";
-
-const KIND_LABEL: Record<AmenityProperties["kind"], string> = {
-  school: "School",
-  station: "Station",
-  shop: "Shop or restaurant",
-};
-
-const KIND_DETAIL_LABEL: Record<AmenityProperties["kind"], string> = {
-  school: "Address",
-  station: "Lines",
-  shop: "Type",
-};
+import { useT } from "@/i18n/context";
 
 export default function AmenityPanel({
   amenity,
@@ -23,12 +12,14 @@ export default function AmenityPanel({
   amenity: AmenityFeature;
   onClose: () => void;
 }) {
+  const t = useT();
   const p = amenity.properties;
   const color = AMENITY_COLORS[p.kind] ?? "#898781";
+  const kindLabel = t.panels.amenity.kinds[p.kind];
 
   return (
     <PanelShell
-      title={p.name ?? KIND_LABEL[p.kind]}
+      title={p.name ?? kindLabel}
       onClose={onClose}
       badge={
         <div
@@ -39,14 +30,14 @@ export default function AmenityPanel({
             className="w-1.5 h-1.5 rounded-full"
             style={{ backgroundColor: color }}
           />
-          {KIND_LABEL[p.kind]}
+          {kindLabel}
         </div>
       }
     >
       <div className="px-5 pb-5 pt-2">
         <div className="flex items-baseline justify-between gap-3 py-[3px]">
           <span className="text-[12px] text-neutral-500">
-            {KIND_DETAIL_LABEL[p.kind]}
+            {t.panels.amenity.detail[p.kind]}
           </span>
           <span
             className={`text-[12px] text-right ${
@@ -57,8 +48,7 @@ export default function AmenityPanel({
           </span>
         </div>
         <p className="text-[11px] text-neutral-400 leading-relaxed mt-3">
-          Counted in this hex&rsquo;s destination totals — see the neighbourhood
-          panel for how many are within reach.
+          {t.panels.amenity.footnote}
         </p>
       </div>
     </PanelShell>

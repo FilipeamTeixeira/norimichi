@@ -1,11 +1,12 @@
 "use client";
 
 import type { RouteScoreResponse } from "@/lib/route-types";
-import { LTS_LABELS } from "@/lib/metrics";
+import { ltsBandLabel } from "@/lib/metrics";
 import { STRESS_LINE } from "@/lib/scales";
 import { SECONDS_PER_TRAFFIC_SIGNAL } from "@/lib/scoring-constants";
 import PanelShell from "@/components/panels/PanelShell";
 import FactorRow from "@/components/panels/FactorRow";
+import { useT } from "@/i18n/context";
 
 /**
  * The trip, said back to the reader. Mirrors SegmentInfoPanel's structure —
@@ -27,7 +28,6 @@ interface Props {
 const km = (m: number) =>
   m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
 const pct = (v: number) => `${Math.round(v * 100)}%`;
-const mins = (v: number) => `${Math.round(v)} min`;
 const yen = (v: number) => `¥${Math.round(v).toLocaleString()}`;
 
 function Section({
@@ -67,22 +67,25 @@ function Section({
  * corroborate itself. There the estimate stands alone, full width.
  */
 function Times({ result }: { result: RouteScoreResponse }) {
+  const t = useT();
   const { ours, reported, provider } = result;
   return (
     <div className={reported ? "grid grid-cols-2 gap-2" : "grid grid-cols-1"}>
       <div className="rounded-lg border border-neutral-900/10 bg-neutral-50 p-3">
         <p className="text-[10.5px] uppercase tracking-wider font-medium text-neutral-500">
-          Our estimate
+          {t.route.result.ourEstimate}
         </p>
         <p className="text-2xl font-bold text-neutral-900 leading-none mt-1">
           {Math.round(ours.minutes)}
           <span className="text-[13px] font-medium text-neutral-400 ml-1">
-            min
+            {t.route.result.minutes}
           </span>
         </p>
         <p className="text-[11px] text-neutral-500 leading-snug mt-1.5">
-          {Math.round(ours.riding_minutes)} riding +{" "}
-          {Math.round(ours.signal_minutes)} at signals
+          {t.route.result.breakdown(
+            Math.round(ours.riding_minutes),
+            Math.round(ours.signal_minutes)
+          )}
         </p>
       </div>
       {reported ? (
@@ -93,11 +96,11 @@ function Times({ result }: { result: RouteScoreResponse }) {
           <p className="text-2xl font-bold text-neutral-400 leading-none mt-1">
             {Math.round(reported.minutes)}
             <span className="text-[13px] font-medium text-neutral-300 ml-1">
-              min
+              {t.route.result.minutes}
             </span>
           </p>
           <p className="text-[11px] text-neutral-400 leading-snug mt-1.5">
-            Generic profile, no signals modelled
+            {t.route.result.genericProfile}
           </p>
         </div>
       ) : null}
@@ -107,6 +110,7 @@ function Times({ result }: { result: RouteScoreResponse }) {
 
 /** The stacked bar. Fixed four-class domain, so two routes are comparable. */
 function ComfortBar({ result }: { result: RouteScoreResponse }) {
+  const t = useT();
   const bands = result.stats.lts_bands;
   const any = bands.some((b) => b.length_m > 0);
   if (!any) return null;
@@ -118,7 +122,7 @@ function ComfortBar({ result }: { result: RouteScoreResponse }) {
           b.share > 0 ? (
             <div
               key={b.lts}
-              title={`LTS ${b.lts} — ${LTS_LABELS[b.lts - 1]}: ${km(
+              title={`LTS ${b.lts} — ${t.metrics.ltsLabels[b.lts - 1]}: ${km(
                 b.length_m
               )}`}
               style={{
@@ -141,7 +145,7 @@ function ComfortBar({ result }: { result: RouteScoreResponse }) {
                 style={{ backgroundColor: STRESS_LINE[b.lts - 1] }}
               />
               <span className="text-[12px] text-neutral-500 leading-snug">
-                {b.lts} — {LTS_LABELS[b.lts - 1].toLowerCase()}
+                {ltsBandLabel(t, b.lts)}
               </span>
               <span className="text-[12px] font-medium text-neutral-900 tabular-nums ml-auto shrink-0">
                 {pct(b.share)}
@@ -160,28 +164,32 @@ function ComfortBar({ result }: { result: RouteScoreResponse }) {
  * verdict on the journey.
  */
 function WorstStretch({ result }: { result: RouteScoreResponse }) {
+  const t = useT();
+  const w = t.route.result.worst;
   const worst = result.stats.worst;
   if (!worst || worst.lts <= 2) return null;
 
   const reasons = [
-    !worst.has_cycle_infra && "no cycle infrastructure",
-    !worst.sidewalk_available && "no sidewalk to fall back on",
-    worst.likely_informal_parking && "likely kerbside parking",
-    worst.speed_kmh != null && worst.speed_kmh >= 50 && `${worst.speed_kmh}km/h limit`,
+    !worst.has_cycle_infra && w.reasons.noInfra,
+    !worst.sidewalk_available && w.reasons.noSidewalk,
+    worst.likely_informal_parking && w.reasons.kerbside,
+    worst.speed_kmh != null &&
+      worst.speed_kmh >= 50 &&
+      w.reasons.speedLimit(worst.speed_kmh),
   ].filter(Boolean) as string[];
 
   return (
     <div className="px-5 pb-3">
       <h3 className="text-[10.5px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-        Worst stretch
+        {w.title}
       </h3>
       <div className="rounded-lg border border-red-100 bg-red-50 p-3 text-red-900">
         <p className="text-[12.5px] font-semibold leading-snug">
-          {worst.name ?? `Unnamed ${worst.highway ?? "road"}`} ·{" "}
+          {worst.name ?? w.unnamed(worst.highway ?? w.fallbackHighway)} ·{" "}
           {km(worst.matched_length_m)}
         </p>
         <p className="text-[11.5px] leading-relaxed mt-1 opacity-80">
-          LTS {worst.lts} — {LTS_LABELS[worst.lts - 1].toLowerCase()}
+          LTS {ltsBandLabel(t, worst.lts)}
           {reasons.length > 0 && `: ${reasons.join(", ")}`}.
         </p>
       </div>
@@ -195,101 +203,99 @@ function WorstStretch({ result }: { result: RouteScoreResponse }) {
  * sourced, the CO₂ factor and health value are illustrative defaults.
  */
 function CarComparison({ result }: { result: RouteScoreResponse }) {
+  const t = useT();
+  const c = t.route.result.car;
   const { car } = result;
   return (
     <div className="mx-4 mb-4 p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-      <p className="text-xs font-semibold text-emerald-700">
-        If you drove this instead
-      </p>
+      <p className="text-xs font-semibold text-emerald-700">{c.title}</p>
       <p className="text-[11px] text-emerald-700/70 leading-relaxed mt-0.5 mb-2.5">
-        ~{mins(car.minutes)} by car door to door, at the same effective urban
-        speed the study-area ROI assumes.
+        {c.caption(t.units.minutes(Math.round(car.minutes)))}
       </p>
       <div className="space-y-1.5 text-[13px]">
         <div className="flex justify-between">
-          <span className="text-emerald-700">Time value</span>
+          <span className="text-emerald-700">{c.timeValue}</span>
           <span className="font-semibold text-emerald-900">
             {yen(car.time_value_yen)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-emerald-700">Running cost</span>
+          <span className="text-emerald-700">{c.runningCost}</span>
           <span className="font-semibold text-emerald-900">
             {yen(car.operating_cost_yen)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-emerald-700">CO&#8322;</span>
+          <span className="text-emerald-700">{c.co2}</span>
           <span className="font-semibold text-emerald-900">
             {car.co2_kg.toFixed(2)} kg
           </span>
         </div>
         <div className="flex justify-between border-t border-emerald-200/70 pt-1.5">
-          <span className="text-emerald-700">Health value of cycling it</span>
+          <span className="text-emerald-700">{c.healthValue}</span>
           <span className="font-semibold text-emerald-900">
             {yen(car.health_benefit_yen)}
           </span>
         </div>
       </div>
       <p className="text-[10.5px] text-emerald-700/60 leading-relaxed mt-2.5">
-        ¥43.74/min and ¥24.43/km are MLIT&rsquo;s official appraisal units
-        (令和6年価格). The CO&#8322; factor and the health value per km are
-        illustrative defaults — see score_roi.R.
+        {c.footnote}
       </p>
     </div>
   );
 }
 
 function Facilities({ result }: { result: RouteScoreResponse }) {
+  const t = useT();
+  const f = t.route.result.facilities;
   const { facilities } = result;
   const parking = facilities.filter((f) => f.facility_type === "parking");
   const sharing = facilities.filter((f) => f.facility_type === "sharing");
 
   return (
-    <Section
-      title="At the destination"
-      note="Within 300 m of B — the same radius the hex-level counts use."
-    >
+    <Section title={f.title} note={f.note}>
       {facilities.length === 0 ? (
         <p className="text-[12px] text-neutral-500 leading-relaxed">
-          No bike parking or sharing dock recorded within 300 m. Somewhere to
-          leave the bike is part of whether the trip works.
+          {f.none}
         </p>
       ) : (
         <>
           <FactorRow
-            label="Bike parking sites"
+            label={f.parkingSites}
             value={String(parking.length)}
             tone={parking.length > 0 ? "good" : "bad"}
           />
           <FactorRow
-            label="Sharing docks"
+            label={f.sharingDocks}
             value={String(sharing.length)}
             tone="neutral"
           />
           <div className="flex flex-col mt-1.5 gap-1">
-            {facilities.slice(0, 4).map((f) => (
+            {facilities.slice(0, 4).map((facility) => (
               <div
-                key={f.osm_id}
+                key={facility.osm_id}
                 className="flex items-baseline justify-between gap-3"
               >
                 <span className="text-[11.5px] text-neutral-600 truncate">
-                  {f.name ??
-                    (f.facility_type === "parking"
-                      ? "Bike parking"
-                      : "Sharing dock")}
-                  {f.capacity != null && (
-                    <span className="text-neutral-400"> · {f.capacity}</span>
+                  {facility.name ??
+                    (facility.facility_type === "parking"
+                      ? f.parking
+                      : f.sharing)}
+                  {facility.capacity != null && (
+                    <span className="text-neutral-400">
+                      {" "}
+                      · {facility.capacity}
+                    </span>
                   )}
                 </span>
                 <span className="text-[11.5px] text-neutral-400 tabular-nums shrink-0">
-                  {Math.round(f.distance_m)} m
+                  {t.units.metres(Math.round(facility.distance_m))}
                 </span>
               </div>
             ))}
             {facilities.length > 4 && (
               <span className="text-[11px] text-neutral-400">
-                + {facilities.length - 4} more
+                {f.more(facilities.length - 4)}
               </span>
             )}
           </div>
@@ -300,59 +306,57 @@ function Facilities({ result }: { result: RouteScoreResponse }) {
 }
 
 export default function RouteResultPanel({ result, onClose }: Props) {
+  const t = useT();
+  const r = t.route.result;
   const s = result.stats;
   const poorMatch = s.matched_share < 0.8;
 
   return (
     <PanelShell
-      title="This trip"
-      subtitle={`${km(s.total_length_m)} · ${s.segments.length} street${
-        s.segments.length === 1 ? "" : "s"
-      }`}
+      title={r.title}
+      subtitle={r.subtitle(km(s.total_length_m), s.segments.length)}
       onClose={onClose}
     >
       <div className="px-5 pb-4">
         <Times result={result} />
       </div>
 
-      <Section
-        title="Comfort along the way"
-        note="Share of the route by traffic stress class. Shown as a breakdown rather than one blended score, because a mostly-calm route with one hostile block is exactly the case an average hides."
-      >
+      <Section title={r.comfort.title} note={r.comfort.note}>
         <ComfortBar result={result} />
       </Section>
 
       <WorstStretch result={result} />
 
-      <Section title="Exposure">
+      <Section title={r.exposure.title}>
         <FactorRow
-          label="No sidewalk to fall back on"
+          label={r.exposure.noSidewalk.label}
           value={pct(s.no_sidewalk_share)}
-          hint="Share of the route where there is neither cycle infrastructure nor a footway to retreat to."
+          hint={r.exposure.noSidewalk.hint}
           tone={s.no_sidewalk_share > 0.25 ? "bad" : "good"}
         />
         <FactorRow
-          label="Likely kerbside parking"
-          value={`${pct(s.informal_parking_share)} · ${
+          label={r.exposure.kerbside.label}
+          value={r.exposure.kerbside.value(
+            pct(s.informal_parking_share),
             s.informal_parking_segments
-          } street${s.informal_parking_segments === 1 ? "" : "s"}`}
-          hint="Parked cars that push a rider out into moving traffic — often the deciding factor in the stress score."
+          )}
+          hint={r.exposure.kerbside.hint}
           tone={s.informal_parking_share > 0.15 ? "bad" : "good"}
         />
         <FactorRow
-          label="On existing cycle provision"
+          label={r.exposure.onProvision}
           value={pct(s.cycle_infra_share)}
           tone={s.cycle_infra_share > 0 ? "good" : "bad"}
         />
         <FactorRow
-          label="Signalised junctions"
+          label={r.exposure.junctions.label}
           value={String(s.signal_junctions)}
-          hint={`Junctions the route passes through, not signal heads it passes — OSM tags one per approach. Charged at ${SECONDS_PER_TRAFFIC_SIGNAL}s each, an illustrative constant.`}
+          hint={r.exposure.junctions.hint(SECONDS_PER_TRAFFIC_SIGNAL)}
         />
         <FactorRow
-          label="Mean traffic stress"
+          label={r.exposure.meanStress.label}
           value={s.mean_lts.toFixed(1)}
-          hint="Length-weighted over the matched part of the route. 1 calm, 4 hostile."
+          hint={r.exposure.meanStress.hint}
         />
       </Section>
 
@@ -364,13 +368,10 @@ export default function RouteResultPanel({ result, onClose }: Props) {
       {poorMatch && (
         <div className="mx-4 mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-[12px] font-semibold text-amber-900 leading-snug">
-            {pct(1 - s.matched_share)} of this route matched no street in our
-            data
+            {r.poorMatch.title(pct(1 - s.matched_share))}
           </p>
           <p className="text-[11px] leading-relaxed text-amber-900/80 mt-1">
-            Everything above describes the {pct(s.matched_share)} that did
-            match. This usually means the route left the study area or ran along
-            a path our OSM extract does not carry.
+            {r.poorMatch.body(pct(s.matched_share))}
           </p>
         </div>
       )}

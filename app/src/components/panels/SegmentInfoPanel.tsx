@@ -9,16 +9,16 @@ import {
   segmentSuitability,
   segmentCategory,
   CATEGORY_COLORS,
-  CATEGORY_LABELS,
 } from "@/lib/types";
-import {
-  SEGMENT_INPUTS,
-  SEGMENT_NETWORK,
-  formatValue,
-  type MetricDef,
-} from "@/lib/metrics";
+import { formatValue, type MetricDef } from "@/lib/metrics";
 import PanelShell from "./PanelShell";
 import FactorRow from "./FactorRow";
+import { useT } from "@/i18n/context";
+import {
+  useFormatValue,
+  useSegmentInputs,
+  useSegmentNetwork,
+} from "@/i18n/metrics";
 
 interface Props {
   segment: SegmentFeature;
@@ -44,11 +44,12 @@ function BeforeAfter({
   after: number | null | undefined;
   color: string;
 }) {
+  const t = useT();
   return (
     <div className="flex items-end gap-3">
       <div>
         <p className="text-[11px] text-neutral-400 uppercase tracking-wider font-medium">
-          Suitability now
+          {t.panels.segment.suitabilityNow}
         </p>
         <p className="text-3xl font-bold leading-none mt-0.5" style={{ color }}>
           {score}
@@ -74,7 +75,7 @@ function BeforeAfter({
           </svg>
           <div>
             <p className="text-[11px] text-emerald-600 uppercase tracking-wider font-medium">
-              If built
+              {t.panels.segment.ifBuilt}
             </p>
             <p className="text-3xl font-bold text-emerald-700 leading-none mt-0.5">
               {after}
@@ -90,6 +91,7 @@ function BeforeAfter({
 }
 
 function InputRow({ metric, value }: { metric: MetricDef; value: unknown }) {
+  const fallbacks = useFormatValue();
   // Booleans get a colour cue as well as the word, since "None" vs "Present"
   // is the part of the panel people scan rather than read.
   const isBool = metric.scale === "boolean";
@@ -99,7 +101,7 @@ function InputRow({ metric, value }: { metric: MetricDef; value: unknown }) {
   return (
     <FactorRow
       label={metric.label}
-      value={formatValue(metric, value)}
+      value={formatValue(metric, value, fallbacks)}
       hint={metric.hint}
       tone={
         isBool && value != null ? (good ? "good" : "bad") : "neutral"
@@ -121,6 +123,10 @@ function NetworkRole({
   p: SegmentProperties;
   category: DisplayCategory;
 }) {
+  const t = useT();
+  const segmentNetwork = useSegmentNetwork();
+  const r = t.panels.segment.networkRole;
+
   if (p.display_category == null) return null;
 
   const islands = p.islands_adjacent ?? 0;
@@ -132,41 +138,37 @@ function NetworkRole({
 
   if (category === "bottleneck" && islands >= 2) {
     tone = "bg-red-50 border-red-100 text-red-900";
-    title = `Connects ${islands} separate safe networks`;
-    body =
-      "These areas are already calm enough to cycle in, but this segment is the only thing between them. Upgrading it merges them into one usable network.";
+    title = r.connectsMany(islands);
+    body = r.connectsManyBody;
   } else if (category === "bottleneck") {
     tone = "bg-red-50 border-red-100 text-red-900";
-    title = "On a corridor between separated calm areas";
-    body = `Part of a short chain of stressful segments that together sever otherwise-connected safe networks. Connectivity value: ${criticality}/100.`;
+    title = r.corridorTitle;
+    body = r.corridorBody(criticality);
   } else if (category === "low_priority") {
     tone = "bg-neutral-50 border-neutral-200 text-neutral-700";
-    title = "Connects little of the network";
-    body =
-      "Stressful to cycle, but upgrading it in isolation would not join any separated calm areas — so it ranks below the bottlenecks despite the low score.";
+    title = r.lowPriorityTitle;
+    body = r.lowPriorityBody;
   } else if (p.island_id != null) {
     tone = "bg-emerald-50 border-emerald-100 text-emerald-900";
-    title = "Part of a connected safe network";
-    body =
-      "Already comfortable enough to cycle, and joined to a wider calm network rather than stranded on its own.";
+    title = r.connectedTitle;
+    body = r.connectedBody;
   } else {
     tone = "bg-neutral-50 border-neutral-200 text-neutral-700";
-    title = "Isolated calm segment";
-    body =
-      "Comfortable in itself, but not connected to a wider calm network — its usefulness depends on the stressful roads around it.";
+    title = r.isolatedTitle;
+    body = r.isolatedBody;
   }
 
   return (
     <div className="px-5 pb-3">
       <h3 className="text-[10.5px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-        Network role
+        {r.title}
       </h3>
       <div className={`rounded-lg border p-3 ${tone}`}>
         <p className="text-[12.5px] font-semibold leading-snug">{title}</p>
         <p className="text-[11.5px] leading-relaxed mt-1 opacity-80">{body}</p>
       </div>
       <div className="flex flex-col mt-1.5">
-        {SEGMENT_NETWORK.map((m) => (
+        {segmentNetwork.map((m) => (
           <InputRow
             key={m.key}
             metric={m}
@@ -179,6 +181,9 @@ function NetworkRole({
 }
 
 export default function SegmentInfoPanel({ segment, onClose }: Props) {
+  const t = useT();
+  const segmentInputs = useSegmentInputs();
+  const s = t.panels.segment;
   const p: SegmentProperties = segment.properties;
   const props = p as unknown as Record<string, unknown>;
   const score = segmentSuitability(p);
@@ -188,8 +193,10 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
 
   return (
     <PanelShell
-      title={p.name ?? "Road segment"}
-      subtitle={`${p.highway ?? "road"} · ${formatLength(p.length_m)} · #${p.way_id}`}
+      title={p.name ?? s.fallbackTitle}
+      subtitle={`${p.highway ?? s.fallbackHighway} · ${formatLength(
+        p.length_m
+      )} · #${p.way_id}`}
       onClose={onClose}
       badge={
         <div
@@ -203,7 +210,7 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
             className="w-1.5 h-1.5 rounded-full"
             style={{ backgroundColor: categoryColor }}
           />
-          {CATEGORY_LABELS[category]}
+          {t.categories[category]}
         </div>
       }
     >
@@ -217,10 +224,10 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
 
       <div className="px-5 pb-3">
         <h3 className="text-[10.5px] font-semibold uppercase tracking-wider text-neutral-400 mb-1.5">
-          Why this street scores as it does
+          {s.whyItScores}
         </h3>
         <div className="flex flex-col">
-          {SEGMENT_INPUTS.map((m) => (
+          {segmentInputs.map((m) => (
             <InputRow key={m.key} metric={m} value={props[m.key]} />
           ))}
         </div>
@@ -249,10 +256,10 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
             </div>
             <div>
               <p className="text-xs font-semibold text-emerald-700">
-                Proposed intervention
+                {s.proposal.title}
               </p>
               <p className="text-[13px] font-bold text-emerald-900">
-                {p.recommendation}
+                {t.interventions[p.recommendation]}
               </p>
             </div>
           </div>
@@ -263,7 +270,7 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
                 printed today's number under a "Proposed intervention" heading —
                 which reads as the intervention delivering it. */}
             <div className="flex justify-between">
-              <span className="text-emerald-700">Suitability</span>
+              <span className="text-emerald-700">{s.proposal.suitability}</span>
               {p.suitability_after != null ? (
                 <span className="font-semibold text-emerald-900">
                   {score} → {p.suitability_after}
@@ -273,25 +280,27 @@ export default function SegmentInfoPanel({ segment, onClose }: Props) {
                   className="font-semibold text-emerald-700/70 cursor-help border-b border-dotted border-emerald-300"
                   title={
                     p.intervention_lever
-                      ? `Not scored: ${p.intervention_lever}.`
-                      : "The traffic-stress score has no input for this intervention, so no after-score is computed."
+                      ? s.proposal.naWithLever(p.intervention_lever)
+                      : s.proposal.naGeneric
                   }
                 >
-                  N/A
+                  {s.proposal.na}
                 </span>
               )}
             </div>
             <div className="flex justify-between">
-              <span className="text-emerald-700">Cost tier</span>
+              <span className="text-emerald-700">{s.proposal.costTier}</span>
               <span className="font-semibold text-emerald-900">
-                {p.cost_tier ?? "—"}
+                {p.cost_tier ? t.costTiers[p.cost_tier] : "—"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-emerald-700">Beneficiaries</span>
+              <span className="text-emerald-700">
+                {s.proposal.beneficiaries}
+              </span>
               <span className="font-semibold text-emerald-900">
                 {beneficiaries > 0
-                  ? `~${beneficiaries.toLocaleString()} people`
+                  ? s.proposal.people(beneficiaries.toLocaleString())
                   : "—"}
               </span>
             </div>
