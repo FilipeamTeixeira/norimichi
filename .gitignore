@@ -1,3 +1,4 @@
+.DS_Store
 .RData
 .Rhistory
 .RProj.user
@@ -8,5 +9,4 @@ pipeline.Rproj
 /pipeline/raw/
 CLAUDE.md
 docs/
-app/.env.local
 pipeline/config/study_area.yml
