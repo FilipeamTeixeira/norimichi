@@ -485,6 +485,69 @@ export default function AboutContentEn() {
             “nearby” means.
           </Term>
         </Card>
+
+        <Card
+          title="Access — who can reach a school or a station"
+          caption="The same measurement taken from a destination rather than about a street: how far you can get, and how much of that disappears if you refuse to ride anything hostile."
+        >
+          <Term name="Distance by bicycle" where="1.5 / 3 / 5 km">
+            Metres of riding, not straight-line radius. A school hemmed in by a
+            river or a rail line reaches far less ground than a circle around it
+            would claim, and that difference is often the finding. 1.5 km is
+            roughly the walking catchment a 通学区域 is drawn at; 3 and 5 km are
+            the trip lengths a bicycle beats a car over.
+          </Term>
+          <Term name="On low-stress streets" where="map, blue">
+            A 250 m census cell whose residents can reach the selected place
+            using only LTS 1–2 streets. The same threshold the Network tab
+            colours on, and the same one that defines a “safe network” there —
+            an origin’s low-stress reach is a distance-limited slice of the safe
+            network it sits on, not a separate calculation.
+          </Term>
+          <Term name="Only on high-stress streets" where="map, red">
+            A cell within reach, but not without riding LTS 3 or 4 somewhere
+            along the way. Not a claim that nobody makes the trip — a claim that
+            making it means accepting a road most people won’t put a child on.
+          </Term>
+          <Term name="Cut off by the streets in between" where="count and %">
+            The difference between the two. Quote the percentage in preference
+            to the count: both surfaces are measured with the same buffer, the
+            same mesh and the same network, so every arbitrary constant cancels
+            out of the ratio and none of them cancels out of the totals.
+          </Term>
+          <Term name="Residents, children, 65+">
+            From the national Census 250 m mesh, counted whole. A cell counts in
+            full when a street comes within 150 m of its centre, and not at all
+            otherwise — deliberately binary, because area-weighting would imply
+            we know how a cell’s residents are distributed inside it, and the
+            250 m mesh is the finest thing e-Stat publishes. The age rows appear
+            only if the source table for this run carried those bands.
+          </Term>
+          <Term name="The streets in the way" where="corridor list">
+            Corridors on the edge of the low-stress area — where a cautious
+            rider has to stop. Each one is a row on the Investment Ranking, and
+            clicking it opens that corridor on the Network map, so “who is cut
+            off” and “what would it cost” are the same object seen twice.
+          </Term>
+          <Term name="+N residents" where="counterfactual">
+            How many more people would reach the place on low-stress streets if
+            that corridor were built as the Investment Ranking models it. The
+            low-stress network is recomputed with that corridor’s stress removed
+            and the two surfaces subtracted. It inherits every limit of the
+            before/after numbers above — it assumes the intervention delivers
+            the stress score the pipeline computes for it, and it models nothing
+            about junctions, gradient or one-way streets. Corridors whose
+            benefit is “not modelled” never appear in this list at all, so there
+            is no case where a number here stands on an intervention that was
+            never simulated.
+          </Term>
+          <Term name="No low-stress street at the gate">
+            Every street touching the school or station is itself LTS 3 or 4.
+            Worth separating from a low reach figure: the barrier is the first
+            street you meet, not something out in the neighbourhood, and it is
+            usually a much smaller thing to fix.
+          </Term>
+        </Card>
       </Section>
 
       <Section id="roi" title="The numbers behind “return on investment”">

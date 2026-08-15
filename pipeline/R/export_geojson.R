@@ -449,3 +449,248 @@ export_summary_stats <- function(summary_json_path, path) {
   }
   file.copy(summary_json_path, path, overwrite = TRUE)
 }
+
+# --- Access surfaces (13_compute_access.R) -------------------------------
+#
+# The three functions below read ACCESS_BANDS_M, ACCESS_BUFFER_M,
+# CALM_MAX_LTS and MAX_FRONTIER_CORRIDORS from R/score_access.R. They are the
+# only ones here that do, and 11_export.R never calls them, so this file
+# still needs no dependency on igraph - but source R/score_access.R before
+# calling any of them.
+
+#' Write the 250m population mesh the access surfaces are measured on.
+#'
+#' Exported as its own layer rather than folded into the per-origin files
+#' because it is the same grid for every origin: one ~1000-feature file the
+#' app loads once, against 135 copies of the same geometry if each surface
+#' carried its own. The surfaces then reference cells by `mesh_code`, which
+#' is e-Stat's own identifier and stable across runs - a positional index
+#' into this file would silently repoint every surface the first time a cell
+#' gained or lost residents.
+#'
+#' @param mesh sf POLYGON from load_population_mesh(), already filtered to
+#'   cells with both residents and a street nearby
+#' @param path output path, e.g. "output/population_mesh.geojson"
+export_population_mesh <- function(mesh, path) {
+  required_cols <- c("mesh_code", "population", "population_child",
+                     "population_elderly")
+  missing <- setdiff(required_cols, names(mesh))
+  if (length(missing) > 0) {
+    stop("population mesh is missing columns: ", paste(missing, collapse = ", "))
+  }
+
+  out <- mesh[, required_cols]
+  out$population         <- round(out$population)
+  out$population_child   <- round(out$population_child)
+  out$population_elderly <- round(out$population_elderly)
+
+  if (file.exists(path)) file.remove(path)  # st_write won't overwrite by default
+  sf::st_write(out, path, driver = "GeoJSON", quiet = TRUE)
+  message(sprintf("Wrote %s (%d cells, %.0f residents)",
+                  path, nrow(out), sum(out$population, na.rm = TRUE)))
+  invisible(out)
+}
+
+#' Write the access index: one row per origin, with the figures the ranked
+#' list and the origin markers are drawn from.
+#'
+#' The one number this file exists to carry is `severed` - residents who can
+#' reach the origin within the band, but not without riding something above
+#' CALM_MAX_LTS. Both sides of that subtraction are measured with the same
+#' buffer, the same mesh and the same graph, so the *share* is far more
+#' robust than either count; the notes block says so, and travels with the
+#' data for the same reason the investment ranking's does.
+#'
+#' @param origins sf POINT from build_access_origins()
+#' @param surfaces list from 13_compute_access.R's first pass
+#' @param unlocks list of per-origin counterfactual data frames, or NULL
+#' @param corridors data frame with corridor_id, name, recommendation,
+#'   cost_tier - the labels for the frontier list, read from the investment
+#'   ranking so the two pages name a street identically
+#' @param study_area study area name, for provenance
+#' @param mesh sf, for the provenance block only
+#' @param path output path, e.g. "output/access_index.json"
+export_access_index <- function(origins, surfaces, unlocks, corridors,
+                                study_area, mesh, path) {
+  coords <- sf::st_coordinates(sf::st_geometry(origins))
+  meta   <- sf::st_drop_geometry(origins)
+
+  # Same encoding fix as export_investment_ranking(): names come off the
+  # GeoPackage unmarked and jsonlite would escape every Japanese character.
+  for (col in names(meta)) {
+    if (is.character(meta[[col]])) meta[[col]] <- enc2utf8(meta[[col]])
+  }
+  # Keyed by name, and looked up below with as.character(). `corridor_id` is an
+  # integer, and `x[2L]` on a named vector indexes the second *position* rather
+  # than the element named "2" - which would silently mislabel every frontier
+  # corridor rather than failing.
+  key <- as.character(corridors$corridor_id)
+  corridor_name <- stats::setNames(enc2utf8(corridors$name), key)
+  corridor_rec  <- stats::setNames(corridors$recommendation, key)
+  corridor_cost <- stats::setNames(corridors$cost_tier, key)
+
+  rows <- lapply(seq_len(nrow(meta)), function(i) {
+    s <- surfaces[[i]]
+
+    bands <- lapply(seq_len(nrow(s$band_any)), function(b) {
+      any_pop  <- s$band_any$population[b]
+      calm_pop <- s$band_calm$population[b]
+      list(
+        band_m                  = s$band_any$band_m[b],
+        population_any          = round(any_pop),
+        population_calm         = round(calm_pop),
+        severed                 = round(any_pop - calm_pop),
+        # Undefined rather than 0 where nobody can reach the origin at all:
+        # a school no one can get to has not severed anyone, and printing
+        # "0% cut off" next to it would read as a clean bill of health.
+        severed_share           = if (any_pop > 0) round(1 - calm_pop / any_pop, 3) else NA_real_,
+        population_child_any    = round(s$band_any$population_child[b]),
+        population_child_calm   = round(s$band_calm$population_child[b]),
+        population_elderly_any  = round(s$band_any$population_elderly[b]),
+        population_elderly_calm = round(s$band_calm$population_elderly[b]),
+        cells_any               = s$band_any$cells[b],
+        cells_calm              = s$band_calm$cells[b]
+      )
+    })
+
+    frontier <- lapply(s$frontier$corridor_ids, function(cid) {
+      gain <- if (is.null(unlocks[[i]])) NULL else
+        unlocks[[i]][unlocks[[i]]$corridor_id == cid, ]
+      at <- as.character(cid)
+      list(
+        corridor_id    = cid,
+        name           = unname(corridor_name[at]),
+        recommendation = unname(corridor_rec[at]),
+        cost_tier      = unname(corridor_cost[at]),
+        unlock = if (is.null(gain) || nrow(gain) == 0) NULL else
+          lapply(seq_len(nrow(gain)), function(k) list(
+            band_m             = gain$band_m[k],
+            population         = round(gain$population[k]),
+            population_child   = round(gain$population_child[k]),
+            population_elderly = round(gain$population_elderly[k])
+          ))
+      )
+    })
+
+    c(
+      as.list(meta[i, ]),
+      list(
+        lon = round(coords[i, 1], 6),
+        lat = round(coords[i, 2], 6),
+        snapped      = s$snapped,
+        calm_at_gate = s$calm_at_gate,
+        bands        = I(bands),
+        frontier_corridor_count = s$frontier$total,
+        frontier     = I(frontier)
+      )
+    )
+  })
+
+  has_child <- any(!is.na(mesh$population_child))
+
+  out <- list(
+    study_area     = study_area,
+    origin_count   = nrow(meta),
+    bands_m        = I(ACCESS_BANDS_M),
+    primary_band_m = ACCESS_PRIMARY_BAND_M,
+    buffer_m       = ACCESS_BUFFER_M,
+    calm_max_lts   = CALM_MAX_LTS,
+    mesh = list(
+      cell_count       = nrow(mesh),
+      cell_size_m      = 250,
+      has_child_band   = has_child,
+      has_elderly_band = any(!is.na(mesh$population_elderly))
+    ),
+    notes = list(
+      unit = paste(
+        "One row is an origin - a school (小/中/高 only) or a station.",
+        "Everything is measured outward from it over the project's own",
+        "segment network, in metres of riding rather than straight line."
+      ),
+      calm = sprintf(paste(
+        "The calm surface may only use segments at LTS %d or below - the same",
+        "definition score_network.R uses for a low-stress island, so an",
+        "origin's calm reach is a distance-limited slice of the island it",
+        "sits on. It is a subgraph, not a preference: a calm reach can never",
+        "be a high-stress path that happens to end calmly."), CALM_MAX_LTS),
+      severed = paste(
+        "population_any minus population_calm: residents who can reach this",
+        "origin within the band, but not without riding a high-stress street.",
+        "Both sides use the same buffer, mesh and graph, so severed_share is",
+        "robust where the absolute counts are order-of-magnitude - quote the",
+        "share."
+      ),
+      population = sprintf(paste(
+        "A 250m mesh cell counts in full when a usable street comes within",
+        "%dm of its centroid, and not at all otherwise. Deliberately binary:",
+        "area-weighting would imply we know how a cell's residents are",
+        "distributed inside it, and the mesh is the finest thing e-Stat",
+        "publishes."), ACCESS_BUFFER_M),
+      frontier = sprintf(paste(
+        "Corridors on the edge of the calm surface, capped at %d per origin",
+        "(frontier_corridor_count is the number before the cap; the ones",
+        "dropped are the shortest). Only corridors whose own modelled",
+        "after-state is low-stress appear - a crossing improvement has no",
+        "modelled after-state at all, so it can never be credited with an",
+        "unlock."), MAX_FRONTIER_CORRIDORS),
+      unlock = paste(
+        "The calm surface recomputed with that corridor's segments treated",
+        "as low-stress, minus the calm surface as it stands. A counterfactual",
+        "in the same sense as suitability_after, and inheriting its limits:",
+        "it assumes the intervention is built as 05d modelled it, and models",
+        "nothing about junctions, gradient or one-way streets."
+      )
+    ),
+    origins = rows
+  )
+
+  jsonlite::write_json(out, path, auto_unbox = TRUE, digits = 4,
+                       null = "null", na = "null", pretty = TRUE)
+  message(sprintf("Wrote %s (%d origins)", path, nrow(meta)))
+  invisible(out)
+}
+
+#' Write one reach surface per origin, into `dir`.
+#'
+#' Per-origin files rather than one blob: the app needs exactly the surface a
+#' reader has selected, and 135 origins x ~1000 cells x 2 numbers is several
+#' megabytes to download for the one school somebody clicked.
+#'
+#' Each cell carries its network distance in metres on each surface, rather
+#' than a band number. The bands are then a rendering choice the app can
+#' animate between without refetching, while every *population* figure still
+#' comes from this pipeline at the bands in `bands_m` - the frontend colours
+#' cells, it does not count people.
+#'
+#' @param origins sf POINT from build_access_origins()
+#' @param surfaces list from 13_compute_access.R's first pass
+#' @param mesh sf, for the cell codes
+#' @param dir output directory, e.g. "output/access"
+export_access_surfaces <- function(origins, surfaces, mesh, dir) {
+  dir.create(dir, showWarnings = FALSE, recursive = TRUE)
+  max_band <- max(ACCESS_BANDS_M)
+
+  for (i in seq_len(nrow(origins))) {
+    s <- surfaces[[i]]
+    reached <- which(is.finite(s$cell_any) & s$cell_any <= max_band)
+
+    cells <- lapply(reached, function(j) {
+      calm <- s$cell_calm[j]
+      c(round(s$cell_any[j]),
+        if (is.finite(calm) && calm <= max_band) round(calm) else NA_real_)
+    })
+    names(cells) <- mesh$mesh_code[reached]
+
+    jsonlite::write_json(
+      list(
+        origin_id = origins$origin_id[i],
+        bands_m   = I(ACCESS_BANDS_M),
+        cells     = cells
+      ),
+      file.path(dir, paste0(origins$origin_id[i], ".json")),
+      auto_unbox = TRUE, digits = 0, null = "null", na = "null"
+    )
+  }
+
+  message(sprintf("Wrote %d reach surfaces to %s/", nrow(origins), dir))
+}

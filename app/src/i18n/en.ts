@@ -22,6 +22,7 @@
 const en = {
   nav: {
     network: "Network",
+    access: "Access",
     route: "Route Analysis",
     ranking: "Investment Ranking",
     about: "About",
@@ -719,6 +720,81 @@ const en = {
       unavailable:
         "Address search is unavailable right now. Click the map to set the trip instead.",
       bad_request: "That search could not be run. Try a shorter query.",
+    },
+  },
+
+  access: {
+    km: (km: number) => `${km % 1 === 0 ? km : km.toFixed(1)} km`,
+    loadError: (detail: string) =>
+      `Could not load the access data (${detail}). Run pipeline/scripts/13_compute_access.R.`,
+    hint: "Pick a school or a station. The map shows who can reach it by bicycle — and who can only get there on a high-stress street.",
+    studySummary: ({
+      km,
+      severed,
+      share,
+    }: {
+      km: number;
+      severed: string;
+      share: number;
+    }) =>
+      `Across every school in the study area, ${severed} residents live within ${km} km of one but cannot ride there without a high-stress street — ${share}% of everyone in range.`,
+
+    kinds: { school: "Schools", station: "Stations" },
+    schoolClasses: {
+      elementary: "Elementary",
+      junior_high: "Junior high",
+      high: "High school",
+    },
+
+    picker: {
+      title: "Where to",
+      lede: "Ordered by how much of the surrounding population is cut off, worst first.",
+      band: "Distance by bicycle",
+      search: "Search by name…",
+      empty: "Nothing matches those filters.",
+    },
+
+    legend: {
+      title: (km: number) => `Who can reach it within ${km} km`,
+      calm: "On low-stress streets",
+      severed: "Only on high-stress streets",
+      note: (maxLts: number, cellM: number) =>
+        `Low-stress means LTS ${maxLts} or below — the same threshold the Network tab colours on. Each square is a ${cellM} m census cell, counted whole or not at all.`,
+    },
+
+    panel: {
+      unsnapped: (bufferM: number) =>
+        `No street in the network comes within ${bufferM} m of this location, so no reach can be measured from it. Usually a mapping gap rather than a finding.`,
+      headline: ({
+        km,
+        any,
+        calm,
+      }: {
+        km: number;
+        any: string;
+        calm: string;
+      }) =>
+        `${any} residents live within ${km} km by bicycle. ${calm} of them can ride here without leaving low-stress streets.`,
+      severedLabel: "Cut off by the streets in between",
+      noCalmAtGate: (maxLts: number) =>
+        `Every street at this location is above LTS ${maxLts}. The barrier starts at the gate, not somewhere out in the neighbourhood.`,
+
+      whoTitle: "Within reach — calm / any street",
+      residents: "Residents",
+      children: "Children (0–14)",
+      elderly: "Residents 65+",
+      cells: "Census cells",
+      cellsHint: (cellM: number, bufferM: number) =>
+        `A ${cellM} m cell counts in full when a street comes within ${bufferM} m of its centre, and not at all otherwise.`,
+
+      frontierTitle: "The streets in the way",
+      frontierNote: (shown: number, total: number) =>
+        total > shown
+          ? `The ${shown} longest of ${total} corridors on the edge of the low-stress area.`
+          : "Corridors on the edge of the low-stress area — where a cautious rider has to stop.",
+      ofWhichChildren: (n: string) => `incl. ${n} children`,
+      unlockCaveat:
+        "The + figure is how many more residents would reach here on low-stress streets if that corridor were built as the Investment Ranking models it. A counterfactual, not a forecast: it assumes the intervention delivers the stress score the pipeline computes for it, and models nothing about junctions, gradient or one-way streets.",
     },
   },
 

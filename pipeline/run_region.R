@@ -28,7 +28,8 @@ REGION_STAGES <- c(
   "05d_score_interventions",    # after 10b: it reads the roi_* columns 10b adds
   "10c_compute_summary_stats",
   "11_export",
-  "12_compute_investment_ranking"
+  "12_compute_investment_ranking",
+  "13_compute_access"            # after 12: it labels corridors from its output
 )
 
 # 11 and 12 write into output/, alongside the .gpkg working files; the app
@@ -46,8 +47,15 @@ PUBLISHED <- c(
   "amenities.geojson",
   "traffic_signals.geojson",
   "summary.json",
-  "investment_ranking.json"
+  "investment_ranking.json",
+  "population_mesh.geojson",
+  "access_index.json"
 )
+
+# One file per origin, so a directory rather than a name. Mirrored rather than
+# merged into the app's copy: an origin that disappears from the study area
+# must not leave a stale surface behind for a deep link to keep resolving.
+PUBLISHED_DIRS <- c("access")
 
 run_region <- function() {
   region <- study_region()
@@ -90,6 +98,19 @@ publish_to_app <- function(region) {
   if (!all(copied)) {
     stop("could not copy into ", APP_DATA, ": ",
          paste(PUBLISHED[!copied], collapse = ", "))
+  }
+
+  for (d in PUBLISHED_DIRS) {
+    src <- file.path("output", d)
+    if (!dir.exists(src)) stop("the export stages did not produce ", src, "/")
+    dest <- file.path(APP_DATA, d)
+    unlink(dest, recursive = TRUE)
+    dir.create(dest, recursive = TRUE)
+    files <- list.files(src, full.names = TRUE)
+    if (!all(file.copy(files, dest, overwrite = TRUE))) {
+      stop("could not copy ", src, "/ into ", dest)
+    }
+    message(sprintf("Mirrored %d files into app/public/data/%s/", length(files), d))
   }
 
   message(sprintf("\nCopied %d files to app/public/data/ - %s is live in the app.",

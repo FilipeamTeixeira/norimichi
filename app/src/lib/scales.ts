@@ -143,6 +143,36 @@ export const CYCLEWAY_COLOR = "#b5379c";
  */
 export const SELECTION_COLOR = "#8ec5f0";
 
+/**
+ * The two states of an access surface: a 250m cell whose residents can reach
+ * the selected school or station on low-stress streets, and one whose
+ * residents can only reach it by riding something above `calm_max_lts`.
+ *
+ * Two steps off STRESS_LINE rather than a new pair, and not for economy. The
+ * surface *is* the LTS threshold, applied to areas instead of to lines: a cell
+ * is calm exactly when a route to it exists within LTS 1-2, and severed when
+ * the only routes run through LTS 3-4. Picking fresh hues would give the same
+ * variable two visual languages depending on whether it was drawn as a street
+ * or as a neighbourhood, and a reader moving between the Network tab and this
+ * one would have to learn the break twice.
+ *
+ * Taken from inside each half of the ramp rather than from its ends, since
+ * these are large flat fills at low opacity and the extremes (#5b9fe8, #992f2c)
+ * read as either washed out or alarming at that size.
+ */
+export const ACCESS_SURFACE = {
+  calm: STRESS_LINE[1],
+  severed: STRESS_LINE[2],
+} as const;
+
+/**
+ * How solid those fills are. Low enough that the basemap's street pattern
+ * still shows through — the reader has to be able to see *which* streets a
+ * cell contains, or the surface is an abstract mosaic — and equal for both
+ * states, because the comparison between them is the entire measurement.
+ */
+export const ACCESS_FILL_OPACITY = 0.42;
+
 /** Sentinel below any real value, so `step` can route nulls to the no-data bucket. */
 const NULL_SENTINEL = -1e9;
 

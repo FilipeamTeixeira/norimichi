@@ -25,6 +25,7 @@ import type { Dict } from "./en";
 const ja: Dict = {
   nav: {
     network: "ネットワーク",
+    access: "アクセス",
     route: "ルート分析",
     ranking: "整備優先度",
     about: "本サイトについて",
@@ -694,6 +695,81 @@ const ja: Dict = {
         "住所検索は現在ご利用いただけません。地図をクリックしてトリップを設定してください。",
       bad_request:
         "この検索は実行できませんでした。より短い語句でお試しください。",
+    },
+  },
+
+  access: {
+    km: (km: number) => `${km % 1 === 0 ? km : km.toFixed(1)}km`,
+    loadError: (detail: string) =>
+      `アクセスデータを読み込めませんでした（${detail}）。pipeline/scripts/13_compute_access.R を実行してください。`,
+    hint: "学校または駅を選んでください。自転車で通える範囲と、交通ストレスの高い道路を通らなければ行けない範囲を地図に表示します。",
+    studySummary: ({
+      km,
+      severed,
+      share,
+    }: {
+      km: number;
+      severed: string;
+      share: number;
+    }) =>
+      `対象地域の学校について、半径${km}km以内に住みながら交通ストレスの高い道路を通らなければ通えない住民は ${severed} 人。到達圏人口の${share}%にあたります。`,
+
+    kinds: { school: "学校", station: "駅" },
+    schoolClasses: {
+      elementary: "小学校",
+      junior_high: "中学校",
+      high: "高等学校",
+    },
+
+    picker: {
+      title: "目的地",
+      lede: "周辺人口のうち安全に到達できない割合が高い順に並んでいます。",
+      band: "自転車での距離",
+      search: "名称で検索…",
+      empty: "条件に一致するものがありません。",
+    },
+
+    legend: {
+      title: (km: number) => `${km}km以内から到達できる範囲`,
+      calm: "低ストレス道路で到達可能",
+      severed: "高ストレス道路を通る場合のみ到達可能",
+      note: (maxLts: number, cellM: number) =>
+        `低ストレスは LTS ${maxLts} 以下 — ネットワークタブの色分けと同じ基準です。1マスは${cellM}mメッシュで、全体を数えるか数えないかのいずれかです。`,
+    },
+
+    panel: {
+      unsnapped: (bufferM: number) =>
+        `この地点から${bufferM}m以内にネットワーク上の道路がないため、到達圏を計測できません。多くの場合、分析結果ではなくマッピングの欠落です。`,
+      headline: ({
+        km,
+        any,
+        calm,
+      }: {
+        km: number;
+        any: string;
+        calm: string;
+      }) =>
+        `自転車で${km}km以内には ${any} 人が居住しています。そのうち低ストレス道路だけで到達できるのは ${calm} 人です。`,
+      severedLabel: "途中の道路によって分断されている人口",
+      noCalmAtGate: (maxLts: number) =>
+        `この地点に接するすべての道路が LTS ${maxLts} を超えています。障壁は周辺のどこかではなく、校門・駅前そのものにあります。`,
+
+      whoTitle: "到達圏人口 — 低ストレス／全道路",
+      residents: "住民",
+      children: "こども（0〜14歳）",
+      elderly: "高齢者（65歳以上）",
+      cells: "メッシュ数",
+      cellsHint: (cellM: number, bufferM: number) =>
+        `${cellM}mメッシュは、中心から${bufferM}m以内に道路がある場合にその全人口を計上し、ない場合は計上しません。`,
+
+      frontierTitle: "障壁となっている道路",
+      frontierNote: (shown: number, total: number) =>
+        total > shown
+          ? `低ストレス圏の境界にある${total}路線のうち、延長の長い${shown}路線。`
+          : "低ストレス圏の境界にある路線 — 慎重な利用者が進めなくなる場所です。",
+      ofWhichChildren: (n: string) => `うちこども ${n} 人`,
+      unlockCaveat:
+        "「+」は、その路線が整備優先度ページの想定どおりに整備された場合に、低ストレス道路だけで到達できるようになる住民の増加数です。予測ではなく反実仮想であり、パイプラインが算定する整備後の交通ストレス値を前提とし、交差点・勾配・一方通行は考慮していません。",
     },
   },
 

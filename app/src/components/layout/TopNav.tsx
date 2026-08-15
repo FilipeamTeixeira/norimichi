@@ -8,6 +8,7 @@ import { LOCALES, LOCALE_LABEL, LOCALE_SHORT } from "@/i18n/config";
 
 const tabs = [
   { key: "network", href: "/" },
+  { key: "access", href: "/access" },
   { key: "route", href: "/route" },
   { key: "ranking", href: "/ranking" },
   { key: "about", href: "/about" },
