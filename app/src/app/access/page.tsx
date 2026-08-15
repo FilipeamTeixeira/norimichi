@@ -6,11 +6,12 @@ import type { FeatureCollection, Polygon } from "geojson";
 import MapView, { type MapControls } from "@/components/map/MapView";
 import AccessLayer from "@/components/map/AccessLayer";
 import AccessPanel from "@/components/access/AccessPanel";
-import OriginPicker from "@/components/access/OriginPicker";
+import OriginPicker, {
+  type ReferencePoint,
+} from "@/components/access/OriginPicker";
 import Legend, { type LegendSection } from "@/components/panels/Legend";
 import { ACCESS_SURFACE } from "@/lib/scales";
 import {
-  bandAt,
   cellStatus,
   normalizeSurface,
   type AccessIndex,
@@ -47,6 +48,7 @@ export default function AccessPage() {
   const [selected, setSelected] = useState<AccessOrigin | null>(null);
   const [surface, setSurface] = useState<AccessSurface | null>(null);
   const [bandM, setBandM] = useState<number | null>(null);
+  const [reference, setReference] = useState<ReferencePoint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
 
@@ -187,6 +189,27 @@ export default function AccessPage() {
    */
   const changeBand = useCallback((next: number) => setBandM(next), []);
 
+  /**
+   * A searched place is a point to measure *from*, not a destination — it
+   * re-sorts the list to the schools and stations nearest it and drops a
+   * neutral marker, and deliberately does not select anything. Picking which
+   * of them to look at stays the reader's move; guessing at the nearest one
+   * would be wrong exactly when the nearest is not the one they use.
+   *
+   * The map only moves if nothing is selected. Yanking the viewport away from
+   * a surface the reader is reading, because they typed an address to orient
+   * themselves against it, is the opposite of helping.
+   */
+  const pickReference = useCallback(
+    (next: ReferencePoint | null) => {
+      setReference(next);
+      if (next && !selected) {
+        mapControls.current?.fitBounds([next.at, next.at]);
+      }
+    },
+    [selected]
+  );
+
   const legendSections = useMemo<LegendSection[]>(() => {
     if (!index || !selected || !surface || bandM === null) return [];
     return [
@@ -203,18 +226,18 @@ export default function AccessPage() {
     ];
   }, [t, index, selected, surface, bandM]);
 
-  const summary = useMemo(() => {
-    if (!index || bandM === null) return null;
-    let any = 0;
-    let severed = 0;
-    for (const o of index.origins) {
-      if (o.kind !== "school") continue;
-      const band = bandAt(o, bandM);
-      any += band.population_any;
-      severed += band.severed;
-    }
-    return { any, severed };
-  }, [index, bandM]);
+  /**
+   * Read, never derived. Adding up every school's `population_any` counts a
+   * central resident once per school in range — it produced 13.8 million
+   * against a region of 612,000 before this came from the pipeline, where the
+   * surfaces are combined by nearest-origin so a mesh cell counts once.
+   */
+  const summary = useMemo(
+    () =>
+      index?.study.find((s) => s.kind === "school" && s.band_m === bandM) ??
+      null,
+    [index, bandM]
+  );
 
   if (error) {
     return (
@@ -237,6 +260,8 @@ export default function AccessPage() {
           bandM={bandM}
           bands={index.bands_m}
           onBandChange={changeBand}
+          reference={reference}
+          onReferenceChange={pickReference}
         />
       ) : (
         <aside className="w-[268px] border-r border-neutral-200 bg-white shrink-0 px-4 py-4">
@@ -263,6 +288,7 @@ export default function AccessPage() {
           surface={surface}
           origin={selected}
           bandM={bandM ?? 0}
+          reference={reference?.at ?? null}
         />
 
         {/* Before anything is selected the map has nothing on it, so the page
@@ -274,12 +300,12 @@ export default function AccessPage() {
             <p className="text-[13px] text-neutral-700 leading-relaxed">
               {t.access.hint}
             </p>
-            {summary && bandM !== null && summary.any > 0 && (
+            {summary && bandM !== null && summary.severed_share !== null && (
               <p className="mt-2 text-[12px] text-neutral-500 leading-relaxed">
                 {t.access.studySummary({
                   km: bandM / 1000,
-                  severed: Math.round(summary.severed).toLocaleString(),
-                  share: Math.round((summary.severed / summary.any) * 100),
+                  severed: summary.severed.toLocaleString(),
+                  share: Math.round(summary.severed_share * 100),
                 })}
               </p>
             )}

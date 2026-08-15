@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { CorridorProperties, InterventionType } from "@/lib/types";
-import { corridorLabel, COST_TIER_ORDER } from "@/lib/types";
+import { corridorLabel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/context";
 import type { Dict } from "@/i18n/en";
@@ -50,7 +50,8 @@ type SortKey =
   | "beneficiaries"
   | "after"
   | "length"
-  | "cost"
+  | "build"
+  | "payback"
   | "lts"
   | "savings";
 
@@ -62,13 +63,23 @@ interface Column {
   help?: string;
 }
 
-/** Order and which two are context; the words come from the dictionary. */
+/**
+ * Order and which two are context; the words come from the dictionary.
+ *
+ * `build` replaced the old cost-*tier* column rather than joining it. The two
+ * answer different questions — tier is how disruptive a scheme is, yen is how
+ * much money — but a funding table wants the money, and showing both invites
+ * "why does this Low-tier corridor cost more than that Medium one?" (answer:
+ * it is four times as long). The tier is still in the data and in the
+ * glossary; it is what escalates the per-metre rate behind this column.
+ */
 const COLUMN_KEYS: { key: SortKey; context?: boolean }[] = [
   { key: "lts" },
   { key: "after" },
   { key: "beneficiaries" },
   { key: "length" },
-  { key: "cost" },
+  { key: "build" },
+  { key: "payback" },
   { key: "gap", context: true },
   { key: "savings", context: true },
 ];
@@ -147,6 +158,38 @@ function AfterCell({ c }: { c: CorridorProperties }) {
   );
 }
 
+/**
+ * A low-to-high range, or an em dash where there is nothing to show.
+ *
+ * Always both ends, never a midpoint. The unit costs behind these are
+ * illustrative placeholders (pipeline/R/score_cost.R), and collapsing the
+ * range to one number is exactly the move that would turn a stated
+ * uncertainty into an apparent quotation. Where the two ends round to the
+ * same string it prints once rather than "¥40M–¥40M".
+ */
+function RangeCell({
+  low,
+  high,
+  format,
+  title,
+}: {
+  low: number | null;
+  high: number | null;
+  format: (v: number) => string;
+  title?: string;
+}) {
+  if (low === null || high === null || !Number.isFinite(low) || !Number.isFinite(high)) {
+    return <span className="text-neutral-300">—</span>;
+  }
+  const a = format(low);
+  const b = format(high);
+  return (
+    <span title={title} className={title ? "cursor-help" : undefined}>
+      {a === b ? a : `${a}–${b}`}
+    </span>
+  );
+}
+
 interface Props {
   corridors: CorridorProperties[];
   /** Row click — F.6 hands the corridor to the Network tab. */
@@ -193,8 +236,12 @@ export default function RankingTable({ corridors, onSelect }: Props) {
           return c.length_m;
         case "lts":
           return c.lts_before;
-        case "cost":
-          return c.cost_tier ? COST_TIER_ORDER[c.cost_tier] : null;
+        case "build":
+          // The low end of the range. Sorting on a midpoint would invent a
+          // point estimate the data deliberately refuses to state.
+          return c.cost_yen_low;
+        case "payback":
+          return c.payback_years_low;
         case "after":
           // Corridors with no modelled after-score have no value to rank on.
           // They sort last in either direction rather than being silently
@@ -386,19 +433,27 @@ export default function RankingTable({ corridors, onSelect }: Props) {
                     <td className="px-4 py-3 text-right text-neutral-500 tabular-nums whitespace-nowrap">
                       {formatLength(c.length_m)}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <span
-                        className={cn(
-                          "text-[11px] px-1.5 py-0.5 rounded",
-                          c.cost_tier === "High"
-                            ? "bg-red-50 text-red-600"
-                            : c.cost_tier === "Medium"
-                              ? "bg-amber-50 text-amber-700"
-                              : "bg-neutral-100 text-neutral-500"
-                        )}
-                      >
-                        {c.cost_tier ? t.costTiers[c.cost_tier] : "—"}
-                      </span>
+                    <td className="px-4 py-3 text-right text-neutral-700 tabular-nums whitespace-nowrap">
+                      <RangeCell
+                        low={c.cost_yen_low}
+                        high={c.cost_yen_high}
+                        format={t.units.yenBig}
+                        // The tier is what escalated the per-metre rate behind
+                        // this, so it belongs in the tooltip rather than in a
+                        // column of its own.
+                        title={
+                          c.cost_tier
+                            ? tt.buildHelp(t.costTiers[c.cost_tier])
+                            : undefined
+                        }
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right text-neutral-700 tabular-nums whitespace-nowrap">
+                      <RangeCell
+                        low={c.payback_years_low}
+                        high={c.payback_years_high}
+                        format={(v) => t.units.years(v.toFixed(v < 10 ? 1 : 0))}
+                      />
                     </td>
                     <td className="px-4 py-3 text-right text-neutral-400 tabular-nums">
                       {c.context_hex_gap_score !== null

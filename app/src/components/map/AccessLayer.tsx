@@ -43,6 +43,8 @@ interface Props {
   surface: AccessSurface | null;
   origin: AccessOrigin | null;
   bandM: number;
+  /** A searched place the list is measuring from, if any. */
+  reference: [number, number] | null;
 }
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -60,14 +62,29 @@ function pinElement(kind: AccessOrigin["kind"]): HTMLElement {
   return el;
 }
 
+/**
+ * The searched place. Deliberately a hollow neutral ring rather than anything
+ * on the surface's two-colour scale: it is where the reader is standing, not a
+ * measurement, and giving it a data colour would put it in the legend's
+ * vocabulary without being in the legend.
+ */
+function referenceElement(): HTMLElement {
+  const el = document.createElement("div");
+  el.className =
+    "w-3.5 h-3.5 rounded-full bg-white ring-[3px] ring-neutral-800 shadow-md select-none";
+  return el;
+}
+
 export default function AccessLayer({
   map,
   mesh,
   surface,
   origin,
   bandM,
+  reference,
 }: Props) {
   const marker = useRef<Marker | null>(null);
+  const referenceMarker = useRef<Marker | null>(null);
 
   /**
    * Only the cells inside the band, each stamped with its status.
@@ -162,9 +179,24 @@ export default function AccessLayer({
       .addTo(map);
   }, [map, origin]);
 
+  useEffect(() => {
+    if (!map) return;
+    if (!reference) {
+      referenceMarker.current?.remove();
+      referenceMarker.current = null;
+      return;
+    }
+    if (referenceMarker.current) referenceMarker.current.setLngLat(reference);
+    else
+      referenceMarker.current = new Marker({ element: referenceElement() })
+        .setLngLat(reference)
+        .addTo(map);
+  }, [map, reference]);
+
   useEffect(
     () => () => {
       marker.current?.remove();
+      referenceMarker.current?.remove();
     },
     []
   );

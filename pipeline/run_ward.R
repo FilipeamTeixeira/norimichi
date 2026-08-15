@@ -37,6 +37,7 @@ WARD_STAGES <- c(
   "01e_download_bike_parking",
   "02_download_estat",
   "03_download_ksj",
+  "03b_merge_schools",           # KSJ is incomplete; OSM tops it up
   "04_download_dem",
   "05_build_segment_table",
   "05b_join_segment_context",

@@ -12,12 +12,17 @@
 export type AccessOriginKind = "school" | "station";
 
 /**
- * KSJ 学校分類コード, narrowed to the three classes where "could a child get
- * here by bicycle" is a real question. 幼稚園, 大学, 専修学校, 各種学校 and
- * 特別支援学校 are excluded upstream — see ACCESS_SCHOOL_CLASSES in
- * R/score_access.R for why each one is.
+ * KSJ 学校分類コード, narrowed to the classes where "could a pupil get here by
+ * bicycle every day" is a real question. `international` is 各種学校, which in
+ * this study area is the international and ethnic schools on the Yamate bluff.
+ * 幼稚園, 認定こども園, 大学, 専修学校 and 特別支援学校 are excluded upstream —
+ * see ACCESS_SCHOOL_CLASSES in R/score_access.R for why each one is.
  */
-export type SchoolClass = "elementary" | "junior_high" | "high";
+export type SchoolClass =
+  | "elementary"
+  | "junior_high"
+  | "high"
+  | "international";
 
 /** One distance band's figures, for one origin. */
 export interface AccessBand {
@@ -87,9 +92,34 @@ export interface AccessOrigin {
   frontier: FrontierCorridor[];
 }
 
+/**
+ * The whole-study-area figure, per origin kind and band.
+ *
+ * Measured from the *nearest* origin of that kind, so a mesh cell counts once.
+ * This exists because the frontend must not derive it: reach surfaces overlap
+ * almost entirely — a resident in the middle of the ward is within 3 km of
+ * dozens of schools — so adding up every origin's `population_any` counts them
+ * once per school and returns several times the region's population. The page
+ * did exactly that until the number came out at 13.8 million against a region
+ * of 612,000.
+ */
+export interface AccessStudyTotal {
+  kind: AccessOriginKind;
+  band_m: number;
+  population_any: number;
+  population_calm: number;
+  severed: number;
+  severed_share: number | null;
+  population_child_any: number;
+  population_child_calm: number;
+}
+
 export interface AccessIndex {
   study_area: string;
   origin_count: number;
+  /** Everyone in the mesh, for scale against the figures above. */
+  region_population: number;
+  study: AccessStudyTotal[];
   bands_m: number[];
   primary_band_m: number;
   buffer_m: number;

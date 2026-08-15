@@ -1,15 +1,37 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/context";
 import { ACCESS_SURFACE } from "@/lib/scales";
+import PlaceSearch from "@/components/access/PlaceSearch";
 import {
   bandAt,
   type AccessOrigin,
   type AccessOriginKind,
   type SchoolClass,
 } from "@/lib/access-types";
+
+/** A place the reader searched for, to measure from. */
+export interface ReferencePoint {
+  at: [number, number];
+  label: string;
+}
+
+/**
+ * Straight-line metres. Deliberately not network distance: every other figure
+ * on this page is measured over the network, but sorting 135 origins that way
+ * would mean 135 more Dijkstras, and this is only deciding list order. The row
+ * labels it as direct distance so the two are never read as the same thing.
+ */
+function directMetres(a: [number, number], b: [number, number]): number {
+  const cosLat = Math.cos(((a[1] + b[1]) / 2) * (Math.PI / 180));
+  return Math.hypot(
+    (a[0] - b[0]) * 111_320 * cosLat,
+    (a[1] - b[1]) * 111_320
+  );
+}
 
 /**
  * The left rail: which school or station the surface is measured from.
@@ -21,7 +43,12 @@ import {
  * box is there for the reader who does arrive with a name in mind.
  */
 
-const SCHOOL_CLASSES: SchoolClass[] = ["elementary", "junior_high", "high"];
+const SCHOOL_CLASSES: SchoolClass[] = [
+  "elementary",
+  "junior_high",
+  "high",
+  "international",
+];
 
 interface Props {
   origins: AccessOrigin[];
@@ -32,6 +59,8 @@ interface Props {
   bandM: number;
   bands: number[];
   onBandChange: (band: number) => void;
+  reference: ReferencePoint | null;
+  onReferenceChange: (reference: ReferencePoint | null) => void;
 }
 
 export default function OriginPicker({
@@ -42,6 +71,8 @@ export default function OriginPicker({
   bandM,
   bands,
   onBandChange,
+  reference,
+  onReferenceChange,
 }: Props) {
   const t = useT();
   const ta = t.access;
@@ -55,19 +86,24 @@ export default function OriginPicker({
   const [chosenKind, setKind] = useState<AccessOriginKind | null>(null);
   const kind = chosenKind ?? selectedKind ?? "school";
   const [classes, setClasses] = useState<SchoolClass[]>(SCHOOL_CLASSES);
-  const [query, setQuery] = useState("");
 
   const rows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return origins
+    const visible = origins
       .filter((o) => o.kind === kind)
-      .filter((o) => kind !== "school" || (o.school_class && classes.includes(o.school_class)))
       .filter(
-        (o) =>
-          q === "" ||
-          o.name.toLowerCase().includes(q) ||
-          (o.detail ?? "").toLowerCase().includes(q)
-      )
+        (o) => kind !== "school" || (o.school_class && classes.includes(o.school_class))
+      );
+
+    // With a place to measure from, the question changes from "which of these
+    // is worst" to "which of these is mine", and the order has to follow it.
+    if (reference) {
+      return visible
+        .map((o) => ({ o, m: directMetres(reference.at, [o.lon, o.lat]) }))
+        .sort((a, b) => a.m - b.m)
+        .map(({ o, m }) => ({ origin: o, metres: m }));
+    }
+
+    return visible
       .sort((a, b) => {
         const sa = bandAt(a, bandM);
         const sb = bandAt(b, bandM);
@@ -81,8 +117,26 @@ export default function OriginPicker({
           return sb.severed_share - sa.severed_share;
         }
         return sb.severed - sa.severed;
-      });
-  }, [origins, kind, classes, query, bandM]);
+      })
+      .map((origin) => ({ origin, metres: null as number | null }));
+  }, [origins, kind, classes, bandM, reference]);
+
+  /**
+   * Names that appear more than once in the visible list. One school can hold
+   * two campuses — 横浜市立横浜商業高等学校 sits in both Isogo and Minami — and
+   * two rows reading identically look like a rendering fault rather than like
+   * two real places. Those rows show their address; the rest stay one line, so
+   * the disambiguation appears exactly where it is needed.
+   */
+  const ambiguous = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const { origin } of rows) {
+      counts.set(origin.name, (counts.get(origin.name) ?? 0) + 1);
+    }
+    return new Set(
+      [...counts.entries()].filter(([, n]) => n > 1).map(([name]) => name)
+    );
+  }, [rows]);
 
   const toggleClass = (c: SchoolClass) =>
     setClasses((current) =>
@@ -98,7 +152,7 @@ export default function OriginPicker({
           {ta.picker.title}
         </h2>
         <p className="text-[11px] text-neutral-500 mt-1 leading-relaxed">
-          {ta.picker.lede}
+          {reference ? ta.picker.ledeNear : ta.picker.lede}
         </p>
       </div>
 
@@ -175,13 +229,32 @@ export default function OriginPicker({
           </div>
         )}
 
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={ta.picker.search}
-          className="w-full rounded-lg border border-neutral-200 px-2.5 py-1.5 text-[12px] text-neutral-700 placeholder:text-neutral-400 focus:outline-none focus:border-neutral-400"
+        <PlaceSearch
+          origins={origins}
+          onPickOrigin={onSelect}
+          onPickPlace={(at, label) => onReferenceChange({ at, label })}
         />
+
+        {reference && (
+          <div className="flex items-center gap-1.5 rounded-lg bg-neutral-50 border border-neutral-200 px-2.5 py-1.5">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] uppercase tracking-wider text-neutral-400">
+                {ta.picker.measuringFrom}
+              </span>
+              <span className="block text-[12px] text-neutral-800 truncate">
+                {reference.label}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => onReferenceChange(null)}
+              aria-label={ta.picker.clearReference}
+              className="p-1 text-neutral-300 hover:text-neutral-600 shrink-0"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -190,7 +263,7 @@ export default function OriginPicker({
             {ta.picker.empty}
           </p>
         ) : (
-          rows.map((o) => {
+          rows.map(({ origin: o, metres }) => {
             const band = bandAt(o, bandM);
             const share = band.severed_share;
             return (
@@ -212,6 +285,22 @@ export default function OriginPicker({
                     {share === null ? "—" : `${Math.round(share * 100)}%`}
                   </span>
                 </div>
+
+                {ambiguous.has(o.name) && o.detail && (
+                  <div className="text-[11px] text-neutral-400 mt-0.5 truncate">
+                    {o.detail}
+                  </div>
+                )}
+
+                {metres !== null && (
+                  <div className="text-[11px] text-neutral-400 mt-0.5">
+                    {ta.picker.directDistance(
+                      metres < 1000
+                        ? `${Math.round(metres / 10) * 10} m`
+                        : `${(metres / 1000).toFixed(1)} km`
+                    )}
+                  </div>
+                )}
 
                 {/* The two-part bar is the row's whole content beyond its
                     name: it is the same measurement as the map, at a glance,

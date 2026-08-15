@@ -15,9 +15,11 @@
 source("R/utils_config.R")
 source("R/export_geojson.R")
 source("R/score_intervention.R")   # COST_TIERS, for max_cost_tier()
+source("R/score_cost.R")           # the yen side of the ledger
 source("R/build_corridors.R")
 library(sf)
 library(dplyr)
+library(jsonlite)
 
 cfg <- load_study_area()
 
@@ -61,4 +63,55 @@ if (any(mixed)) {
        "re-run scripts/05d_score_interventions.R")
 }
 
-export_investment_ranking(corridors, cfg$name, "output/investment_ranking.json")
+# --- The yen side ---------------------------------------------------------
+#
+# Cost, benefit and payback per corridor. Done here rather than inside
+# aggregate_corridors() because it needs nothing the rollup does not already
+# produce - length, junction count, cost tier and beneficiaries are all
+# columns by this point - and keeping it visible at the top level is worth
+# more than hiding it one call deeper.
+
+cost <- corridor_cost_yen(
+  corridors$recommendation,
+  corridors$length_m,
+  corridors$signalised_junctions,
+  corridors$cost_tier
+)
+corridors$cost_yen_low       <- round(cost$low)
+corridors$cost_yen_high      <- round(cost$high)
+corridors$benefit_yen_year   <- round(corridor_benefit_yen_year(corridors$estimated_beneficiaries))
+corridors$payback_years_low  <- round(payback_years(cost$low,  corridors$benefit_yen_year), 1)
+corridors$payback_years_high <- round(payback_years(cost$high, corridors$benefit_yen_year), 1)
+
+uncosted <- sum(is.na(corridors$cost_yen_low))
+if (uncosted > 0) {
+  message(sprintf("%d corridor(s) have no costed intervention form (%s)",
+                  uncosted,
+                  paste(sort(unique(corridors$recommendation[is.na(corridors$cost_yen_low)])),
+                        collapse = ", ")))
+}
+
+# The study-area ledger pairs a sum of disjoint build costs against the
+# hex-grid benefit scenario, where each resident is counted once. 10c writes
+# that summary earlier in the same run.
+summary_path <- sprintf("output/%s_summary.json", cfg$name)
+if (!file.exists(summary_path)) {
+  stop("no ", summary_path, "\n",
+       "  Run scripts/10c_compute_summary_stats.R first - the study-area ",
+       "ledger pairs corridor costs against its ROI scenario.")
+}
+ledger <- programme_ledger(
+  cost$low, cost$high,
+  jsonlite::read_json(summary_path, simplifyVector = TRUE)$roi_scenario
+)
+
+message(sprintf(
+  "Programme: %d costed corridors, ¥%.1fbn-¥%.1fbn to build, ¥%.1fbn/year of modelled benefit, payback %.1f-%.1f years",
+  ledger$costed_corridors,
+  ledger$total_cost_yen_low / 1e9, ledger$total_cost_yen_high / 1e9,
+  ledger$annual_benefit_yen / 1e9,
+  ledger$payback_years_low, ledger$payback_years_high
+))
+
+export_investment_ranking(corridors, cfg$name, "output/investment_ranking.json",
+                          ledger = ledger)

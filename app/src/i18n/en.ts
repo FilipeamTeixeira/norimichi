@@ -94,6 +94,18 @@ const en = {
     metres: (v: number) => `${v} m`,
     km: (v: string) => `${v} km`,
     minutes: (v: number) => `${v} min`,
+    /**
+     * Construction-scale yen, rounded hard on purpose: the unit costs behind
+     * these are illustrative placeholders, and printing ¥18,432,915 would
+     * dress a guess as a quotation.
+     */
+    yenBig: (v: number) =>
+      v >= 1e9
+        ? `¥${(v / 1e9).toFixed(1)}bn`
+        : v >= 1e6
+          ? `¥${(v / 1e6).toFixed(0)}M`
+          : `¥${Math.round(v / 1e3)}k`,
+    years: (v: string) => `${v} yr`,
   },
 
   metrics: {
@@ -446,6 +458,14 @@ const en = {
     title: "Investment Ranking",
     lede: "Fundable projects, ranked. Each row is a corridor — stretches of one street that run end to end into each other and are all worth spending money on — not a single OSM way, so a row is something that can actually be built.",
     tabs: { corridors: "Corridors", areas: "Areas" },
+
+    ledger: {
+      cost: (n: number) => `To build all ${n.toLocaleString()} corridors`,
+      benefit: "Modelled benefit per year",
+      payback: "Pays for itself in",
+      caveat:
+        "The cost side sums the corridors, which is valid because each is a separate build; the benefit side comes from the area-wide mode-shift scenario, where every resident is counted once — not from adding up the table's own benefit column, whose catchments overlap. Both sides rest on illustrative assumptions, and no sourced schedule of Japanese cycle-infrastructure construction costs was available, so read this as an order of magnitude and a shape of argument, not an appraisal.",
+    },
     loadError: (detail: string) =>
       `Could not load investment_ranking.json (${detail}). Run pipeline/scripts/05d_score_interventions.R then 12_compute_investment_ranking.R.`,
 
@@ -464,6 +484,8 @@ const en = {
     },
 
     table: {
+      buildHelp: (tier: string) =>
+        `Illustrative unit costs — no sourced schedule of Japanese cycle-infrastructure costs was available. Road space escalated this to cost tier ${tier}.`,
       interventionFilter: "Intervention",
       unavailableType:
         "No corridor carries this type — bike parking is a point facility, not a stretch of street.",
@@ -497,7 +519,14 @@ const en = {
           help: "From a single unioned buffer around the whole corridor, not summed across its segments.",
         },
         length: { label: "Length", help: "" },
-        cost: { label: "Cost tier", help: "" },
+        build: {
+          label: "Build cost",
+          help: "What it would cost to build, as a range. The unit costs behind it are illustrative planning placeholders — unlike the two MLIT figures in the ROI, no published schedule of Japanese cycle-infrastructure costs was found to source them against. Sorted on the low end; never collapse the range to a midpoint.",
+        },
+        payback: {
+          label: "Payback",
+          help: "Simple, undiscounted benefit payback period: build cost divided by the modelled annual benefit for this corridor's own residents. Not a benefit-cost ratio or a formal economic appraisal: that needs a discount rate and an appraisal period, which are policy choices this tool has no mandate to set. A screening indicator for comparing corridors, not an MLIT-compliant cost-benefit analysis.",
+        },
         gap: {
           label: "Area gap",
           help: "The missed-opportunity score of the ~0.1km² hex this corridor sits in, from hex-level population. Two corridors crossing the same cell show the same figure — it ranks neighbourhoods, not projects.",
@@ -744,14 +773,29 @@ const en = {
       elementary: "Elementary",
       junior_high: "Junior high",
       high: "High school",
+      international: "International",
     },
 
     picker: {
       title: "Where to",
       lede: "Ordered by how much of the surrounding population is cut off, worst first.",
+      ledeNear: "Nearest first, from the place you searched for.",
       band: "Distance by bicycle",
-      search: "Search by name…",
       empty: "Nothing matches those filters.",
+      measuringFrom: "Near",
+      clearReference: "Clear the place being measured from",
+      directDistance: (d: string) => `${d} away, direct`,
+    },
+
+    search: {
+      label: "Find a school, station or place",
+      placeholder: "School, station, or an address…",
+      groupOrigins: "Schools & stations",
+      groupPlaces: "Places",
+      nothingFound: "Nothing found for that.",
+      clear: "Clear the search",
+      unreachable:
+        "Place search could not be reached. Schools and stations can still be found by name above.",
     },
 
     legend: {

@@ -135,9 +135,14 @@ INTERVENTION_LEVER <- c(
 #' with the number of lanes that have to be reallocated.
 INTERVENTION_BASE_COST <- c(
   "Protected cycle lane" = "Medium",
-  # A new connection rather than a re-marking of an existing carriageway -
-  # it may need land, a bridge, or a signal, so it starts a tier higher.
-  "Missing link"         = "High",
+  # Physically the same build as a protected lane - see
+  # INTERVENTION_COUNTERFACTUAL above, both are "track both sides". There is
+  # no per-corridor signal here for whether a given missing link needs land,
+  # a bridge or a structure, so it is not defaulted to a higher tier than the
+  # build it actually is. A corridor with real evidence of extraordinary
+  # works should be escalated on that evidence, not by a blanket rule for the
+  # type.
+  "Missing link"         = "Medium",
   "Traffic calming"      = "Low",
   "Crossing improvement" = "Low",
   "Bike parking"         = "Low"

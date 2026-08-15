@@ -108,6 +108,21 @@ net_calm <- prepare_subnetwork(g, which(is_calm))
 
 message("Computing reach surfaces...")
 
+# The study-area rollup, accumulated as we go: for each mesh cell, the
+# distance to the NEAREST origin of each kind, on each surface.
+#
+# A running pmin() rather than a sum over origins, and the difference is not
+# small. Reach surfaces overlap almost completely - a resident in the centre
+# of the ward is within 3km of dozens of schools - so adding up every origin's
+# population_any counts them once per school and produces a figure many times
+# the region's population. Exactly the trap F.3 records for
+# `estimated_beneficiaries`, in a different guise. A cell counts once, for the
+# nearest origin that reaches it.
+study <- list(
+  school  = list(any = rep(Inf, nrow(mesh)), calm = rep(Inf, nrow(mesh))),
+  station = list(any = rep(Inf, nrow(mesh)), calm = rep(Inf, nrow(mesh)))
+)
+
 surfaces <- lapply(seq_len(nrow(origins)), function(i) {
   seeds <- gate[[i]]
 
@@ -116,6 +131,10 @@ surfaces <- lapply(seq_len(nrow(origins)), function(i) {
 
   cell_any  <- cell_distances(dist_any,  cell_segs)
   cell_calm <- cell_distances(dist_calm, cell_segs)
+
+  kind <- origins$kind[i]
+  study[[kind]]$any  <<- pmin(study[[kind]]$any,  cell_any)
+  study[[kind]]$calm <<- pmin(study[[kind]]$calm, cell_calm)
 
   frontier <- frontier_corridors(g, segments, dist_any, dist_calm, seeds)
 
@@ -213,20 +232,23 @@ corridors <- do.call(rbind, lapply(ranking$corridors, function(c) data.frame(
   cost_tier      = c$cost_tier %||% NA_character_
 )))
 
+study_bands <- lapply(study, function(s) list(
+  any  = band_population(s$any,  mesh),
+  calm = band_population(s$calm, mesh)
+))
+
 export_population_mesh(mesh, "output/population_mesh.geojson")
 export_access_index(origins, surfaces, unlocks, corridors, cfg$name, mesh,
-                    "output/access_index.json")
+                    study_bands, "output/access_index.json")
 export_access_surfaces(origins, surfaces, mesh, "output/access")
 
 primary <- which(ACCESS_BANDS_M == ACCESS_PRIMARY_BAND_M)
-severed <- vapply(surfaces, function(s) {
-  s$band_any$population[primary] - s$band_calm$population[primary]
-}, numeric(1))
-reach <- vapply(surfaces, function(s) s$band_any$population[primary], numeric(1))
+reach   <- study_bands$school$any$population[primary]
+severed <- reach - study_bands$school$calm$population[primary]
 
 message(sprintf(
-  "\nAt %dm: %.0f residents reach a school or station on any street, %.0f of them only on high-stress streets (%.0f%%)",
-  ACCESS_PRIMARY_BAND_M, sum(reach), sum(severed),
-  100 * sum(severed) / max(sum(reach), 1)
+  "\nAt %dm: %.0f residents can reach some school on any street, %.0f of them only on high-stress streets (%.0f%%). Region total %.0f.",
+  ACCESS_PRIMARY_BAND_M, reach, severed,
+  100 * severed / max(reach, 1), sum(mesh$population, na.rm = TRUE)
 ))
 message("Wrote population_mesh.geojson, access_index.json and output/access/")

@@ -6,7 +6,10 @@
 
 library(sf)
 library(dplyr)
+
 library(jsonlite)
+
+source("R/geometry_points.R")
 
 #' Drop hexes the study has nothing to say about.
 #'
@@ -114,10 +117,12 @@ export_segment_layer <- function(segments, path) {
 #' @param corridors sf object from aggregate_corridors()
 #' @param study_area study area name, for provenance
 #' @param path output path, e.g. "../app/public/data/investment_ranking.json"
-export_investment_ranking <- function(corridors, study_area, path) {
+export_investment_ranking <- function(corridors, study_area, path, ledger = NULL) {
   required_cols <- c(
     "corridor_id", "name", "nearest_station", "recommendation", "benefit_kind",
     "intervention_lever", "cost_tier", "highway",
+    "cost_yen_low", "cost_yen_high", "benefit_yen_year",
+    "payback_years_low", "payback_years_high",
     "segment_count", "length_m", "way_ids", "osm_ids",
     "lts_before", "suitability_before", "suitability_after",
     "estimated_beneficiaries",
@@ -170,7 +175,38 @@ export_investment_ranking <- function(corridors, study_area, path) {
     study_area = study_area,
     corridor_count = nrow(df),
     total_length_km = round(sum(df$length_m) / 1000, 1),
+    ledger = ledger,
     notes = list(
+      cost = paste(
+        "cost_yen_low/high is a RANGE, and every unit cost behind it is an",
+        "illustrative planning placeholder - unlike score_roi.R's two MLIT",
+        "unit values, no published schedule of Japanese cycle-infrastructure",
+        "construction costs was found to source these against. Render the",
+        "range, never a midpoint: a single number would imply a precision",
+        "that is not there. See R/score_cost.R to replace them."
+      ),
+      benefit_yen_year = paste(
+        "The same illustrative 20% mode-shift scenario as the hex ROI, run",
+        "over this corridor's own beneficiaries. It credits the whole of that",
+        "shift to this one corridor, so where several serve the same",
+        "residents it is an upper bound. NEVER sum it across corridors -",
+        "their 500m catchments overlap, exactly as estimated_beneficiaries",
+        "does. Costs may be summed; benefits may not."
+      ),
+      payback_years = paste(
+        "Simple, undiscounted benefit payback period: cost / annual benefit.",
+        "Not a benefit-cost ratio or a formal economic appraisal - a BCR",
+        "needs a discount rate and an appraisal period, and both are policy",
+        "choices this project has no mandate to set. A screening indicator",
+        "for comparing corridors, not an MLIT-compliant cost-benefit analysis."
+      ),
+      ledger = paste(
+        "The study-area total. Its cost side sums the corridors, which is",
+        "valid because they are disjoint builds; its benefit side comes from",
+        "the hex grid rather than from summing the corridors, so each",
+        "resident is counted once. That is why this pairing is quotable and a",
+        "sum of corridor benefits would not be."
+      ),
       unit = paste(
         "One row is a corridor: segments that share a street name (or are all",
         "unnamed), run end to end into one another, and are all worth",
@@ -386,23 +422,41 @@ export_traffic_signals_layer <- function(signals, path) {
 #' layer with a `kind` discriminator, so the map can show the actual points
 #' behind those per-hex counts rather than only the counts.
 #'
-#' Sources differ in shape: KSJ schools are points, KSJ railway data is
-#' LINESTRING platform centrelines (several rows per station, so they are
-#' collapsed to one representative point per station name), and the OSM POI
-#' layer is points.
+#' Sources differ in shape: schools arrive as points already merged from KSJ
+#' and OSM (03b_merge_schools.R), KSJ railway data is LINESTRING platform
+#' centrelines (several rows per station, so they are collapsed to one
+#' representative point per station name), and the OSM POI layer is points.
 #'
-#' @param schools sf POINT, KSJ P29 (P29_004 name, P29_005 address)
+#' @param schools sf POINT from 03b_merge_schools.R - name, address,
+#'   school_class, source
 #' @param stations sf LINESTRING, KSJ N02 (N02_003 line, N02_004 operator,
 #'   N02_005 station name)
 #' @param poi sf POINT, OSM (name, amenity, shop)
 #' @param path output path, e.g. "../app/public/data/amenities.geojson"
 export_amenities_layer <- function(schools, stations, poi, path) {
-  as_points <- function(x) sf::st_point_on_surface(sf::st_geometry(x))
+  # See R/geometry_points.R. This used to be st_point_on_surface() straight on
+  # lon/lat, which sf warns about once per call - three warnings per export -
+  # and which lands an area feature's marker at an arbitrary interior point
+  # rather than its centre.
+  as_points <- function(x) representative_point(sf::st_geometry(x))
+
+  required <- c("name", "address", "school_class")
+  missing <- setdiff(required, names(schools))
+  if (length(missing) > 0) {
+    stop("the schools layer is missing: ", paste(missing, collapse = ", "),
+         "\n  Run scripts/03b_merge_schools.R - 03 alone writes the KSJ-only ",
+         "layer under a different name.")
+  }
 
   schools_pts <- sf::st_sf(
     kind   = "school",
-    name   = schools$P29_004,
-    detail = schools$P29_005,
+    name   = schools$name,
+    # KSJ carries an address, OSM almost never does, and the schools this
+    # layer gains from OSM therefore have no subtitle. Left empty rather than
+    # falling back to `school_class`: that column holds internal tokens
+    # ("elementary"), which this file has no way to translate and the panel
+    # would print raw beside a Japanese school name.
+    detail = schools$address,
     geometry = as_points(schools)
   )
 
@@ -508,10 +562,13 @@ export_population_mesh <- function(mesh, path) {
 #'   cost_tier - the labels for the frontier list, read from the investment
 #'   ranking so the two pages name a street identically
 #' @param study_area study area name, for provenance
-#' @param mesh sf, for the provenance block only
+#' @param mesh sf, for the provenance block and the region total
+#' @param study_bands per-kind list of `any`/`calm` band_population() frames,
+#'   each measured from the NEAREST origin of that kind rather than summed
+#'   across origins - see the `study` note in the output
 #' @param path output path, e.g. "output/access_index.json"
 export_access_index <- function(origins, surfaces, unlocks, corridors,
-                                study_area, mesh, path) {
+                                study_area, mesh, study_bands, path) {
   coords <- sf::st_coordinates(sf::st_geometry(origins))
   meta   <- sf::st_drop_geometry(origins)
 
@@ -588,9 +645,35 @@ export_access_index <- function(origins, surfaces, unlocks, corridors,
 
   has_child <- any(!is.na(mesh$population_child))
 
+  # The whole-study-area figure, one row per band per kind. Computed here
+  # rather than by the frontend adding up every origin, which is the one
+  # arithmetic the frontend must never do: reach surfaces overlap almost
+  # entirely, so summing them counts a central resident once per school and
+  # returns a multiple of the region's population.
+  study <- lapply(names(study_bands), function(kind) {
+    b <- study_bands[[kind]]
+    lapply(seq_len(nrow(b$any)), function(i) {
+      any_pop  <- b$any$population[i]
+      calm_pop <- b$calm$population[i]
+      list(
+        kind                  = kind,
+        band_m                = b$any$band_m[i],
+        population_any        = round(any_pop),
+        population_calm       = round(calm_pop),
+        severed               = round(any_pop - calm_pop),
+        severed_share         = if (any_pop > 0) round(1 - calm_pop / any_pop, 3) else NA_real_,
+        population_child_any  = round(b$any$population_child[i]),
+        population_child_calm = round(b$calm$population_child[i])
+      )
+    })
+  })
+  study <- unlist(study, recursive = FALSE)
+
   out <- list(
     study_area     = study_area,
     origin_count   = nrow(meta),
+    region_population = round(sum(mesh$population, na.rm = TRUE)),
+    study          = I(study),
     bands_m        = I(ACCESS_BANDS_M),
     primary_band_m = ACCESS_PRIMARY_BAND_M,
     buffer_m       = ACCESS_BUFFER_M,
@@ -633,6 +716,13 @@ export_access_index <- function(origins, surfaces, unlocks, corridors,
         "after-state is low-stress appear - a crossing improvement has no",
         "modelled after-state at all, so it can never be credited with an",
         "unlock."), MAX_FRONTIER_CORRIDORS),
+      study = paste(
+        "The same figures for the whole study area, per origin kind, measured",
+        "from the NEAREST origin of that kind - a mesh cell counts once. Never",
+        "the sum of the origins' own figures: reach surfaces overlap almost",
+        "entirely, so summing them counts a central resident once per school",
+        "and returns several times the region's population."
+      ),
       unlock = paste(
         "The calm surface recomputed with that corridor's segments treated",
         "as low-stress, minus the calm surface as it stands. A counterfactual",

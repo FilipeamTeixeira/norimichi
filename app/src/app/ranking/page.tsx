@@ -7,9 +7,88 @@ import type {
   CorridorProperties,
   HexProperties,
   InvestmentRanking,
+  ProgrammeLedger,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/context";
+
+/**
+ * The whole-study-area ledger: what building every recommended corridor would
+ * cost, against what a year of the modelled mode shift returns.
+ *
+ * This is the sentence the project's framing was built to produce and could
+ * not write until the cost side existed — and it is the *only* place the two
+ * sides may be put together, for a reason that is arithmetic rather than
+ * rhetorical. Costs are summed over corridors, which is valid because they are
+ * disjoint stretches of street. The benefit is not the sum of those corridors'
+ * own benefit figures — their catchments overlap — but the hex-grid scenario,
+ * where every resident sits in one cell and is counted once. Adding up the
+ * table's own benefit column instead would multiply the same residents by
+ * however many corridors happen to serve them.
+ *
+ * Rendered above the table rather than as a footnote: a reader who takes one
+ * thing from this page should take this.
+ */
+function Ledger({ ledger }: { ledger: ProgrammeLedger }) {
+  const t = useT();
+  const tl = t.ranking.ledger;
+  const yen = t.units.yenBig;
+
+  const payback =
+    ledger.payback_years_low !== null && ledger.payback_years_high !== null
+      ? `${ledger.payback_years_low.toFixed(1)}–${ledger.payback_years_high.toFixed(1)}`
+      : null;
+
+  return (
+    <div className="bg-white rounded-xl border border-[#E5E7EB] px-5 py-4 mb-5">
+      <div className="flex flex-wrap gap-x-10 gap-y-3">
+        <Figure
+          label={tl.cost(ledger.costed_corridors)}
+          value={`${yen(ledger.total_cost_yen_low)}–${yen(ledger.total_cost_yen_high)}`}
+        />
+        <Figure label={tl.benefit} value={`${yen(ledger.annual_benefit_yen)}`} />
+        {payback && (
+          <Figure
+            label={tl.payback}
+            value={t.units.years(payback)}
+            emphasis
+          />
+        )}
+      </div>
+      <p className="text-[11px] leading-relaxed text-neutral-400 mt-3 max-w-3xl">
+        {tl.caveat}
+      </p>
+    </div>
+  );
+}
+
+function Figure({
+  label,
+  value,
+  emphasis,
+}: {
+  label: string;
+  value: string;
+  emphasis?: boolean;
+}) {
+  return (
+    <div>
+      <div className="text-[11px] font-medium text-neutral-400 uppercase tracking-wider">
+        {label}
+      </div>
+      <div
+        className={cn(
+          "tabular-nums mt-0.5",
+          emphasis
+            ? "text-[19px] font-semibold text-neutral-900"
+            : "text-[17px] text-neutral-800"
+        )}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
 
 export default function RankingPage() {
   const t = useT();
@@ -101,10 +180,13 @@ export default function RankingPage() {
           ) : !ranking ? (
             <p className="text-sm text-neutral-400">{t.common.loading}</p>
           ) : (
-            <RankingTable
-              corridors={ranking.corridors}
-              onSelect={openOnMap}
-            />
+            <>
+              {ranking.ledger && <Ledger ledger={ranking.ledger} />}
+              <RankingTable
+                corridors={ranking.corridors}
+                onSelect={openOnMap}
+              />
+            </>
           )
         ) : (
           <>

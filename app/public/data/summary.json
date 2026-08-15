@@ -22,15 +22,15 @@
   },
   "destinations": {
     "shops_and_restaurants": 2795,
-    "schools": 185,
+    "schools": 239,
     "stations": 41
   },
   "demand": {
     "total_population": 612200,
-    "avg_demand_score": 0.264,
-    "avg_gap_score": -0.316,
-    "missed_opportunity_hexes": 48,
-    "population_in_missed_opportunity_hexes": 51841
+    "avg_demand_score": 0.265,
+    "avg_gap_score": -0.314,
+    "missed_opportunity_hexes": 49,
+    "population_in_missed_opportunity_hexes": 54834
   },
   "roi_scenario": {
     "note": "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",

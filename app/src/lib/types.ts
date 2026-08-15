@@ -70,6 +70,41 @@ export interface CorridorProperties {
   /** Plain-language description of what was simulated to get the after-number. */
   intervention_lever: string;
   cost_tier: "Low" | "Medium" | "High" | null;
+  /**
+   * What it would cost to build, as a **range** in yen. Null for
+   * interventions with no costed corridor form (bike parking).
+   *
+   * Unlike the ROI unit values, none of the unit costs behind this is
+   * sourced — no published schedule of Japanese cycle-infrastructure
+   * construction costs was found to check them against, so they are
+   * order-of-magnitude planning placeholders in `pipeline/R/score_cost.R`.
+   * Render the range; never collapse it to a midpoint, which would imply a
+   * precision that isn't there.
+   */
+  cost_yen_low: number | null;
+  cost_yen_high: number | null;
+  /**
+   * Annual benefit under the same illustrative 20% mode-shift scenario as the
+   * hex ROI, run over this corridor's own beneficiaries.
+   *
+   * Two limits, both load-bearing. It credits the whole of that shift to this
+   * one corridor, so where several serve the same residents it is an upper
+   * bound. And it **must never be summed across corridors** — their 500m
+   * catchments overlap, the same trap `estimated_beneficiaries` documents.
+   * Costs may be summed; benefits may not. The study-area figure that is safe
+   * to quote is `InvestmentRanking.ledger`.
+   */
+  benefit_yen_year: number | null;
+  /**
+   * Simple, undiscounted benefit payback period in years: cost ÷ annual
+   * benefit, carrying the cost range through. Not a benefit-cost ratio or a
+   * formal economic appraisal: a BCR needs a discount rate and an appraisal
+   * period, both policy choices this project has no mandate to set. A
+   * screening indicator for comparing corridors, not an MLIT-compliant
+   * cost-benefit analysis.
+   */
+  payback_years_low: number | null;
+  payback_years_high: number | null;
   /** Dominant OSM highway class by length. */
   highway: string | null;
   segment_count: number;
@@ -129,10 +164,33 @@ export interface CorridorProperties {
  * the data rather than living only in the UI, because three of these columns
  * are honest only when read with their caveat.
  */
+/**
+ * The study-area ledger — the one place the two sides of the ROI may honestly
+ * be put together, and the reason is arithmetic rather than framing.
+ *
+ * The cost side sums the corridors, which is valid because they are disjoint
+ * stretches of street and each is a separate build. The benefit side does
+ * *not* come from summing those same corridors — their catchments overlap —
+ * but from the hex grid, where every resident sits in exactly one cell and is
+ * counted exactly once.
+ */
+export interface ProgrammeLedger {
+  total_cost_yen_low: number;
+  total_cost_yen_high: number;
+  annual_benefit_yen: number;
+  payback_years_low: number | null;
+  payback_years_high: number | null;
+  /** Corridors with a costed intervention form, of `corridor_count`. */
+  costed_corridors: number;
+  note: string;
+}
+
 export interface InvestmentRanking {
   study_area: string;
   corridor_count: number;
   total_length_km: number;
+  /** Absent on data written before the cost side existed. */
+  ledger: ProgrammeLedger | null;
   notes: Record<string, string>;
   corridors: CorridorProperties[];
 }

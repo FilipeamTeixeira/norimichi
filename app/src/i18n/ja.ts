@@ -87,6 +87,15 @@ const ja: Dict = {
     metres: (v: number) => `${v} m`,
     km: (v: string) => `${v} km`,
     minutes: (v: number) => `${v}分`,
+    // 億・万 rather than the English magnitudes: these are construction
+    // figures, and 億円 is how they are written and read in Japanese.
+    yenBig: (v: number) =>
+      v >= 1e8
+        ? `${(v / 1e8).toFixed(1)}億円`
+        : v >= 1e4
+          ? `${Math.round(v / 1e4).toLocaleString()}万円`
+          : `${Math.round(v).toLocaleString()}円`,
+    years: (v: string) => `${v}年`,
   },
 
   metrics: {
@@ -430,6 +439,14 @@ const ja: Dict = {
     title: "整備優先度",
     lede: "事業化できる単位で並べた一覧です。各行は「路線」——同一の街路が端から端までつながり、いずれも投資に値する区間のまとまり——であって、OSM の way 1 本ではありません。だからこそ 1 行が実際に整備できる単位になります。",
     tabs: { corridors: "路線", areas: "地区" },
+
+    ledger: {
+      cost: (n: number) => `全${n.toLocaleString()}路線の整備費`,
+      benefit: "年間便益（推計）",
+      payback: "回収年数",
+      caveat:
+        "整備費は各路線が独立した事業であるため合計できます。便益側は、住民を重複なく一度だけ数える地域全体の転換シナリオによるもので、表の便益列を合計したものではありません（路線ごとの圏域は重なります）。いずれも目安の前提に基づき、日本の自転車通行空間整備費の公表単価表も確認できていないため、事業評価ではなく桁感と論理の枠組みとしてお読みください。",
+    },
     loadError: (detail: string) =>
       `investment_ranking.json を読み込めませんでした（${detail}）。pipeline/scripts/05d_score_interventions.R を実行したうえで 12_compute_investment_ranking.R を実行してください。`,
 
@@ -448,6 +465,8 @@ const ja: Dict = {
     },
 
     table: {
+      buildHelp: (tier: string) =>
+        `単価は目安値です（日本の自転車通行空間整備費の公表単価表は確認できていません）。道路空間の規模により概算費用区分「${tier}」に相当します。`,
       interventionFilter: "対策",
       unavailableType:
         "この種別に該当する路線はありません。駐輪場は点の施設であり、街路の区間ではないためです。",
@@ -480,7 +499,14 @@ const ja: Dict = {
           help: "路線全体を 1 つに統合したバッファから算出しており、区間ごとの値の単純合計ではありません。",
         },
         length: { label: "延長", help: "" },
-        cost: { label: "概算費用", help: "" },
+        build: {
+          label: "整備費",
+          help: "整備に要する費用の幅です。単価は計画上の目安値であり、ROIで用いている国土交通省の2つの原単位とは異なり、日本の自転車通行空間整備費の公表単価表を確認できていません。並べ替えは下限値で行います。幅を平均値に丸めないでください。",
+        },
+        payback: {
+          label: "回収年数",
+          help: "単純・割引なしの便益回収年数です。整備費を、その路線の周辺住民に対して見込まれる年間便益で割った値です。費用便益比（B/C）や正式な経済評価ではありません。B/Cには割引率と評価期間が必要で、いずれも本ツールが設定する立場にない政策判断です。路線同士を比較するためのスクリーニング指標であり、国交省基準に準拠した費用便益分析ではありません。",
+        },
         gap: {
           label: "地区ギャップ",
           help: "この路線が含まれる約 0.1km² の地区の機会損失スコアで、地区単位の人口から算出しています。同じ地区を通る 2 路線は同じ値になります。事業ではなく地区の順位付けです。",
@@ -719,14 +745,29 @@ const ja: Dict = {
       elementary: "小学校",
       junior_high: "中学校",
       high: "高等学校",
+      international: "各種学校",
     },
 
     picker: {
       title: "目的地",
       lede: "周辺人口のうち安全に到達できない割合が高い順に並んでいます。",
+      ledeNear: "検索した地点から近い順に並んでいます。",
       band: "自転車での距離",
-      search: "名称で検索…",
       empty: "条件に一致するものがありません。",
+      measuringFrom: "起点",
+      clearReference: "起点をクリア",
+      directDistance: (d: string) => `直線距離 ${d}`,
+    },
+
+    search: {
+      label: "学校・駅・地名を検索",
+      placeholder: "学校名、駅名、または住所…",
+      groupOrigins: "学校・駅",
+      groupPlaces: "地名・住所",
+      nothingFound: "該当するものが見つかりませんでした。",
+      clear: "検索をクリア",
+      unreachable:
+        "地名検索に接続できませんでした。学校・駅は上記のとおり名称で検索できます。",
     },
 
     legend: {

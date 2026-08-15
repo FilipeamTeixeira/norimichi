@@ -376,6 +376,45 @@ export default function AboutContentEn() {
             lanes is not the same project as one across two, while a crossing
             treatment costs about the same however wide the road.
           </Term>
+
+          <Term name="Build cost" where="a range, in yen">
+            What the corridor would cost to build. The intervention type sets a
+            rate — per metre for a lane or a calming scheme, per junction for a
+            crossing — the cost tier above escalates it for road space, and
+            length does the rest.
+            <br />
+            <br />
+            <strong>None of those unit rates is sourced.</strong> The two unit
+            values in the ROI below come from MLIT’s own cost-benefit manual;
+            for construction costs there is no equivalent published schedule
+            this project has been able to find and verify, so these are
+            order-of-magnitude planning placeholders chosen to be defensible as
+            ranges rather than accurate as numbers. That is why the column
+            shows a range and never a midpoint, and why the range is wide.
+            Replacing them with real tendered costs is a single edit to
+            <code> pipeline/R/score_cost.R</code>.
+          </Term>
+          <Term name="Payback" where="years">
+            A simple, undiscounted benefit payback period: the build cost
+            divided by the modelled annual benefit for the residents within
+            500 m of that corridor — congestion, vehicle operating cost and
+            the health proxy, under the same illustrative 20% mode-shift
+            scenario as everything else here.
+            <br />
+            <br />
+            Two things it is not. It is not a benefit-cost ratio or a formal
+            economic appraisal: a BCR needs a discount rate and an appraisal
+            period, and both are policy choices this tool has no mandate to
+            make — payback needs neither. Treat it as a screening indicator
+            for comparing corridors against each other, not an MLIT-compliant
+            cost-benefit analysis. And a corridor’s benefit is not additive —
+            it credits the whole of that neighbourhood’s modelled shift to
+            this one street, so where several corridors serve the same
+            residents each is an upper bound. Never add the column up. The one
+            total that is safe to quote is the ledger above the table, whose
+            benefit comes from the hex grid, where each resident is counted
+            exactly once.
+          </Term>
           <Term name="Residents within 500 m">
             Who a fix would plausibly serve. For a corridor this is recomputed
             from one merged buffer around the whole street, never the sum of its
@@ -490,6 +529,16 @@ export default function AboutContentEn() {
           title="Access — who can reach a school or a station"
           caption="The same measurement taken from a destination rather than about a street: how far you can get, and how much of that disappears if you refuse to ride anything hostile."
         >
+          <Term name="Which schools are listed" where="小 / 中 / 高 / 各種">
+            Elementary, junior high, high schools, and 各種学校 — which in this
+            area is the international and ethnic schools, ordinary day schools
+            whose pupils commute locally. Kindergartens and 認定こども園 are
+            left out because nobody cycles to them unaccompanied; universities
+            and 専修学校 because their catchment is regional and post-secondary,
+            so a 5 km surface around one says little; 特別支援学校 because its
+            pupils’ journeys are overwhelmingly not made by bicycle, and a
+            number beside one of those schools would mean something else.
+          </Term>
           <Term name="Distance by bicycle" where="1.5 / 3 / 5 km">
             Metres of riding, not straight-line radius. A school hemmed in by a
             river or a rail line reaches far less ground than a circle around it
@@ -540,6 +589,15 @@ export default function AboutContentEn() {
             benefit is “not modelled” never appear in this list at all, so there
             is no case where a number here stands on an intervention that was
             never simulated.
+          </Term>
+          <Term name="“… away, direct”" where="list only">
+            The one straight-line distance on this page. Searching for a place
+            re-sorts the list to the schools and stations nearest it, and that
+            ordering is measured as the crow flies — sorting 135 origins by
+            network distance would mean routing from every one of them, to
+            decide a list order. Everything else here, including every band and
+            every population figure, is metres of riding. Labelled “direct” so
+            the two are never read as the same number.
           </Term>
           <Term name="No low-stress street at the gate">
             Every street touching the school or station is itself LTS 3 or 4.

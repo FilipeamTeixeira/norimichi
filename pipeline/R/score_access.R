@@ -70,6 +70,7 @@ library(dplyr)
 
 source("R/score_network.R")      # build_segment_adjacency(), VERTEX_SNAP_M, METRIC_CRS
 source("R/score_suitability.R")  # NO_SAFE_OPTION_PENALTY, and the LTS -> 0-100 mapping
+source("R/geometry_points.R")    # representative_point()
 
 # --- Constants -----------------------------------------------------------
 
@@ -133,41 +134,102 @@ CALM_AFTER_SUITABILITY_MIN <- 57
 #' many there were before the cut.
 MAX_FRONTIER_CORRIDORS <- 8
 
-#' KSJ P29 学校分類コード -> the label this project uses.
+#' Which school levels the Access page measures reach for.
 #'
-#' Only the three classes where "can a child get here by bicycle" is a real
-#' question. 幼稚園 (16011) and 認定こども園 (16013) are excluded because
-#' nobody cycles to them unaccompanied; 大学 (16007), 専修学校 (16016) and
-#' 各種学校 (16015) because their catchment is regional rather than local and
-#' a 5km reach surface says nothing useful about them. 特別支援学校 (16012)
-#' is excluded for a different reason worth stating: its pupils' journeys are
-#' overwhelmingly not made by bicycle, and including it would put a number
-#' next to a school where the number means something else entirely.
+#' A filter over the normalised levels R/fetch_schools.R assigns, not a KSJ
+#' code map - that mapping moved there when OSM became a second source, so the
+#' two sources are levelled once and this file never sees a 学校分類コード.
 #'
-#' Stations are handled separately and have no class.
-ACCESS_SCHOOL_CLASSES <- c(
-  "16001" = "elementary",
-  "16002" = "junior_high",
-  "16004" = "high"
-)
+#' The levels here are the ones where "can a pupil get here by bicycle every
+#' day" is a real question. Left out: `kindergarten`, because nobody cycles to
+#' one unaccompanied; `tertiary` and `vocational`, whose catchment is regional
+#' and post-secondary, so a 5km surface around one says little; `special`,
+#' whose pupils' journeys are overwhelmingly not made by bicycle, which would
+#' put a number next to a school where the number means something else.
+#'
+#' **`international` was wrongly left out at first.** It is KSJ 各種学校 - a
+#' *legal* category, not a description of who attends - and in this study area
+#' it is the international and ethnic schools on the Yamate bluff, ordinary
+#' K-12 day schools whose pupils commute locally every morning. Excluding them
+#' by legal class removed them from the list with no trace, which is the
+#' failure mode an include-list makes easy. Prefer including and labelling.
+#'
+#' Stations are handled separately and have no level.
+ACCESS_SCHOOL_CLASSES <- c("elementary", "junior_high", "high", "international")
 
 # --- Origins -------------------------------------------------------------
 
+#' Stable, filesystem-safe origin ids for schools.
+#'
+#' Three things this has to survive, each learned the hard way:
+#'
+#' 1. **A change to which levels the list admits.** The first version numbered
+#'    rows across the whole origin table, so admitting one more level
+#'    renumbered every school *and* every station after them, silently
+#'    repointing every saved link and every per-origin surface file. Keying on
+#'    `school_id` - KSJ's 学校コード or the OSM object id - does not move.
+#'
+#' 2. **One school at two sites.** `school_id` identifies a school, not a
+#'    location: 横浜市立横浜商業高等学校 is one KSJ code at two campuses, 丸山
+#'    in Isogo and 南太田 in Minami. They are two places to cycle to, so they
+#'    stay two origins and the id has to separate them. The suffix ranks by
+#'    position rather than row order, because row order is an artefact of which
+#'    ward merged first. Only shared ids are suffixed, so the ordinary school
+#'    keeps a clean one.
+#'
+#' 3. **Being a filename.** `school_id` carries `:` and `/` (`osm:way/12345`),
+#'    and the export writes one file per origin. Everything outside
+#'    [A-Za-z0-9_-] becomes a hyphen.
+#'
+#' @param school_id character vector from R/fetch_schools.R
+#' @param geometry sfc POINT, same length and order
+school_origin_ids <- function(school_id, geometry) {
+  ids <- sprintf("school_%s", gsub("[^A-Za-z0-9_-]", "-", school_id))
+  shared <- ids %in% ids[duplicated(ids)]
+  if (!any(shared)) return(ids)
+
+  xy <- sf::st_coordinates(geometry)
+  by_position <- order(ids, xy[, 1], xy[, 2])
+
+  nth <- integer(length(ids))
+  nth[by_position] <- as.integer(
+    stats::ave(rep(1L, length(ids)), ids[by_position], FUN = cumsum)
+  )
+
+  ids[shared] <- sprintf("%s_%d", ids[shared], nth[shared])
+  ids
+}
+
 #' Build the origin table: the places whose reach is worth measuring.
 #'
-#' @param schools sf POINT, KSJ P29 (P29_003 class, P29_004 name, P29_005 address)
+#' @param schools sf POINT from 03b_merge_schools.R - school_id, name,
+#'   address, school_class, source
 #' @param stations sf, KSJ N02 platform centrelines (N02_003 line, N02_005 name)
 #' @return sf POINT with origin_id, kind, school_class, name, detail
 build_access_origins <- function(schools, stations) {
-  school_class <- unname(ACCESS_SCHOOL_CLASSES[as.character(schools$P29_003)])
-  keep <- !is.na(school_class)
+  required <- c("school_id", "name", "address", "school_class", "source")
+  missing <- setdiff(required, names(schools))
+  if (length(missing) > 0) {
+    stop("the schools layer is missing: ", paste(missing, collapse = ", "),
+         "\n  Run scripts/03b_merge_schools.R - 03 alone writes the KSJ-only ",
+         "layer under a different name.")
+  }
+
+  keep <- !is.na(schools$school_class) &
+    schools$school_class %in% ACCESS_SCHOOL_CLASSES
+  school_geometry <- sf::st_geometry(schools[keep, ])
 
   schools_pts <- sf::st_sf(
+    origin_id    = school_origin_ids(schools$school_id[keep], school_geometry),
     kind         = "school",
-    school_class = school_class[keep],
-    name         = schools$P29_004[keep],
-    detail       = schools$P29_005[keep],
-    geometry     = sf::st_point_on_surface(sf::st_geometry(schools[keep, ]))
+    school_class = schools$school_class[keep],
+    name         = schools$name[keep],
+    # OSM rarely carries an address, so this is NA for most schools it
+    # contributes. Left NA rather than filled with the level, which the panel
+    # already shows as its own badge - a subtitle that silently means
+    # something different on some rows is worse than an absent one.
+    detail       = schools$address[keep],
+    geometry     = school_geometry
   )
 
   # One row per platform centreline collapses to one origin per station, the
@@ -181,20 +243,35 @@ build_access_origins <- function(schools, stations) {
     )
 
   stations_pts <- sf::st_sf(
+    # Numbered within the station table rather than across both. group_by()
+    # sorts on the name, so these hold as long as the station set does - and
+    # KSJ N02 carries no station-level id to key on the way schools do.
+    origin_id    = sprintf("station_%d", seq_len(nrow(station_groups))),
     kind         = "station",
     school_class = NA_character_,
     name         = station_groups$station,
     detail       = station_groups$detail,
-    geometry     = sf::st_point_on_surface(sf::st_geometry(station_groups))
+    # A point on one of the station's platforms, computed in metres - see
+    # R/geometry_points.R, which is also what stops sf warning about planar
+    # maths on lon/lat here. An earlier version suppressed that warning on the
+    # grounds the error was sub-metre; it was the same warning that turned out
+    # to be putting school markers on the wrong building, so it is fixed
+    # rather than silenced.
+    geometry     = representative_point(sf::st_geometry(station_groups))
   )
 
   origins <- rbind(schools_pts, stations_pts)
 
-  # Stable within a run and readable in a URL. Not stable across runs if the
-  # KSJ extract changes - the app treats it as an opaque key and always reads
-  # the index for the list, so a shifted id is a stale bookmark rather than a
-  # wrong answer.
-  origins$origin_id <- sprintf("%s_%d", origins$kind, seq_len(nrow(origins)))
+  # The id is a filename in the export, so a collision would have two origins
+  # overwriting one surface and the second silently winning. Cheap to check,
+  # invisible if it ever happened - and it did: this fired on a school code
+  # shared by two campuses, which is what school_origin_ids() now separates.
+  if (anyDuplicated(origins$origin_id) > 0) {
+    dupes <- unique(origins$origin_id[duplicated(origins$origin_id)])
+    stop("duplicate origin ids: ", paste(dupes, collapse = ", "),
+         "\n  school_origin_ids() should already have separated shared ids.")
+  }
+
   origins[, c("origin_id", "kind", "school_class", "name", "detail")]
 }
 
@@ -450,11 +527,24 @@ cell_distances <- function(seg_dist, cell_segs) {
 #' @return data frame, one row per band: band_m, cells, population,
 #'   population_child, population_elderly
 band_population <- function(cell_dist, mesh, bands = ACCESS_BANDS_M) {
-  # An age band the source table did not carry is NA for every cell, and
-  # sum(na.rm = TRUE) would turn that into a confident 0. Kept as NA so the
-  # export can say "this run has no child figures" rather than "no children
-  # live near any school in Yokohama".
-  total <- function(x) if (all(is.na(x))) NA_real_ else sum(x, na.rm = TRUE)
+  # Two different reasons a total can have nothing to add up, and they must not
+  # come out the same:
+  #
+  #   no cells in the band   -> 0. Nobody is reachable. A real measurement, and
+  #                             the one the most severed origins produce.
+  #   the band is not in the -> NA. We do not know. The export then says "this
+  #   source table              run has no child figures" rather than "no
+  #                             children live near any school in Yokohama".
+  #
+  # all(is.na(x)) is TRUE for a zero-length vector, so the length check has to
+  # come first - without it an origin with no calm reach at all reports a null
+  # calm population, and the UI renders it in the "nobody can reach this"
+  # style, which is the opposite of what happened.
+  total <- function(x) {
+    if (length(x) == 0) return(0)
+    if (all(is.na(x))) return(NA_real_)
+    sum(x, na.rm = TRUE)
+  }
 
   do.call(rbind, lapply(bands, function(band) {
     inside <- cell_dist <= band

@@ -110,15 +110,23 @@ bind_layers <- function(parts, layer) {
   do.call(rbind, lapply(parts, function(p) p[, common]))
 }
 
-#' Deduplicate a point layer. OSM layers key on osm_id, since the same node id
-#' is the same thing. KSJ layers (schools, stations) have no id column at all,
-#' so they key on geometry PLUS every attribute - geometry alone is wrong and
-#' loses real records: KSJ N02 gives 関内 two rows sharing one centreline, one
-#' per subway line (1号線 / 3号線, station codes 004691 / 004692). A genuine
-#' seam duplicate is the same feature read through two ward boundaries, so it
-#' matches on geometry and attributes together; two lines at one station do
-#' not. A row whose osm_id is NA falls back to the same combined key rather
-#' than collapsing with every other NA row.
+#' Deduplicate a point layer. Layers with an id column key on it, since the
+#' same id is the same thing. Layers without one (stations) key on geometry
+#' PLUS every attribute - geometry alone is wrong and loses real records: KSJ
+#' N02 gives 関内 two rows sharing one centreline, one per subway line (1号線 /
+#' 3号線, station codes 004691 / 004692). A genuine seam duplicate is the same
+#' feature read through two ward boundaries, so it matches on geometry and
+#' attributes together; two lines at one station do not. A row whose id is NA
+#' falls back to the same combined key rather than collapsing with every other
+#' NA row.
+#'
+#' `school_id` is here for a case the geometry key cannot catch. 03b clips
+#' OSM campus polygons to the ward boundary, so a school straddling a ward line
+#' is read into both extracts and reduced to a point on each *clipped half* -
+#' two different coordinates, identical attributes, one real school. Keying on
+#' the id it kept from OSM collapses them; keying on geometry would not.
+ID_COLUMNS <- c("osm_id", "school_id")
+
 dedupe_points <- function(x, layer) {
   before <- nrow(x)
   full_key <- paste(
@@ -126,8 +134,10 @@ dedupe_points <- function(x, layer) {
     do.call(paste, c(as.list(sf::st_drop_geometry(x)), sep = "\r")),
     sep = "\r"
   )
-  key <- if ("osm_id" %in% names(x)) {
-    ifelse(is.na(x$osm_id), full_key, as.character(x$osm_id))
+  id_col <- intersect(ID_COLUMNS, names(x))
+  key <- if (length(id_col) > 0) {
+    ids <- as.character(x[[id_col[1]]])
+    ifelse(is.na(ids), full_key, ids)
   } else {
     full_key
   }
