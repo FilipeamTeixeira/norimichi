@@ -186,34 +186,35 @@ const HEX_OUTLINE_OPACITY: ExpressionSpecification = [
   0,
 ];
 
+/**
+ * A station is the one amenity that anchors a whole catchment rather than
+ * marking a single address, so it is drawn bigger than the schools and shops
+ * around it — about halfway to a dock, which stays the largest point on the
+ * map because it is infrastructure rather than context.
+ *
+ * The size split lives inside each zoom stop rather than in a `match` wrapped
+ * around the whole thing: a style property may hold only one zoom-driven
+ * `interpolate`, and nesting one inside a `match` is rejected outright, which
+ * drops the layer.
+ */
+const amenityRadius = (station: number, other: number): ExpressionSpecification => [
+  "match",
+  ["get", "kind"],
+  "station",
+  station,
+  other,
+];
+
 const AMENITY_RADIUS: ExpressionSpecification = [
   "interpolate",
   ["linear"],
   ["zoom"],
   12,
-  2,
+  amenityRadius(2.75, 2),
   15,
-  3.2,
+  amenityRadius(4.1, 3.2),
   18,
-  5,
-];
-
-/**
- * A station is the one amenity that anchors a whole catchment rather than
- * marking a single address, so it is drawn bigger than the schools and shops
- * around it — halfway to a dock, which stays the largest point on the map
- * because it is infrastructure rather than context.
- */
-const STATION_RADIUS: ExpressionSpecification = [
-  "interpolate",
-  ["linear"],
-  ["zoom"],
-  12,
-  2.75,
-  15,
-  4.1,
-  18,
-  6.25,
+  amenityRadius(6.25, 5),
 ];
 
 const BIKE_RADIUS: ExpressionSpecification = [
@@ -684,13 +685,7 @@ export default function MapView({
       source: "amenities",
       layout: { visibility: vis(toggles.amenities) },
       paint: {
-        "circle-radius": [
-          "match",
-          ["get", "kind"],
-          "station",
-          STATION_RADIUS,
-          AMENITY_RADIUS,
-        ],
+        "circle-radius": AMENITY_RADIUS,
         "circle-color": [
           "match",
           ["get", "kind"],
