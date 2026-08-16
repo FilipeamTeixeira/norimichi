@@ -97,15 +97,6 @@ export default function TopNav() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-1.5">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="text-neutral-400">
-            <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M9.5 9.5L13 13" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-          </svg>
-          <span className="text-sm text-neutral-400 whitespace-nowrap">
-            {t.nav.searchPlace}
-          </span>
-        </div>
         <LanguageSwitcher />
       </div>
     </nav>

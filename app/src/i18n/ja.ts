@@ -29,7 +29,6 @@ const ja: Dict = {
     route: "ルート分析",
     ranking: "整備優先度",
     about: "本サイトについて",
-    searchPlace: "地名を検索…",
     language: "言語",
   },
 

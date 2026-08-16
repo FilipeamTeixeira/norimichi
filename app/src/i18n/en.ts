@@ -26,7 +26,6 @@ const en = {
     route: "Route Analysis",
     ranking: "Investment Ranking",
     about: "About",
-    searchPlace: "Search place…",
     language: "Language",
   },
 
