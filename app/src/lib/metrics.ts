@@ -48,6 +48,9 @@ export interface MetricDef {
 const int = (v: number) => Math.round(v).toLocaleString();
 const dec1 = (v: number) => v.toFixed(1);
 const dec2 = (v: number) => v.toFixed(2);
+/** A 0-1 share as a percentage. One decimal: the source's own second digit is
+ *  noise (multi-mode counting, see the observed_* note in lib/types.ts). */
+const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 const yen = (v: number) =>
   v >= 10000
     ? `¥${(v / 1000).toFixed(0)}k`
@@ -151,6 +154,32 @@ export function views(t: Dict): ViewDef[] {
         label: v.demand_score.label,
         scale: "sequential",
         format: dec2,
+      },
+    },
+    /**
+     * The only measured layer on the map. Everything else here is derived
+     * from population, OSM tags and stated assumptions; this one is a count
+     * of people, from the census, on the same 250m grid the population comes
+     * on.
+     *
+     * It sits next to `demand_score` deliberately — the two answer "where
+     * should cycling happen" and "where does it happen", and the interesting
+     * places are where they disagree. Absent from the list entirely if the
+     * field is missing, which is what a study area with no census mesh
+     * downloaded looks like; an empty layer would read as "nobody cycles".
+     */
+    {
+      id: "observed_bicycle_share",
+      label: v.observed_bicycle_share.label,
+      geometry: "areas",
+      group: "areas",
+      hint: v.observed_bicycle_share.hint,
+      note: v.observed_bicycle_share.note,
+      metric: {
+        key: "observed_bicycle_share",
+        label: v.observed_bicycle_share.label,
+        scale: "sequential",
+        format: pct,
       },
     },
     {

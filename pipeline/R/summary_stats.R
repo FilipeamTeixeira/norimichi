@@ -18,10 +18,14 @@ library(sf)
 #' @param gap_threshold gap_score above which a hex counts as a "missed
 #'   opportunity" for the headline count below. 0.2 is a starting point -
 #'   tune once you see the real distribution for your area.
+#' @param observed_cycling optional list from summarise_observed_cycling() -
+#'   the one measured figure in the file, carried alongside the modelled ones
+#'   rather than folded into them
 #' @return a named list, ready for jsonlite::toJSON()
 compute_study_area_summary <- function(hexes, segments,
                                         poi_count, schools_count, stations_count,
-                                        gap_threshold = 0.2) {
+                                        gap_threshold = 0.2,
+                                        observed_cycling = NULL) {
 
   segments_df <- sf::st_drop_geometry(segments)
   hexes_df    <- sf::st_drop_geometry(hexes)
@@ -84,6 +88,14 @@ compute_study_area_summary <- function(hexes, segments,
         sum(hexes_df$population[hexes_df$gap_score > gap_threshold], na.rm = TRUE)
       )
     ),
+    # The only measurement here. Everything above and below it is modelled,
+    # and keeping it in its own block rather than merged into `demand` is the
+    # point: a reader has to be able to see which figures were observed and
+    # which were derived, and a merged block would let the modelled ones
+    # borrow this one's authority. NULL until config/observed_cycling.yml is
+    # filled in - absent rather than guessed.
+    observed = observed_cycling,
+
     roi_scenario = list(
       note = "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",
       daily_car_trips = round(sum(hexes_df$roi_car_trips_per_day, na.rm = TRUE)),

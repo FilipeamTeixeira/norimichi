@@ -330,6 +330,31 @@ export interface HexProperties {
   roi_emissions_avoided_kg_day: number;
   roi_health_benefit_yen_day: number;
   roi_parking_spaces_freed: number;
+
+  /**
+   * The measured fields — and the only ones on this interface that are.
+   * Everything above is derived from population, OSM tags and stated
+   * assumptions; these are counts of people from 令和2年国勢調査's 250m mesh,
+   * joined by the same area-weighted route the population takes
+   * (pipeline/scripts/07b_join_observed_cycling.R).
+   *
+   * Optional because a study area with no census extract downloaded exports
+   * without them, and the "Cycling today" view hides itself rather than
+   * rendering an empty layer that would read as "nobody cycles here".
+   *
+   * Two things the share is not. **Commute and school journeys only** — in
+   * this study area 55% of them involve a train, and the shopping and escort
+   * trips a bicycle is best at are not in the source at all. And **not
+   * mutually exclusive**: the census records every mode a person uses, so
+   * cycling to the station counts under both bicycle and rail. Treat the
+   * second decimal as noise.
+   */
+  observed_commuters?: number;
+  observed_bicycle?: number;
+  /** Null where nobody lives in the hex — undefined, not zero. */
+  observed_bicycle_share?: number | null;
+  observed_rail_share?: number | null;
+  observed_car_share?: number | null;
 }
 
 /**

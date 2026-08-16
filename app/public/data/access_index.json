@@ -141,7 +141,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -167,7 +167,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -219,7 +219,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -297,7 +297,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -404,7 +404,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -430,7 +430,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -482,7 +482,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -534,7 +534,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -667,7 +667,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -693,7 +693,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -745,7 +745,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -771,7 +771,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -930,7 +930,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -956,7 +956,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1008,7 +1008,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1086,7 +1086,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1297,7 +1297,7 @@
           "corridor_id": 441,
           "name": "紅葉坂",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1323,7 +1323,7 @@
           "corridor_id": 126,
           "name": "音楽通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1456,7 +1456,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1508,7 +1508,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1560,7 +1560,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1612,7 +1612,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1719,7 +1719,7 @@
           "corridor_id": 256,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1745,7 +1745,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -1982,7 +1982,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2060,7 +2060,7 @@
           "corridor_id": 158,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2167,7 +2167,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2193,7 +2193,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2245,7 +2245,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2271,7 +2271,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2430,7 +2430,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2456,7 +2456,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2534,7 +2534,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2586,7 +2586,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2612,7 +2612,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2693,7 +2693,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2719,7 +2719,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2771,7 +2771,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2797,7 +2797,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2956,7 +2956,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -2982,7 +2982,7 @@
           "corridor_id": 256,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3086,7 +3086,7 @@
           "corridor_id": 43,
           "name": "イスパニア通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3219,7 +3219,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3245,7 +3245,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3297,7 +3297,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3375,7 +3375,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3482,7 +3482,7 @@
           "corridor_id": 40,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3534,7 +3534,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3612,7 +3612,7 @@
           "corridor_id": 158,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3638,7 +3638,7 @@
           "corridor_id": 265,
           "name": "お馬通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3719,7 +3719,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3745,7 +3745,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3771,7 +3771,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3797,7 +3797,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3901,7 +3901,7 @@
           "corridor_id": 61,
           "name": "長安道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -3982,7 +3982,7 @@
           "corridor_id": 170,
           "name": "池下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4008,7 +4008,7 @@
           "corridor_id": 173,
           "name": "関内大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4060,7 +4060,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4112,7 +4112,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4138,7 +4138,7 @@
           "corridor_id": 606,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4164,7 +4164,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4245,7 +4245,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4271,7 +4271,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4323,7 +4323,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4401,7 +4401,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4508,7 +4508,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4534,7 +4534,7 @@
           "corridor_id": 82,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4560,7 +4560,7 @@
           "corridor_id": 222,
           "name": "代官坂",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4586,7 +4586,7 @@
           "corridor_id": 230,
           "name": "ひらがな商店街",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4771,7 +4771,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4797,7 +4797,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4823,7 +4823,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4875,7 +4875,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4927,7 +4927,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -4953,7 +4953,7 @@
           "corridor_id": 589,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5034,7 +5034,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5060,7 +5060,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5086,7 +5086,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5138,7 +5138,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5190,7 +5190,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5216,7 +5216,7 @@
           "corridor_id": 589,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5297,7 +5297,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5323,7 +5323,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5375,7 +5375,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5401,7 +5401,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5560,7 +5560,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5586,7 +5586,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5638,7 +5638,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5716,7 +5716,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5823,7 +5823,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5849,7 +5849,7 @@
           "corridor_id": 82,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5875,7 +5875,7 @@
           "corridor_id": 222,
           "name": "代官坂",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -5901,7 +5901,7 @@
           "corridor_id": 230,
           "name": "ひらがな商店街",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6086,7 +6086,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6112,7 +6112,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6164,7 +6164,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6190,7 +6190,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6349,7 +6349,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6375,7 +6375,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6401,7 +6401,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6453,7 +6453,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6505,7 +6505,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6531,7 +6531,7 @@
           "corridor_id": 589,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6612,7 +6612,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6638,7 +6638,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6690,7 +6690,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6716,7 +6716,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6875,7 +6875,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6901,7 +6901,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -6953,7 +6953,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7005,7 +7005,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7138,7 +7138,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7164,7 +7164,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7216,7 +7216,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7242,7 +7242,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7427,7 +7427,7 @@
           "corridor_id": 61,
           "name": "長安道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7453,7 +7453,7 @@
           "corridor_id": 10,
           "name": "開港道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7664,7 +7664,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7690,7 +7690,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7716,7 +7716,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7742,7 +7742,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7794,7 +7794,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7820,7 +7820,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7846,7 +7846,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7927,7 +7927,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -7953,7 +7953,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8005,7 +8005,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8083,7 +8083,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8190,7 +8190,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8294,7 +8294,7 @@
           "corridor_id": 158,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8375,7 +8375,7 @@
           "corridor_id": 61,
           "name": "長安道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8401,7 +8401,7 @@
           "corridor_id": 10,
           "name": "開港道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8638,7 +8638,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8664,7 +8664,7 @@
           "corridor_id": 41,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -8690,7 +8690,7 @@
           "corridor_id": 14,
           "name": "横浜市道82号山下本牧磯子線",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9323,7 +9323,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9375,7 +9375,7 @@
           "corridor_id": 315,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9401,7 +9401,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9427,7 +9427,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9479,7 +9479,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9716,7 +9716,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9823,7 +9823,7 @@
           "corridor_id": 293,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -9982,7 +9982,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10034,7 +10034,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10060,7 +10060,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10112,7 +10112,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10138,7 +10138,7 @@
           "corridor_id": 406,
           "name": "台の下（中原第110号線）",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10482,7 +10482,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10508,7 +10508,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10586,7 +10586,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10638,7 +10638,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10664,7 +10664,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10771,7 +10771,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10823,7 +10823,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10849,7 +10849,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -10901,7 +10901,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11164,7 +11164,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11297,7 +11297,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11349,7 +11349,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11375,7 +11375,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11453,7 +11453,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11586,7 +11586,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11664,7 +11664,7 @@
           "corridor_id": 341,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11797,7 +11797,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11849,7 +11849,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11875,7 +11875,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -11927,7 +11927,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12060,7 +12060,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12112,7 +12112,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12138,7 +12138,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12190,7 +12190,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12297,7 +12297,7 @@
           "corridor_id": 390,
           "name": "洋光台通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12323,7 +12323,7 @@
           "corridor_id": 289,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12430,7 +12430,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12482,7 +12482,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12508,7 +12508,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12560,7 +12560,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -12823,7 +12823,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13352,7 +13352,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13378,7 +13378,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13482,7 +13482,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13667,7 +13667,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13693,7 +13693,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13719,7 +13719,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13771,7 +13771,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13878,7 +13878,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13930,7 +13930,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -13982,7 +13982,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14034,7 +14034,7 @@
           "corridor_id": 406,
           "name": "台の下（中原第110号線）",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14060,7 +14060,7 @@
           "corridor_id": 329,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14141,7 +14141,7 @@
           "corridor_id": 390,
           "name": "洋光台通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14167,7 +14167,7 @@
           "corridor_id": 289,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14274,7 +14274,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14326,7 +14326,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14352,7 +14352,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -14404,7 +14404,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15063,7 +15063,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15115,7 +15115,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15167,7 +15167,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15193,7 +15193,7 @@
           "corridor_id": 406,
           "name": "台の下（中原第110号線）",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15219,7 +15219,7 @@
           "corridor_id": 329,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15563,7 +15563,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15589,7 +15589,7 @@
           "corridor_id": 293,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15641,7 +15641,7 @@
           "corridor_id": 411,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15748,7 +15748,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15800,7 +15800,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15826,7 +15826,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -15878,7 +15878,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16011,7 +16011,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16063,7 +16063,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16089,7 +16089,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16141,7 +16141,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16274,7 +16274,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16326,7 +16326,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16352,7 +16352,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16404,7 +16404,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16537,7 +16537,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16589,7 +16589,7 @@
           "corridor_id": 315,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16615,7 +16615,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16641,7 +16641,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -16693,7 +16693,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -17563,7 +17563,7 @@
           "corridor_id": 493,
           "name": "旧東海道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -17615,7 +17615,7 @@
           "corridor_id": 571,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -18589,7 +18589,7 @@
           "corridor_id": 441,
           "name": "紅葉坂",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -18615,7 +18615,7 @@
           "corridor_id": 126,
           "name": "音楽通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -18748,7 +18748,7 @@
           "corridor_id": 458,
           "name": "新横浜通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -18774,7 +18774,7 @@
           "corridor_id": 493,
           "name": "旧東海道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -18800,7 +18800,7 @@
           "corridor_id": 523,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19144,7 +19144,7 @@
           "corridor_id": 483,
           "name": "藤江橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19274,7 +19274,7 @@
           "corridor_id": 485,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19326,7 +19326,7 @@
           "corridor_id": 493,
           "name": "旧東海道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19407,7 +19407,7 @@
           "corridor_id": 458,
           "name": "新横浜通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19459,7 +19459,7 @@
           "corridor_id": 493,
           "name": "旧東海道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19485,7 +19485,7 @@
           "corridor_id": 523,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19511,7 +19511,7 @@
           "corridor_id": 515,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19855,7 +19855,7 @@
           "corridor_id": 483,
           "name": "藤江橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -19985,7 +19985,7 @@
           "corridor_id": 485,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20037,7 +20037,7 @@
           "corridor_id": 493,
           "name": "旧東海道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20118,7 +20118,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20144,7 +20144,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20170,7 +20170,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20222,7 +20222,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20274,7 +20274,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -20300,7 +20300,7 @@
           "corridor_id": 589,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21696,7 +21696,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21722,7 +21722,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21748,7 +21748,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21800,7 +21800,7 @@
           "corridor_id": 606,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21826,7 +21826,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -21878,7 +21878,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -22378,7 +22378,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23537,7 +23537,7 @@
           "corridor_id": 170,
           "name": "池下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23563,7 +23563,7 @@
           "corridor_id": 173,
           "name": "関内大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23589,7 +23589,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23615,7 +23615,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23641,7 +23641,7 @@
           "corridor_id": 606,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23667,7 +23667,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -23693,7 +23693,7 @@
           "corridor_id": 64,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -24326,7 +24326,7 @@
           "corridor_id": 651,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -24404,7 +24404,7 @@
           "corridor_id": 686,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -24430,7 +24430,7 @@
           "corridor_id": 644,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -25878,7 +25878,7 @@
           "corridor_id": 660,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -25904,7 +25904,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -25930,7 +25930,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -25982,7 +25982,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -26034,7 +26034,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -26060,7 +26060,7 @@
           "corridor_id": 589,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -26930,7 +26930,7 @@
           "corridor_id": 651,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -26956,7 +26956,7 @@
           "corridor_id": 686,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -26982,7 +26982,7 @@
           "corridor_id": 644,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29401,7 +29401,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29825,7 +29825,7 @@
           "corridor_id": 170,
           "name": "池下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29851,7 +29851,7 @@
           "corridor_id": 173,
           "name": "関内大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29877,7 +29877,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29929,7 +29929,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29955,7 +29955,7 @@
           "corridor_id": 606,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -29981,7 +29981,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -30007,7 +30007,7 @@
           "corridor_id": 64,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -30877,7 +30877,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -30929,7 +30929,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -30981,7 +30981,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31007,7 +31007,7 @@
           "corridor_id": 406,
           "name": "台の下（中原第110号線）",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31033,7 +31033,7 @@
           "corridor_id": 329,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31114,7 +31114,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31140,7 +31140,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31192,7 +31192,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -31270,7 +31270,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32244,7 +32244,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32296,7 +32296,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32322,7 +32322,7 @@
           "corridor_id": 329,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32348,7 +32348,7 @@
           "corridor_id": 358,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32481,7 +32481,7 @@
           "corridor_id": 457,
           "name": "すずかけ通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32825,7 +32825,7 @@
           "corridor_id": 10,
           "name": "開港道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -32955,7 +32955,7 @@
           "corridor_id": 4,
           "name": "海岸通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33088,7 +33088,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33140,7 +33140,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33166,7 +33166,7 @@
           "corridor_id": 403,
           "name": "中原本道",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33218,7 +33218,7 @@
           "corridor_id": 336,
           "name": "台の上",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33244,7 +33244,7 @@
           "corridor_id": 406,
           "name": "台の下（中原第110号線）",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33325,7 +33325,7 @@
           "corridor_id": 35,
           "name": "本牧通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33351,7 +33351,7 @@
           "corridor_id": 232,
           "name": "横浜駅根岸道路",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33403,7 +33403,7 @@
           "corridor_id": 72,
           "name": "山下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33481,7 +33481,7 @@
           "corridor_id": 183,
           "name": "山手本通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -33718,7 +33718,7 @@
           "corridor_id": 126,
           "name": "音楽通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34062,7 +34062,7 @@
           "corridor_id": 392,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34114,7 +34114,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34140,7 +34140,7 @@
           "corridor_id": 357,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34192,7 +34192,7 @@
           "corridor_id": 345,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34299,7 +34299,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34325,7 +34325,7 @@
           "corridor_id": 117,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34351,7 +34351,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34377,7 +34377,7 @@
           "corridor_id": 2,
           "name": "みなと大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34455,7 +34455,7 @@
           "corridor_id": 276,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34666,7 +34666,7 @@
           "corridor_id": 287,
           "name": "東京環状",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -34744,7 +34744,7 @@
           "corridor_id": 341,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35351,7 +35351,7 @@
           "corridor_id": 170,
           "name": "池下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35377,7 +35377,7 @@
           "corridor_id": 173,
           "name": "関内大通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35403,7 +35403,7 @@
           "corridor_id": 63,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35507,7 +35507,7 @@
           "corridor_id": 62,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35770,7 +35770,7 @@
           "corridor_id": 170,
           "name": "池下橋",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -35877,7 +35877,7 @@
           "corridor_id": 86,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -36062,7 +36062,7 @@
           "corridor_id": 549,
           "name": "西区役所通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -36114,7 +36114,7 @@
           "corridor_id": 498,
           "name": "戸部本町紅梅通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -36166,7 +36166,7 @@
           "corridor_id": 497,
           "name": "戸部通り",
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,
@@ -36218,7 +36218,7 @@
           "corridor_id": 499,
           "name": null,
           "recommendation": "Missing link",
-          "cost_tier": "High",
+          "cost_tier": "Medium",
           "unlock": [
             {
               "band_m": 1500,

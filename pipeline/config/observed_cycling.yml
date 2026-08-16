@@ -1,0 +1,59 @@
+# Observed cycling — the one number in this project that is a measurement
+# rather than a model.
+#
+# WHY THIS FILE EXISTS
+#
+# Everything else here is derived. Demand is modelled from population,
+# destinations and terrain; stress is modelled from OSM tags; the ROI is a
+# scenario built on eight stated assumptions. None of it had ever been checked
+# against what people in these wards actually do, and until it was, the
+# project's central claim — "the potential is there, the streets are
+# suppressing it" — rested entirely on its own reasoning.
+#
+# `score_demand.R` used to make that worse by *assuming* suppression from road
+# stress and then comparing it against road stress. That term is gone. This is
+# the other half: something to check the result against.
+#
+# WHAT THE DATA IS
+#
+# 令和2年国勢調査 地域メッシュ統計, table T001109 — the same 250m grid the
+# population already comes on, so it joins to the hex grid by exactly the
+# route 07_join_population.R already uses. Downloaded per prefecture as
+# tblT001109Q<NN>.txt; Kanagawa is Q14.
+#
+#   https://www.e-stat.go.jp/dbview?sid=0003454513
+#
+# The columns that matter are the last six: 利用交通手段別１５歳以上自宅外
+# 就業者・通学者 by 徒歩のみ / 鉄道・電車 / 乗合バス / 自家用車 / オートバイ /
+# 自転車, plus 当地に常住する１５歳以上就業者・通学者 総数 as the denominator.
+#
+# WHAT IT IS NOT
+#
+# **Commute and school trips only.** That is a specific and, in Yokohama, an
+# unusually rail-heavy slice of travel — 55% of these journeys involve a train.
+# The shopping, errand and escort trips a bicycle is best at are not in this
+# table at all. So a weak relationship between modelled demand and this figure
+# is evidence about commuting, not a verdict on the model. Read
+# R/observed_mode_share.R before quoting any correlation from it.
+#
+# It is also **not** a substitute for the ROI's CURRENT_CAR_MODE_SHARE, for the
+# same reason: different population of trips.
+
+# Where the downloaded prefecture files live, relative to the pipeline
+# directory, and which prefecture the study area is in.
+data_dir: "../data/estat_bike_data"
+prefecture_code: 14        # 神奈川県 -> tblT001109Q14.txt
+census_year: 2020
+source: "令和2年国勢調査 地域メッシュ統計 T001109（利用交通手段別15歳以上自宅外就業者・通学者）"
+
+# Column codes in that file. Listed rather than hardcoded in the R because
+# e-Stat renumbers these between census years, and a silently shifted column
+# would put 乗合バス where 自転車 should be with no error anywhere.
+columns:
+  commuters_total: "T001109086"   # 当地に常住する15歳以上就業者・通学者 総数
+  walk:            "T001109089"
+  rail:            "T001109090"
+  bus:             "T001109091"
+  car:             "T001109092"
+  motorcycle:      "T001109093"
+  bicycle:         "T001109094"

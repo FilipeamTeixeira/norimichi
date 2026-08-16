@@ -27,10 +27,60 @@
   },
   "demand": {
     "total_population": 612200,
-    "avg_demand_score": 0.265,
-    "avg_gap_score": -0.314,
-    "missed_opportunity_hexes": 49,
+    "avg_demand_score": 0.244,
+    "avg_gap_score": -0.335,
+    "missed_opportunity_hexes": 33,
     "population_in_missed_opportunity_hexes": 54834
+  },
+  "observed": {
+    "source": "令和2年国勢調査 地域メッシュ統計 T001109",
+    "trips": "commute and school journeys only (通勤・通学)",
+    "commuters": 289124,
+    "bicycle_commuters": 23127,
+    "bicycle_share": 0.08,
+    "rail_share": 0.5431,
+    "car_share": 0.1111,
+    "validation": {
+      "hexes_used": 479,
+      "hexes_excluded_too_few_commuters": 48,
+      "min_commuters": 50,
+      "corr_demand": -0.206,
+      "corr_gap": -0.258,
+      "corr_infra_quality": 0.275,
+      "corr_rail_share": -0.708,
+      "partial_corr_demand_given_infra": -0.052,
+      "by_infra_quartile": [
+        {
+          "quartile": 1,
+          "hexes": 120,
+          "mean_infra_quality": 0.427,
+          "mean_observed_bicycle_share": 0.07,
+          "mean_demand_score": 0.434
+        },
+        {
+          "quartile": 2,
+          "hexes": 120,
+          "mean_infra_quality": 0.588,
+          "mean_observed_bicycle_share": 0.0828,
+          "mean_demand_score": 0.273
+        },
+        {
+          "quartile": 3,
+          "hexes": 119,
+          "mean_infra_quality": 0.648,
+          "mean_observed_bicycle_share": 0.0803,
+          "mean_demand_score": 0.19
+        },
+        {
+          "quartile": 4,
+          "hexes": 120,
+          "mean_infra_quality": 0.693,
+          "mean_observed_bicycle_share": 0.0971,
+          "mean_demand_score": 0.179
+        }
+      ],
+      "note": "Reported, never fitted. demand_score claims to measure potential; tuning it to reproduce observed cycling would redefine it as a prediction of the status quo, which is the thing this project argues is not the ceiling. Read the partial correlation rather than the raw one - and read all of it as evidence about commuting, since 通勤・通学 is the only trip type in the source and is far more rail-heavy than travel in general."
+    }
   },
   "roi_scenario": {
     "note": "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",

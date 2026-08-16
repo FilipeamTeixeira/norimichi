@@ -43,6 +43,7 @@ WARD_STAGES <- c(
   "05b_join_segment_context",
   "06_build_hex_grid",
   "07_join_population",
+  "07b_join_observed_cycling",   # the one measured input
   "08_join_poi",
   "09_join_terrain"
 )

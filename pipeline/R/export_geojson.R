@@ -52,6 +52,25 @@ export_hex_layer <- function(hexes, path) {
     "roi_operating_savings_yen_day", "roi_emissions_avoided_kg_day",
     "roi_health_benefit_yen_day", "roi_parking_spaces_freed"
   )
+
+  # The measured columns (07b). Optional rather than required, so a study area
+  # with no census mesh downloaded still exports - the app hides the view when
+  # the field is absent. Every other column in this file is modelled; these
+  # are the only ones anybody counted.
+  observed_cols <- c("observed_commuters", "observed_bicycle",
+                     "observed_bicycle_share", "observed_rail_share",
+                     "observed_car_share")
+  present_observed <- intersect(observed_cols, names(hexes))
+  if (length(present_observed) == 0) {
+    message("  no observed_* columns on the hex grid - exporting modelled ",
+            "fields only (run scripts/07b_join_observed_cycling.R to add them)")
+  } else if (length(present_observed) < length(observed_cols)) {
+    stop("the hex layer has only some observed_* columns (",
+         paste(present_observed, collapse = ", "), ") - 07b writes all five ",
+         "together, so a partial set means something has dropped them")
+  }
+  required_cols <- c(required_cols, present_observed)
+
   missing <- setdiff(required_cols, names(hexes))
   if (length(missing) > 0) {
     stop("hex layer is missing columns: ", paste(missing, collapse = ", "))

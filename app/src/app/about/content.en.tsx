@@ -246,12 +246,42 @@ export default function AboutContentEn() {
             in. The destination half of demand.
           </Term>
           <Term name="Cycling demand" where="0–1">
-            The two halves combined, plus flat terrain, plus an allowance for how
-            suppressed cycling looks given current road stress. Not measured
-            cycling: no open dataset records trips or mode share at this scale in
-            Japan, so stressful areas are assumed to have suppressed demand
-            rather than absent demand. See the limits below — this is the map’s
-            most load-bearing assumption.
+            The two halves combined, plus flat terrain. Deliberately nothing
+            else: how many people live here, how many destinations are within
+            reach, and whether the ground allows it — all of them independent of
+            what the roads are like.
+            <br />
+            <br />
+            It used to carry a fourth term, an allowance for how suppressed
+            cycling looks given current road stress, and that was a mistake
+            worth naming. The gap score is demand minus infrastructure quality,
+            and infrastructure quality is road stress — so stress entered the
+            headline number twice, once through each side, both times pushing it
+            the same way. It also made the map’s central claim unfalsifiable: if
+            suppression is assumed from stress and then compared against stress,
+            the map cannot fail to find it. Demand is now measured before the
+            roads are looked at, which is what this tooltip always said it was.
+            <br />
+            <br />
+            It is still not measured cycling. No open dataset records trips or
+            mode share at this scale in Japan — see “Observed cycling” below for
+            the one external figure there is, and the limits at the end of the
+            page for what remains unverified.
+          </Term>
+          <Term name="Observed cycling" where="if available">
+            The only measurement in this project. Ward-level mode share for
+            commute and school trips from the national census, where it has been
+            entered — everything else on this page is derived from population,
+            map data and stated assumptions.
+            <br />
+            <br />
+            It is reported next to the modelled figures and deliberately not
+            fitted to them. Four wards cannot estimate a three-weight model, and
+            cycling demand is a 0–1 rescale across the hexes in a run — a
+            ranking device, not a rate — so there is no defensible transform
+            between the two. It is also not substituted into the ROI’s
+            short-trip car share: commute trips are a different, longer, far
+            more rail-heavy population than the trips that model is about.
           </Term>
           <Term name="Mean traffic stress" where="1–4">
             The average stress class of the roads inside the hexagon: 1 calm, 4
@@ -710,11 +740,15 @@ export default function AboutContentEn() {
             density, not an observed count of actual parked cars.
           </Bullet>
           <Bullet>
-            Demand uses current road stress as an inverse proxy for suppressed
-            cycling, because no open dataset measures cycling at this scale in
-            Japan. That means stress enters both sides of the gap score, and the
-            assumption — stressful streets suppress demand rather than reflect
-            its absence — is the map’s premise rather than a finding of it.
+            Demand is modelled, not measured. It is built from population,
+            destinations and terrain — none of which depends on the roads, so
+            the gap score is a comparison of two independent quantities rather
+            than of one input against itself. But nothing here is calibrated
+            against how much people actually cycle: no open dataset records
+            trips or mode share at hexagon scale in Japan, and the ward-level
+            census figure the tool can carry is an external check, not a fit. A
+            high gap score means the model expects demand the streets don’t
+            serve. It does not mean anyone has counted the bicycles.
           </Bullet>
           <Bullet>
             Routing happens on this map’s own stress data by default: the Calm /

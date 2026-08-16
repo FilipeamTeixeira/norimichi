@@ -144,6 +144,11 @@ const en = {
         label: "Cycling demand",
         hint: "Trips this area should generate and attract, before asking whether the roads allow it.",
       },
+      observed_bicycle_share: {
+        label: "Cycling today (measured)",
+        hint: "The share of residents' commute and school journeys made by bicycle, from the census. The only measured layer on this map — everything else is modelled.",
+        note: "Commute and school trips only, and in this area 55% of them involve a train. The shopping and escort trips a bicycle is best at are not in this data.",
+      },
       display_category: {
         label: "Where to invest",
         hint: "The pipeline's own classification: suitability band, upgraded to 'bottleneck' where the network analysis says the segment unlocks connectivity.",
