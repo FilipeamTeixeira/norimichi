@@ -136,6 +136,7 @@ export function views(t: Dict): ViewDef[] {
       geometry: "areas",
       group: "areas",
       hint: v.gap_score.hint,
+      note: v.gap_score.note,
       metric: {
         key: "gap_score",
         label: v.gap_score.label,
@@ -144,14 +145,14 @@ export function views(t: Dict): ViewDef[] {
       },
     },
     {
-      id: "demand_score",
-      label: v.demand_score.label,
+      id: "potential_score",
+      label: v.potential_score.label,
       geometry: "areas",
       group: "areas",
-      hint: v.demand_score.hint,
+      hint: v.potential_score.hint,
       metric: {
-        key: "demand_score",
-        label: v.demand_score.label,
+        key: "potential_score",
+        label: v.potential_score.label,
         scale: "sequential",
         format: dec2,
       },
@@ -162,7 +163,7 @@ export function views(t: Dict): ViewDef[] {
      * of people, from the census, on the same 250m grid the population comes
      * on.
      *
-     * It sits next to `demand_score` deliberately — the two answer "where
+     * It sits next to `potential_score` deliberately — the two answer "where
      * should cycling happen" and "where does it happen", and the interesting
      * places are where they disagree. Absent from the list entirely if the
      * field is missing, which is what a study area with no census mesh
@@ -275,7 +276,7 @@ export function hexRoadSummary(t: Dict): MetricDef[] {
   ];
 }
 
-/** The two halves of demand, shown as a breakdown rather than as layers. */
+/** The two halves of potential, shown as a breakdown rather than as layers. */
 export function hexSubscores(t: Dict): MetricDef[] {
   const m = t.metrics.hexSubscores;
   return [
@@ -292,6 +293,55 @@ export function hexSubscores(t: Dict): MetricDef[] {
       scale: "sequential",
       hint: m.attraction_score.hint,
       format: dec2,
+    },
+  ];
+}
+
+/**
+ * The measured rows — the only ones on this panel that are.
+ *
+ * Rail share is here as **context, not as a model term**. It is by far the
+ * strongest thing in the observed data (r = -0.65 against cycling) and the
+ * potential index contains nothing corresponding to it, deliberately: putting
+ * rail into the index would assert that proximity to a station reduces cycling
+ * potential in general, when the evidence is about commuting only. Showing it
+ * beside the scores lets a reader see "this is a rail-dominated area" and
+ * discount accordingly, without the model claiming it. Same move Part F makes
+ * with the context_hex_* fields.
+ *
+ * Empty when the census mesh has not been joined, which the panel treats as a
+ * section to skip rather than a section of blanks.
+ */
+export function hexObserved(t: Dict): MetricDef[] {
+  const m = t.metrics.hexObserved;
+  return [
+    {
+      key: "observed_bicycle_share",
+      label: m.observed_bicycle_share.label,
+      scale: "sequential",
+      hint: m.observed_bicycle_share.hint,
+      format: pct,
+    },
+    {
+      key: "observed_rail_share",
+      label: m.observed_rail_share.label,
+      scale: "sequential",
+      hint: m.observed_rail_share.hint,
+      format: pct,
+    },
+    {
+      key: "observed_car_share",
+      label: m.observed_car_share.label,
+      scale: "sequential",
+      hint: m.observed_car_share.hint,
+      format: pct,
+    },
+    {
+      key: "observed_commuters",
+      label: m.observed_commuters.label,
+      scale: "sequential",
+      hint: m.observed_commuters.hint,
+      format: int,
     },
   ];
 }

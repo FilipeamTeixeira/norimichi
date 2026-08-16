@@ -9,6 +9,7 @@ import {
   useHexAmenityCounts,
   useHexBikeCounts,
   useHexInputs,
+  useHexObserved,
   useHexRoadSummary,
   useHexSubscores,
   useRoiShifted,
@@ -97,6 +98,7 @@ export default function HexInfoPanel({
   const t = useT();
   const fallbacks = useFormatValue();
   const roadSummary = useHexRoadSummary();
+  const observed = useHexObserved();
   const subscores = useHexSubscores();
   const inputs = useHexInputs();
   const amenityCounts = useHexAmenityCounts();
@@ -176,6 +178,19 @@ export default function HexInfoPanel({
           ))}
         </div>
       </Section>
+
+      {/* Skipped entirely where the census mesh has not been joined — a
+          section of blanks would read as "nobody cycles here" rather than as
+          "this has not been measured". */}
+      {p.observed_bicycle_share != null && (
+        <Section title={t.panels.hex.sections.observed}>
+          <div className="flex flex-col">
+            {observed.map((m) => (
+              <Row key={m.key} metric={m} value={p[m.key]} />
+            ))}
+          </div>
+        </Section>
+      )}
 
       <Section title={t.panels.hex.sections.inputs}>
         <div className="flex flex-col">

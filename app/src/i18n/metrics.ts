@@ -5,6 +5,7 @@ import {
   hexAmenityCounts,
   hexBikeCounts,
   hexInputs,
+  hexObserved,
   hexRoadSummary,
   hexSubscores,
   roiShifted,
@@ -39,6 +40,7 @@ export const useViewById = (): Map<string, ViewDef> => useGroup(viewById);
 export const useHexRoadSummary = (): MetricDef[] => useGroup(hexRoadSummary);
 export const useHexSubscores = (): MetricDef[] => useGroup(hexSubscores);
 export const useHexInputs = (): MetricDef[] => useGroup(hexInputs);
+export const useHexObserved = (): MetricDef[] => useGroup(hexObserved);
 export const useHexAmenityCounts = (): MetricDef[] => useGroup(hexAmenityCounts);
 export const useHexBikeCounts = (): MetricDef[] => useGroup(hexBikeCounts);
 export const useRoiToday = (): MetricDef[] => useGroup(roiToday);

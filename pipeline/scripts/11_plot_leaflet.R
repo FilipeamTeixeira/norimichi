@@ -22,7 +22,7 @@ layers <- c(
   "population",
   "production_score",
   "attraction_score",
-  "demand_score",
+  "potential_score",
   "stress_score",
   "infra_quality_score",
   "gap_score",
@@ -67,7 +67,7 @@ pal_attraction <- colorNumeric(
 
 pal_demand <- colorNumeric(
   "YlOrRd",
-  domain = hex$demand_score,
+  domain = hex$potential_score,
   na.color = "transparent"
 )
 
@@ -123,7 +123,7 @@ popup <- ~paste0(
   "<br><strong>Population:</strong> ", population,
   "<br><strong>Production:</strong> ", round(production_score, 3),
   "<br><strong>Attraction:</strong> ", round(attraction_score, 3),
-  "<br><strong>Demand:</strong> ", round(demand_score, 3),
+  "<br><strong>Demand:</strong> ", round(potential_score, 3),
   "<br><strong>Stress:</strong> ", round(stress_score, 3),
   "<br><strong>Infrastructure quality:</strong> ",
   round(infra_quality_score, 3),
@@ -190,7 +190,7 @@ m <- leaflet(
   addPolygons(
     data = hex,
     group = "Demand score",
-    fillColor = ~pal_demand(demand_score),
+    fillColor = ~pal_demand(potential_score),
     fillOpacity = 0.7,
     color = "#444444",
     weight = 0.2,

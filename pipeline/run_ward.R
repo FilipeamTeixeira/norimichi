@@ -21,7 +21,7 @@
 #
 # Everything from 05c on is scored relative to whatever features are in the
 # run - percentile ranks (network_criticality_score) and min-max rescales
-# (demand_score, and gap_score through it). Scored per ward, Naka's 80th
+# (potential_score, and gap_score through it). Scored per ward, Naka's 80th
 # percentile is not Isogo's, and no amount of concatenating fixes it after the
 # fact. So the geometry is gathered per ward here and scored once, over the
 # whole region, in run_region.R. 09b's header has the full argument, including

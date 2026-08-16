@@ -16,7 +16,7 @@ source("R/geometry_points.R")
 #' The H3 grid covers the study area's bounding geometry, so it runs out
 #' over the bay: cells with no road touching them and nobody living in
 #' them. Their scores aren't measurements - stress_score comes from the
-#' no-road fallback in 10_compute_scores.R (avg_lts = 4) and demand_score
+#' no-road fallback in 10_compute_scores.R (avg_lts = 4) and potential_score
 #' is NA wherever the DEM has no land - so on the map they read as a
 #' fringe of hexagons floating in the sea. Filtered here, at export, so
 #' the upstream analysis keeps working on the full grid.
@@ -43,7 +43,7 @@ drop_empty_hexes <- function(hexes, segments) {
 export_hex_layer <- function(hexes, path) {
   required_cols <- c(
     "hex_id", "population", "production_score", "attraction_score",
-    "demand_score", "stress_score", "infra_quality_score", "gap_score",
+    "potential_score", "stress_score", "infra_quality_score", "gap_score",
     "schools_nearby", "stations_nearby", "shops_nearby",
     "bike_parking_nearby", "bike_parking_capacity_nearby",
     "bike_sharing_nearby", "bike_sharing_capacity_nearby", "flat_terrain",
@@ -103,7 +103,7 @@ export_segment_layer <- function(segments, path) {
     "estimated_beneficiaries",
     # Neighbourhood context from the enclosing hex. NOT attributable to the
     # segment - see R/join_hex_context.R's header note.
-    "context_hex_gap_score", "context_hex_demand_score",
+    "context_hex_gap_score", "context_hex_potential_score",
     "context_hex_population", "context_hex_daily_savings_yen"
   )
   missing <- setdiff(required_cols, names(segments))

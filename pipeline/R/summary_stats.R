@@ -8,7 +8,7 @@ library(sf)
 
 #' Compute study-area-wide summary statistics.
 #'
-#' @param hexes scored hex data frame/sf, post score_demand()/score_gap()/
+#' @param hexes scored hex data frame/sf, post score_potential()/score_gap()/
 #'   compute_hex_roi()
 #' @param segments scored segment data frame/sf, post score_lts()
 #' @param poi_count,schools_count,stations_count raw counts of each POI
@@ -81,7 +81,7 @@ compute_study_area_summary <- function(hexes, segments,
     ),
     demand = list(
       total_population = round(sum(hexes_df$population, na.rm = TRUE)),
-      avg_demand_score = round(mean(hexes_df$demand_score, na.rm = TRUE), 3),
+      avg_potential_score = round(mean(hexes_df$potential_score, na.rm = TRUE), 3),
       avg_gap_score = round(mean(hexes_df$gap_score, na.rm = TRUE), 3),
       missed_opportunity_hexes = sum(hexes_df$gap_score > gap_threshold, na.rm = TRUE),
       population_in_missed_opportunity_hexes = round(

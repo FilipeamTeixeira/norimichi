@@ -242,7 +242,9 @@ export default function NetworkPage() {
   /**
    * Clicking the active view switches it off, which is the only way to see the
    * basemap on its own. A view change takes any panel describing the geometry
-   * that just left with it.
+   * that just left with it — except that the recommendations overlay draws
+   * streets of its own, so a segment panel survives a view change while it is
+   * on.
    */
   const handleViewChange = useCallback(
     (id: string) => {
@@ -252,11 +254,30 @@ export default function NetworkPage() {
       setActiveView(next);
       setSelected((s) => {
         if (s?.kind === "hex" && geometry !== "areas") return null;
-        if (s?.kind === "segment" && geometry !== "streets") return null;
+        if (
+          s?.kind === "segment" &&
+          geometry !== "streets" &&
+          !toggles.recommendations
+        )
+          return null;
         return s;
       });
     },
-    [activeView, viewById]
+    [activeView, viewById, toggles.recommendations]
+  );
+
+  /**
+   * The mirror of the rule above: switching the overlay off takes the segment
+   * panel with it, unless a street view is drawing the segment anyway.
+   */
+  const handleTogglesChange = useCallback(
+    (next: ToggleState) => {
+      setToggles(next);
+      if (!next.recommendations && coloredGeometry !== "streets") {
+        setSelected((s) => (s?.kind === "segment" ? null : s));
+      }
+    },
+    [coloredGeometry]
   );
 
   /**
@@ -426,7 +447,7 @@ export default function NetworkPage() {
         activeView={activeView}
         onViewChange={handleViewChange}
         toggles={toggles}
-        onTogglesChange={setToggles}
+        onTogglesChange={handleTogglesChange}
       />
       <main className="flex-1 relative bg-[#F7F8FA]">
         <MapView

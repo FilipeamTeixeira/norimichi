@@ -1,7 +1,7 @@
 # 08_join_poi.R
 # Counts schools/stations/shops+restaurants within a fixed radius of each
 # hex centroid. Schools/stations feed the existing proximity term; shop
-# counts feed the attraction_score in score_demand.R. Bike parking is
+# counts feed the attraction_score in score_potential.R. Bike parking is
 # joined separately at a smaller radius - see the notes below.
 
 source("R/utils_config.R")

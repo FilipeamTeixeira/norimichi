@@ -3,7 +3,7 @@
 #
 # WHAT THIS IS FOR
 #
-# `score_demand.R` no longer assumes suppression from road stress, so
+# `score_potential.R` no longer assumes suppression from road stress, so
 # `gap_score` is at least not circular. That makes it *falsifiable*; it does
 # not make it *true*. 07b puts observed commuting mode on the same hexes the
 # model scores, so the two can finally be set against each other, and this
@@ -11,7 +11,7 @@
 #
 # It reports. It does not fit. With ~450 usable hexes there is now enough data
 # to estimate weights, which is exactly why it is worth saying explicitly that
-# doing so would be the wrong move here: `demand_score` claims to measure
+# doing so would be the wrong move here: `potential_score` claims to measure
 # *potential*, and fitting it to *observed* cycling would redefine it as a
 # prediction of the status quo - a model tuned to reproduce the pattern that
 # the current, hostile network produces. The project exists to argue that
@@ -25,17 +25,17 @@
 # journeys involve a train. The shopping, errand and school-escort trips a
 # bicycle is best at are not in it at all. So:
 #
-#   - A weak relationship between `demand_score` and observed cycling is
-#     evidence about *commuting*, not a verdict on the demand model.
-#   - Rail share is the strongest single signal in the data and the demand
-#     model contains nothing corresponding to it. A station is treated purely
+#   - A weak relationship between `potential_score` and observed cycling is
+#     evidence about *commuting*, not a verdict on the potential index.
+#   - Rail share is the strongest single signal in the data and the potential
+#     index contains nothing corresponding to it. A station is treated purely
 #     as something that attracts trips; for commuting it is mostly a
 #     substitute for them.
 #
 # The fair test of the demand side is therefore not the raw correlation but
 # the one holding infrastructure constant: among hexes where the streets are
-# equally good, do the ones the model calls high-demand actually cycle more?
-# `validate_demand_model()` reports both, and the partial correlation is the
+# equally good, do the ones the index calls high-potential actually cycle more?
+# `validate_potential_model()` reports both, and the partial correlation is the
 # one to read.
 
 library(dplyr)
@@ -73,7 +73,7 @@ MIN_COMMUTERS_FOR_VALIDATION <- 50
 #'   is reported rather than quietly dropped
 #' @return a named list for the study-area summary, or NULL where no observed
 #'   data is present at all
-validate_demand_model <- function(hexes, min_commuters = MIN_COMMUTERS_FOR_VALIDATION) {
+validate_potential_model <- function(hexes, min_commuters = MIN_COMMUTERS_FOR_VALIDATION) {
   if (!"observed_bicycle_share" %in% names(hexes)) return(NULL)
   df <- sf::st_drop_geometry(hexes)
   if (all(is.na(df$observed_bicycle_share))) return(NULL)
@@ -99,7 +99,7 @@ validate_demand_model <- function(hexes, min_commuters = MIN_COMMUTERS_FOR_VALID
         hexes = nrow(part),
         mean_infra_quality = round(mean(part$infra_quality_score, na.rm = TRUE), 3),
         mean_observed_bicycle_share = round(mean(part$observed_bicycle_share, na.rm = TRUE), 4),
-        mean_demand_score = round(mean(part$demand_score, na.rm = TRUE), 3)
+        mean_potential_score = round(mean(part$potential_score, na.rm = TRUE), 3)
       )
     })
   }
@@ -120,26 +120,33 @@ validate_demand_model <- function(hexes, min_commuters = MIN_COMMUTERS_FOR_VALID
       hexes_excluded_too_few_commuters =
         sum(!is.na(df$observed_bicycle_share)) - nrow(usable),
       min_commuters = min_commuters,
-      corr_demand = round(.corr(usable$observed_bicycle_share, usable$demand_score), 3),
+      corr_potential = round(.corr(usable$observed_bicycle_share, usable$potential_score), 3),
       corr_gap = round(.corr(usable$observed_bicycle_share, usable$gap_score), 3),
       corr_infra_quality = round(
         .corr(usable$observed_bicycle_share, usable$infra_quality_score), 3),
       corr_rail_share = round(
         .corr(usable$observed_bicycle_share, usable$observed_rail_share), 3),
-      # The one to read: does the demand side say anything about cycling once
-      # the state of the streets is allowed for?
-      partial_corr_demand_given_infra = round(
-        .partial_corr(usable$observed_bicycle_share, usable$demand_score,
+      # The one to read: does the potential side say anything about cycling
+      # once the state of the streets is allowed for?
+      partial_corr_potential_given_infra = round(
+        .partial_corr(usable$observed_bicycle_share, usable$potential_score,
                       usable$infra_quality_score), 3),
       by_infra_quartile = quartile_table,
       note = paste(
-        "Reported, never fitted. demand_score claims to measure potential;",
-        "tuning it to reproduce observed cycling would redefine it as a",
-        "prediction of the status quo, which is the thing this project argues",
-        "is not the ceiling. Read the partial correlation rather than the raw",
-        "one - and read all of it as evidence about commuting, since 通勤・通学",
-        "is the only trip type in the source and is far more rail-heavy than",
-        "travel in general."
+        "Reported, never fitted. potential_score is an index of",
+        "characteristics, not a forecast; tuning it to reproduce observed",
+        "cycling would redefine it as a prediction of the status quo, which is",
+        "the thing this project argues is not the ceiling. Read the partial",
+        "correlation rather than the raw one."
+      ),
+      # Three readings of a null partial correlation, and this data separates
+      # none of them. Listed in full because the first is the comfortable one
+      # and would otherwise become the explanation by default - it is the only
+      # one that asks nothing of us.
+      why_the_partial_is_null = c(
+        "Potential may not be observable from current behaviour at all: everyone in this study area is choosing under the network as it stands.",
+        "The source is 通勤・通学 only, the most rail-dominated trip type there is. The shopping, errand and escort trips a bicycle is best at are absent, and the index may track those.",
+        "The index may weight the wrong things. attraction_score scores stations x3 as trip attractors, when for commuting a station is largely a substitute - corr(potential, rail share) is positive."
       )
     )
   )

@@ -137,12 +137,13 @@ const en = {
 
     views: {
       gap_score: {
-        label: "Demand / supply gap",
-        hint: "Demand minus infrastructure quality. Positive means people want to cycle here and can't.",
+        label: "Opportunity gap",
+        hint: "Cycling potential minus infrastructure quality. Positive means the streets serve less than the place's characteristics would support.",
+        note: "An index, not a forecast — nobody has measured how many people would cycle here if the streets were fixed. The infrastructure half has been checked against observed cycling and holds; the potential half has not.",
       },
-      demand_score: {
-        label: "Cycling demand",
-        hint: "Trips this area should generate and attract, before asking whether the roads allow it.",
+      potential_score: {
+        label: "Cycling potential",
+        hint: "An index of characteristics associated with cycling — people, destinations, flat ground — before asking whether the roads allow it. A modelling assumption, not measured demand.",
       },
       observed_bicycle_share: {
         label: "Cycling today (measured)",
@@ -193,6 +194,25 @@ const en = {
       attraction_score: {
         label: "Attraction",
         hint: "Trip-drawing potential — shops, schools and stations pulling journeys in.",
+      },
+    },
+
+    hexObserved: {
+      observed_bicycle_share: {
+        label: "By bicycle",
+        hint: "Share of this area's commute and school journeys involving a bicycle, from the census.",
+      },
+      observed_rail_share: {
+        label: "By rail",
+        hint: "Shown as context, not as a model input. Rail is the strongest single influence on cycling in the observed data, but the evidence is about commuting only — so it informs how you read the scores rather than entering them.",
+      },
+      observed_car_share: {
+        label: "By car",
+        hint: "Share of commute and school journeys by private car.",
+      },
+      observed_commuters: {
+        label: "Commuters & students",
+        hint: "Residents aged 15+ who work or study — the denominator for the shares above.",
       },
     },
 
@@ -417,7 +437,8 @@ const en = {
       },
       sections: {
         roads: "Roads in this area",
-        demand: "Why demand is what it is",
+        observed: "Cycling here today (measured)",
+        demand: "Why the potential is what it is",
         inputs: "Inputs",
         destinations: "Destinations within reach",
         bikeFacilities: "Bike facilities within reach",

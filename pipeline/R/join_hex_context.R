@@ -39,7 +39,7 @@ METRIC_CRS <- 6677
 #' hexagons.geojson for anyone who wants them.
 HEX_CONTEXT_FIELDS <- c(
   context_hex_gap_score    = "gap_score",
-  context_hex_demand_score = "demand_score",
+  context_hex_potential_score = "potential_score",
   context_hex_population   = "population"
 )
 

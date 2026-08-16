@@ -19,7 +19,7 @@ stations <- sf::st_read(sprintf("output/%s_stations.gpkg", cfg$name), quiet = TR
 # The model set against the one measurement, from the observed_* columns
 # 07b joined onto the grid. NULL where 07b has not been run, in which case the
 # summary carries modelled figures only and says so.
-observed <- validate_demand_model(hexes)
+observed <- validate_potential_model(hexes)
 if (is.null(observed)) {
   message("No observed cycling on the hex grid - run scripts/07b_join_observed_cycling.R ",
           "per ward. The summary will carry modelled figures only.")
@@ -32,8 +32,8 @@ if (is.null(observed)) {
   message(sprintf("  rail %.0f%%, car %.0f%%",
                   100 * observed$rail_share, 100 * observed$car_share))
   message(sprintf("Model vs measurement over %d hexes:", v$hexes_used))
-  message(sprintf("  demand_score          r = %+.3f   (partial, given infra: %+.3f)",
-                  v$corr_demand, v$partial_corr_demand_given_infra))
+  message(sprintf("  potential_score       r = %+.3f   (partial, given infra: %+.3f)",
+                  v$corr_potential, v$partial_corr_potential_given_infra))
   message(sprintf("  gap_score             r = %+.3f", v$corr_gap))
   message(sprintf("  infra_quality_score   r = %+.3f", v$corr_infra_quality))
   message(sprintf("  observed rail share   r = %+.3f", v$corr_rail_share))

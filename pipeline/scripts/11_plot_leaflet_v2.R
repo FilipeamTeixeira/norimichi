@@ -35,7 +35,7 @@ pal_attraction <- colorNumeric(
 )
 
 pal_demand <- colorNumeric(
-  "YlOrRd", hex$demand_score, na.color = "transparent"
+  "YlOrRd", hex$potential_score, na.color = "transparent"
 )
 
 pal_stress <- colorNumeric(
@@ -147,7 +147,7 @@ hex_popup <- ~paste0(
   "<br><strong>Population:</strong> ", population,
   "<br><strong>Production:</strong> ", round(production_score, 3),
   "<br><strong>Attraction:</strong> ", round(attraction_score, 3),
-  "<br><strong>Demand:</strong> ", round(demand_score, 3),
+  "<br><strong>Demand:</strong> ", round(potential_score, 3),
   "<br><strong>Stress:</strong> ", round(stress_score, 3),
   "<br><strong>Infrastructure:</strong> ",
   round(infra_quality_score, 3),
@@ -230,7 +230,7 @@ m <- m %>%
   addPolygons(
     data = hex,
     group = "Demand score",
-    fillColor = ~pal_demand(demand_score),
+    fillColor = ~pal_demand(potential_score),
     fillOpacity = 0.7,
     color = "#444444",
     weight = 0.2,

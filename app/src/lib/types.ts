@@ -259,7 +259,7 @@ export interface SegmentProperties {
   estimated_beneficiaries: number | null;
   /** Enclosing-hex context, not segment-attributable. See CorridorProperties. */
   context_hex_gap_score?: number | null;
-  context_hex_demand_score?: number | null;
+  context_hex_potential_score?: number | null;
   context_hex_population?: number | null;
   context_hex_daily_savings_yen?: number | null;
 }
@@ -308,7 +308,7 @@ export interface HexProperties {
   population: number;
   production_score: number;
   attraction_score: number;
-  demand_score: number | null;
+  potential_score: number | null;
   stress_score: number;
   infra_quality_score: number;
   gap_score: number | null;
@@ -408,7 +408,7 @@ export interface StudySummary {
   };
   demand: {
     total_population: number;
-    avg_demand_score: number;
+    avg_potential_score: number;
     avg_gap_score: number;
     missed_opportunity_hexes: number;
     population_in_missed_opportunity_hexes: number;

@@ -26,8 +26,8 @@
 # be repaired by concatenating finished outputs:
 #   - network_criticality_score  percentile rank (score_network.R:217), and the
 #                                bottleneck/low_priority cut is its 50th
-#   - demand_score               normalize01() min-max (score_demand.R)
-#   - gap_score                  demand_score - infra_quality_score, so it
+#   - potential_score               normalize01() min-max (score_potential.R)
+#   - gap_score                  potential_score - infra_quality_score, so it
 #                                inherits the min-max transitively
 # Island severance is the worst of it: a low-stress island continuing into the
 # next ward is truncated, can fall under MIN_ISLAND_LENGTH_M and vanish, and a
@@ -79,7 +79,7 @@ RECOMPUTED_BY_05C <- c(
 RECOMPUTED_BY_05D <- c(
   "way_id", "estimated_beneficiaries", "recommendation", "cost_tier",
   "suitability_after", "benefit_kind", "intervention_lever",
-  "context_hex_gap_score", "context_hex_demand_score",
+  "context_hex_gap_score", "context_hex_potential_score",
   "context_hex_population", "context_hex_daily_savings_yen",
   "corridor_id"
 )
@@ -207,8 +207,8 @@ message(sprintf("  %d segments, %.1f km",
 message("hexgrid:")
 hexes <- bind_layers(lapply(CITIES, read_layer, layer = "hexgrid"), "hexgrid")
 
-if ("demand_score" %in% names(hexes)) {
-  stop("merged hexgrid carries demand_score - that is the scored grid. ",
+if ("potential_score" %in% names(hexes)) {
+  stop("merged hexgrid carries potential_score - that is the scored grid. ",
        "Merge {city}_hexgrid.gpkg (post-09), not {city}_hexgrid_scored.gpkg; ",
        "10 rebuilds the scored grid from this one.")
 }

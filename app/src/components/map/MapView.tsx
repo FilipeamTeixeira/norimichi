@@ -198,6 +198,24 @@ const AMENITY_RADIUS: ExpressionSpecification = [
   5,
 ];
 
+/**
+ * A station is the one amenity that anchors a whole catchment rather than
+ * marking a single address, so it is drawn bigger than the schools and shops
+ * around it — halfway to a dock, which stays the largest point on the map
+ * because it is infrastructure rather than context.
+ */
+const STATION_RADIUS: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  12,
+  2.75,
+  15,
+  4.1,
+  18,
+  6.25,
+];
+
 const BIKE_RADIUS: ExpressionSpecification = [
   "interpolate",
   ["linear"],
@@ -352,6 +370,12 @@ export default function MapView({
         { id: "bike-facilities-layer", kind: "facility" as const, key: "osm_id" },
         { id: "amenities-layer", kind: "amenity" as const, key: "amenity_id" },
         { id: "segments-layer", kind: "segment" as const, key: "way_id" },
+        // The proposal halo is its own hit target, because it is drawn
+        // independently of the active view: under an area view the street
+        // layer above is hidden, and without this a click on a recommendation
+        // fell through to the hex underneath — while the legend was telling
+        // the user to click the street.
+        { id: "recommendations-glow", kind: "segment" as const, key: "way_id" },
         { id: "hex-fill", kind: "hex" as const, key: "hex_id" },
       ].filter(({ id }) => map.getLayer(id));
 
@@ -660,7 +684,13 @@ export default function MapView({
       source: "amenities",
       layout: { visibility: vis(toggles.amenities) },
       paint: {
-        "circle-radius": AMENITY_RADIUS,
+        "circle-radius": [
+          "match",
+          ["get", "kind"],
+          "station",
+          STATION_RADIUS,
+          AMENITY_RADIUS,
+        ],
         "circle-color": [
           "match",
           ["get", "kind"],
@@ -770,13 +800,17 @@ export default function MapView({
     set("hex-outline", showHex);
     set("hex-highlight", showHex);
     set("segments-layer", showSegments);
-    set("segments-highlight", showSegments);
+    // A street can also be selected through the proposal halo, which outlives
+    // the street layer, so the selection glow has to outlive it too —
+    // otherwise the panel opens with nothing on the map to point at.
+    const segmentSelectable = showSegments || toggles.recommendations;
+    set("segments-highlight", segmentSelectable);
     // Hiding a layer deselects whatever was selected in it (page.tsx), so its
     // highlight shouldn't survive to reappear when the layer comes back.
     if (!showHex && map.getLayer("hex-highlight")) {
       map.setFilter("hex-highlight", ["==", ["get", "hex_id"], ""]);
     }
-    if (!showSegments && map.getLayer("segments-highlight")) {
+    if (!segmentSelectable && map.getLayer("segments-highlight")) {
       map.setFilter("segments-highlight", ["==", ["get", "way_id"], -1]);
     }
     set("amenities-layer", toggles.amenities);

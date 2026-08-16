@@ -245,11 +245,18 @@ export default function AboutContentEn() {
             Trip-drawing potential — shops, schools and stations pulling journeys
             in. The destination half of demand.
           </Term>
-          <Term name="Cycling demand" where="0–1">
-            The two halves combined, plus flat terrain. Deliberately nothing
-            else: how many people live here, how many destinations are within
-            reach, and whether the ground allows it — all of them independent of
-            what the roads are like.
+          <Term name="Cycling potential" where="0–1">
+            An index of characteristics associated with cycling: the two halves
+            above combined, plus flat terrain. Deliberately nothing else — how
+            many people live here, how many destinations are within reach, and
+            whether the ground allows it, all independent of what the roads are
+            like.
+            <br />
+            <br />
+            It is called <em>potential</em> and not <em>demand</em>, and that is
+            not a softening. It asserts that these characteristics are present,
+            not that any particular number of trips would follow. Nobody has
+            counted the bicycles that would appear here.
             <br />
             <br />
             It used to carry a fourth term, an allowance for how suppressed
@@ -263,25 +270,48 @@ export default function AboutContentEn() {
             roads are looked at, which is what this tooltip always said it was.
             <br />
             <br />
-            It is still not measured cycling. No open dataset records trips or
-            mode share at this scale in Japan — see “Observed cycling” below for
-            the one external figure there is, and the limits at the end of the
-            page for what remains unverified.
+            Checked against the census, this index shows no relationship with
+            observed cycling once infrastructure quality is allowed for. There
+            are three live reasons for that and this data separates none of them
+            — see the limits at the end of the page. What it is not is a
+            calibrated predictor, and it is not presented as one.
           </Term>
-          <Term name="Observed cycling" where="if available">
-            The only measurement in this project. Ward-level mode share for
-            commute and school trips from the national census, where it has been
-            entered — everything else on this page is derived from population,
-            map data and stated assumptions.
+          <Term name="Cycling today (measured)" where="%">
+            The only measurement in this project. The share of an area’s commute
+            and school journeys made by bicycle, from the 2020 census, published
+            on the same 250 m grid the population comes on — everything else on
+            this page is derived from population, map data and stated
+            assumptions. Across this study area it is <strong>7.9%</strong>;
+            rail is 55% and car 11%.
+            <br />
+            <br />
+            Two things it is not. <strong>Not all trips</strong> — commute and
+            school only, the most rail-dominated slice of travel there is, with
+            the shopping and escort trips a bicycle is best at absent entirely.
+            And <strong>not mutually exclusive</strong>: the census records every
+            mode a person uses, so cycling to the station counts under both
+            bicycle and rail. Treat the second decimal as noise.
             <br />
             <br />
             It is reported next to the modelled figures and deliberately not
-            fitted to them. Four wards cannot estimate a three-weight model, and
-            cycling demand is a 0–1 rescale across the hexes in a run — a
-            ranking device, not a rate — so there is no defensible transform
-            between the two. It is also not substituted into the ROI’s
-            short-trip car share: commute trips are a different, longer, far
-            more rail-heavy population than the trips that model is about.
+            fitted to them. There is now enough of it to fit weights, which is
+            why it matters to say why we don’t: cycling potential claims to
+            measure what a place could support, and tuning it to reproduce
+            today’s cycling would redefine it as a prediction of the status quo
+            — the pattern the current network produces, which is the thing this
+            map argues is not the ceiling. It is also not substituted into the
+            ROI’s short-trip car share, which is a different population of
+            trips.
+          </Term>
+          <Term name="By rail / by car" where="context rows">
+            Shown beside the scores, and deliberately not inside them. Rail is
+            the strongest single influence on cycling in the observed data by a
+            distance — far stronger than anything the model contains — but the
+            evidence for it is about commuting, and putting it into the
+            potential index would assert that living near a station reduces
+            cycling potential in general. That is not obviously true for
+            shopping, errands or the school run. So it informs how you read a
+            hexagon’s scores rather than entering them.
           </Term>
           <Term name="Mean traffic stress" where="1–4">
             The average stress class of the roads inside the hexagon: 1 calm, 4
@@ -293,10 +323,21 @@ export default function AboutContentEn() {
             length is genuinely comfortable to cycle. This is the supply side of
             the gap score.
           </Term>
-          <Term name="Demand / supply gap" where="−1 to +1">
-            Demand minus infrastructure quality. Positive means people want to
-            cycle here and can’t. This is the missed-opportunity number the whole
-            map is built around.
+          <Term name="Opportunity gap" where="−1 to +1">
+            Cycling potential minus infrastructure quality. This is the
+            missed-opportunity number the whole map is built around, and it
+            claims exactly one thing: <em>this place has characteristics
+            associated with substantial cycling potential, and its current
+            cycling environment is poor</em>.
+            <br />
+            <br />
+            It does not claim to have measured how many people would cycle here
+            if the streets were fixed. It is a counterfactual index built from
+            two sides measured separately, and its whole content is that the two
+            disagree. The two sides are not equally well-founded either: the
+            infrastructure half has been checked against observed cycling and
+            holds, the potential half has not. Read a high gap as a place worth
+            looking at, not as a forecast.
           </Term>
           <Term name="Flat terrain">
             Whether the hexagon is flat enough that terrain isn’t itself the
@@ -740,15 +781,32 @@ export default function AboutContentEn() {
             density, not an observed count of actual parked cars.
           </Bullet>
           <Bullet>
-            Demand is modelled, not measured. It is built from population,
-            destinations and terrain — none of which depends on the roads, so
-            the gap score is a comparison of two independent quantities rather
-            than of one input against itself. But nothing here is calibrated
-            against how much people actually cycle: no open dataset records
-            trips or mode share at hexagon scale in Japan, and the ward-level
-            census figure the tool can carry is an external check, not a fit. A
-            high gap score means the model expects demand the streets don’t
-            serve. It does not mean anyone has counted the bicycles.
+            <Lead>Cycling potential is modelled, not measured</Lead>, and the
+            census says so. Built from population, destinations and terrain —
+            none of which depends on the roads, so the opportunity gap compares
+            two independent quantities rather than one input against itself.
+            But set against observed cycling it shows no relationship once
+            infrastructure quality is allowed for. There are three live
+            explanations and this data separates none of them: potential may
+            simply not be observable from behaviour under the network as it
+            stands; the only trip type in the source is the most rail-dominated
+            one there is, and the index may track the shopping and escort trips
+            it cannot see; or the index may weight the wrong things — it scores
+            stations as trip attractors when for commuting they are largely a
+            substitute. The first is the most comfortable reading and it is not
+            the default one. A high gap score means the model expects potential
+            the streets don’t serve; it does not mean anyone has counted the
+            bicycles.
+          </Bullet>
+          <Bullet>
+            <Lead>The infrastructure side does have support.</Lead> Ranked into
+            quartiles by infrastructure quality, observed cycling rises
+            monotonically, and the effect holds inside every tercile of rail
+            share — the dominant confounder — at a near-identical increment.
+            That is evidence the measure corresponds to real behaviour. It is
+            not evidence that building infrastructure causes cycling: this is
+            cross-sectional data about areas, not a before-and-after study of
+            schemes.
           </Bullet>
           <Bullet>
             Routing happens on this map’s own stress data by default: the Calm /
