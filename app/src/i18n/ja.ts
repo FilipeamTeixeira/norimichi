@@ -783,6 +783,8 @@ const ja: Dict = {
       measuringFrom: "起点",
       clearReference: "起点をクリア",
       directDistance: (d: string) => `直線距離 ${d}`,
+      showOnMap: "地図に表示",
+      hideOnMap: "地図から非表示",
     },
 
     search: {

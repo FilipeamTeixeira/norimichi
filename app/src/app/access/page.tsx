@@ -14,10 +14,14 @@ import { ACCESS_SURFACE } from "@/lib/scales";
 import {
   cellStatus,
   normalizeSurface,
+  visibleOrigins,
+  SCHOOL_CLASSES,
   type AccessIndex,
   type AccessOrigin,
+  type AccessOriginKind,
   type AccessSurface,
   type MeshCellProperties,
+  type SchoolClass,
 } from "@/lib/access-types";
 import { useT } from "@/i18n/context";
 
@@ -51,6 +55,22 @@ export default function AccessPage() {
   const [reference, setReference] = useState<ReferencePoint | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
+
+  /**
+   * Which list the picker is showing, and which school classes are in it.
+   *
+   * Up here rather than inside the picker because the map draws the same set
+   * of places when "show on map" is on — one filter, two renderings of it.
+   *
+   * Null until the reader picks a side, so a `?origin=` deep link to a station
+   * opens on the Stations tab rather than on a list its own selection is not
+   * in. An effect syncing state to the selection would do the same thing and is
+   * the cascading-render pattern this build's lint rejects.
+   */
+  const [chosenKind, setChosenKind] = useState<AccessOriginKind | null>(null);
+  const [classes, setClasses] = useState<SchoolClass[]>(SCHOOL_CLASSES);
+  const [showOnMap, setShowOnMap] = useState(false);
+  const kind = chosenKind ?? selected?.kind ?? "school";
 
   const mapControls = useRef<MapControls | null>(null);
   /** Invalidates a surface fetch the reader has already navigated away from. */
@@ -180,6 +200,23 @@ export default function AccessPage() {
     [selectWith, mesh]
   );
 
+  const toggleClass = useCallback(
+    (c: SchoolClass) =>
+      setClasses((current) =>
+        current.includes(c)
+          ? current.filter((x) => x !== c)
+          : [...current, c]
+      ),
+    []
+  );
+
+  /** The dots, when they are asked for: exactly the rows the picker lists. */
+  const pins = useMemo(
+    () =>
+      showOnMap && index ? visibleOrigins(index.origins, kind, classes) : [],
+    [showOnMap, index, kind, classes]
+  );
+
   /**
    * Changing the band repaints from the surface already in memory — the export
    * carries a distance per cell, not a band, precisely so this costs nothing.
@@ -255,8 +292,13 @@ export default function AccessPage() {
         <OriginPicker
           origins={index.origins}
           selected={selected?.origin_id ?? null}
-          selectedKind={selected?.kind ?? null}
           onSelect={(o) => select(o, bandM)}
+          kind={kind}
+          onKindChange={setChosenKind}
+          classes={classes}
+          onClassToggle={toggleClass}
+          showOnMap={showOnMap}
+          onShowOnMapChange={setShowOnMap}
           bandM={bandM}
           bands={index.bands_m}
           onBandChange={changeBand}
@@ -289,6 +331,10 @@ export default function AccessPage() {
           origin={selected}
           bandM={bandM ?? 0}
           reference={reference?.at ?? null}
+          pins={pins}
+          onPickPin={(o) => {
+            if (bandM !== null) select(o, bandM);
+          }}
         />
 
         {/* Before anything is selected the map has nothing on it, so the page

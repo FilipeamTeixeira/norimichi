@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { Marker, type GeoJSONSource, type Map } from "maplibre-gl";
-import type { Feature, FeatureCollection, Polygon } from "geojson";
+import {
+  Marker,
+  type GeoJSONSource,
+  type Map,
+  type MapLayerMouseEvent,
+} from "maplibre-gl";
+import type { Feature, FeatureCollection, Point, Polygon } from "geojson";
 import {
   ACCESS_FILL_OPACITY,
   ACCESS_SURFACE,
@@ -45,6 +50,14 @@ interface Props {
   bandM: number;
   /** A searched place the list is measuring from, if any. */
   reference: [number, number] | null;
+  /**
+   * The origins the picker is listing, drawn as dots — empty unless the reader
+   * has asked to see them. The selected origin keeps its own pin on top; a dot
+   * underneath it is what makes the pin read as one of a set.
+   */
+  pins: AccessOrigin[];
+  /** Clicking a dot selects it, same as clicking its row. */
+  onPickPin: (origin: AccessOrigin) => void;
 }
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
@@ -82,9 +95,37 @@ export default function AccessLayer({
   origin,
   bandM,
   reference,
+  pins,
+  onPickPin,
 }: Props) {
   const marker = useRef<Marker | null>(null);
   const referenceMarker = useRef<Marker | null>(null);
+
+  // The dot layer's click handler is registered once against a long-lived map,
+  // so what it needs has to be reachable through refs rather than closed over
+  // — same reasoning as MapView's zoom handler.
+  const pinsRef = useRef(pins);
+  const onPickRef = useRef(onPickPin);
+  useEffect(() => {
+    pinsRef.current = pins;
+  }, [pins]);
+  useEffect(() => {
+    onPickRef.current = onPickPin;
+  }, [onPickPin]);
+
+  const pinData = useMemo<FeatureCollection<Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: pins.map(
+        (o): Feature<Point> => ({
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [o.lon, o.lat] },
+          properties: { origin_id: o.origin_id, kind: o.kind },
+        })
+      ),
+    }),
+    [pins]
+  );
 
   /**
    * Only the cells inside the band, each stamped with its status.
@@ -156,12 +197,67 @@ export default function AccessLayer({
         "line-opacity": 0.55,
       },
     });
+
+    // Above the surface, because a dot inside a coloured cell is the one thing
+    // on this map small enough to be lost under a fill. Same two hues the
+    // amenity points use elsewhere in the app, so a school is the same colour
+    // on every page.
+    map.addSource("access-origins", { type: "geojson", data: EMPTY });
+    map.addLayer({
+      id: "access-origin-dots",
+      type: "circle",
+      source: "access-origins",
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 11, 3, 14, 4.5, 18, 7],
+        "circle-color": [
+          "match",
+          ["get", "kind"],
+          "station",
+          AMENITY_COLORS.station,
+          AMENITY_COLORS.school,
+        ],
+        "circle-stroke-width": 1.25,
+        "circle-stroke-color": "#ffffff",
+        "circle-opacity": 0.9,
+      },
+    });
   }, [map]);
 
   useEffect(() => {
     if (!map) return;
     map.getSource<GeoJSONSource>("access-cells")?.setData(painted);
   }, [map, painted]);
+
+  useEffect(() => {
+    if (!map) return;
+    map.getSource<GeoJSONSource>("access-origins")?.setData(pinData);
+  }, [map, pinData]);
+
+  // --- Clicking a dot ----------------------------------------------------
+  useEffect(() => {
+    if (!map) return;
+
+    const click = (e: MapLayerMouseEvent) => {
+      const id = e.features?.[0]?.properties?.origin_id;
+      const picked = pinsRef.current.find((o) => o.origin_id === id);
+      if (picked) onPickRef.current(picked);
+    };
+    const enter = () => {
+      map.getCanvas().style.cursor = "pointer";
+    };
+    const leave = () => {
+      map.getCanvas().style.cursor = "";
+    };
+
+    map.on("click", "access-origin-dots", click);
+    map.on("mouseenter", "access-origin-dots", enter);
+    map.on("mouseleave", "access-origin-dots", leave);
+    return () => {
+      map.off("click", "access-origin-dots", click);
+      map.off("mouseenter", "access-origin-dots", enter);
+      map.off("mouseleave", "access-origin-dots", leave);
+    };
+  }, [map]);
 
   // --- The origin pin ----------------------------------------------------
   useEffect(() => {

@@ -811,6 +811,8 @@ const en = {
       measuringFrom: "Near",
       clearReference: "Clear the place being measured from",
       directDistance: (d: string) => `${d} away, direct`,
+      showOnMap: "Show on map",
+      hideOnMap: "Hide from map",
     },
 
     search: {

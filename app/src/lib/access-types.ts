@@ -160,6 +160,35 @@ export interface MeshCellProperties {
 /** How a cell renders for the selected origin at the selected band. */
 export type CellStatus = "calm" | "severed" | "unreached";
 
+/** The school classes the picker offers, in the order it offers them. */
+export const SCHOOL_CLASSES: SchoolClass[] = [
+  "elementary",
+  "junior_high",
+  "high",
+  "international",
+];
+
+/**
+ * The origins the picker is currently listing.
+ *
+ * Shared between the list and the map dots deliberately: the dots are the same
+ * set of places as the rows, so filtering out a school class has to remove it
+ * from both. Two independent filters would eventually disagree, and a dot with
+ * no row is a place the reader cannot open.
+ */
+export function visibleOrigins(
+  origins: AccessOrigin[],
+  kind: AccessOriginKind,
+  classes: SchoolClass[]
+): AccessOrigin[] {
+  return origins.filter(
+    (o) =>
+      o.kind === kind &&
+      (kind !== "school" ||
+        (o.school_class !== null && classes.includes(o.school_class)))
+  );
+}
+
 /**
  * jsonlite writes an empty named list as `[]`, not `{}` — so an origin whose
  * surface reaches nothing arrives as an array and would break every lookup

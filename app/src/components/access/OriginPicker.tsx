@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { useMemo } from "react";
+import { MapPin, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/context";
 import { ACCESS_SURFACE } from "@/lib/scales";
 import PlaceSearch from "@/components/access/PlaceSearch";
 import {
   bandAt,
+  visibleOrigins,
+  SCHOOL_CLASSES,
   type AccessOrigin,
   type AccessOriginKind,
   type SchoolClass,
@@ -43,19 +45,22 @@ function directMetres(a: [number, number], b: [number, number]): number {
  * box is there for the reader who does arrive with a name in mind.
  */
 
-const SCHOOL_CLASSES: SchoolClass[] = [
-  "elementary",
-  "junior_high",
-  "high",
-  "international",
-];
-
 interface Props {
   origins: AccessOrigin[];
   selected: string | null;
-  /** The selected origin's kind, so the list can open on the right tab. */
-  selectedKind: AccessOriginKind | null;
   onSelect: (origin: AccessOrigin) => void;
+  /**
+   * Which side of the list is showing, and which school classes are in it.
+   * Owned by the page rather than here because the map's dot layer draws the
+   * same set — see `visibleOrigins`.
+   */
+  kind: AccessOriginKind;
+  onKindChange: (kind: AccessOriginKind) => void;
+  classes: SchoolClass[];
+  onClassToggle: (schoolClass: SchoolClass) => void;
+  /** Whether the listed origins are drawn as dots on the map. */
+  showOnMap: boolean;
+  onShowOnMapChange: (show: boolean) => void;
   bandM: number;
   bands: number[];
   onBandChange: (band: number) => void;
@@ -66,8 +71,13 @@ interface Props {
 export default function OriginPicker({
   origins,
   selected,
-  selectedKind,
   onSelect,
+  kind,
+  onKindChange,
+  classes,
+  onClassToggle,
+  showOnMap,
+  onShowOnMapChange,
   bandM,
   bands,
   onBandChange,
@@ -77,22 +87,8 @@ export default function OriginPicker({
   const t = useT();
   const ta = t.access;
 
-  /**
-   * Null until the reader picks a side, so a `?origin=` deep link to a station
-   * opens on the Stations tab rather than on a list its own selection is not
-   * in. An effect syncing state to the prop would do the same thing and is the
-   * cascading-render pattern this build's lint rejects.
-   */
-  const [chosenKind, setKind] = useState<AccessOriginKind | null>(null);
-  const kind = chosenKind ?? selectedKind ?? "school";
-  const [classes, setClasses] = useState<SchoolClass[]>(SCHOOL_CLASSES);
-
   const rows = useMemo(() => {
-    const visible = origins
-      .filter((o) => o.kind === kind)
-      .filter(
-        (o) => kind !== "school" || (o.school_class && classes.includes(o.school_class))
-      );
+    const visible = visibleOrigins(origins, kind, classes);
 
     // With a place to measure from, the question changes from "which of these
     // is worst" to "which of these is mine", and the order has to follow it.
@@ -137,13 +133,6 @@ export default function OriginPicker({
       [...counts.entries()].filter(([, n]) => n > 1).map(([name]) => name)
     );
   }, [rows]);
-
-  const toggleClass = (c: SchoolClass) =>
-    setClasses((current) =>
-      current.includes(c)
-        ? current.filter((x) => x !== c)
-        : [...current, c]
-    );
 
   return (
     <aside className="w-[268px] border-r border-neutral-200 bg-white shrink-0 overflow-y-auto flex flex-col">
@@ -196,7 +185,7 @@ export default function OriginPicker({
             <button
               key={k}
               type="button"
-              onClick={() => setKind(k)}
+              onClick={() => onKindChange(k)}
               className={cn(
                 "flex-1 rounded-md py-1 text-[11px] font-medium transition-colors",
                 k === kind
@@ -215,7 +204,7 @@ export default function OriginPicker({
               <button
                 key={c}
                 type="button"
-                onClick={() => toggleClass(c)}
+                onClick={() => onClassToggle(c)}
                 className={cn(
                   "rounded-full border px-2.5 py-1 text-[11px] transition-colors",
                   classes.includes(c)
@@ -228,6 +217,28 @@ export default function OriginPicker({
             ))}
           </div>
         )}
+
+        {/* Where the listed places actually are. The surface answers "who can
+            reach this one", which says nothing about how the schools or
+            stations are spread over the ward — and before anything is selected
+            the map is empty. Off by default: the dots are context for the
+            reader who asks for it, not a fourth thing competing with the two
+            colours the legend explains. */}
+        <button
+          type="button"
+          aria-pressed={showOnMap}
+          onClick={() => onShowOnMapChange(!showOnMap)}
+          className={cn(
+            "flex items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5",
+            "text-[11px] font-medium transition-colors",
+            showOnMap
+              ? "border-neutral-900 bg-neutral-900 text-white"
+              : "border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50"
+          )}
+        >
+          <MapPin className="w-3.5 h-3.5 shrink-0" />
+          {showOnMap ? ta.picker.hideOnMap : ta.picker.showOnMap}
+        </button>
 
         <PlaceSearch
           origins={origins}
