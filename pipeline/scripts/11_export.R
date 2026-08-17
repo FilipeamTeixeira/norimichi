@@ -61,13 +61,19 @@ if (!"lanes_n" %in% names(segments)) {
 
 segments$existing_cycling <- segments$has_cycle_infra
 
-export_hex_layer(drop_empty_hexes(hexes, segments), "output/hexagons.geojson")
-export_segment_layer(segments, "output/segments.geojson")
-export_cycleway_layer(segments, "output/cycleways.geojson")
-export_bike_facilities_layer(bike_facilities, "output/bike_facilities.geojson")
-export_amenities_layer(schools, stations, poi, "output/amenities.geojson")
-export_traffic_signals_layer(traffic_signals, "output/traffic_signals.geojson")
-export_summary_stats(sprintf("output/%s_summary.json", cfg$name), "output/summary.json")
+# Per region, not shared: see export_dir() in R/utils_config.R for why these
+# used to be bare output/*.geojson and what that cost.
+out_dir <- export_dir(cfg)
+
+export_hex_layer(drop_empty_hexes(hexes, segments), file.path(out_dir, "hexagons.geojson"))
+export_segment_layer(segments, file.path(out_dir, "segments.geojson"))
+export_cycleway_layer(segments, file.path(out_dir, "cycleways.geojson"))
+export_bike_facilities_layer(bike_facilities, file.path(out_dir, "bike_facilities.geojson"))
+export_amenities_layer(schools, stations, poi, file.path(out_dir, "amenities.geojson"))
+export_traffic_signals_layer(traffic_signals, file.path(out_dir, "traffic_signals.geojson"))
+export_summary_stats(sprintf("output/%s_summary.json", cfg$name),
+                     file.path(out_dir, "summary.json"))
 
 message("Exported hexagons.geojson, segments.geojson, cycleways.geojson, bike_facilities.geojson, amenities.geojson, traffic_signals.geojson and summary.json")
+message("  into ", out_dir, "/")
 message("Run scripts/12_compute_investment_ranking.R for investment_ranking.json")

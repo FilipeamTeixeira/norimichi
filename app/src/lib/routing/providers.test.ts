@@ -43,6 +43,13 @@ import {
  * has a real route to find rather than a degenerate one. Same pair the BRouter
  * profile comparison in that provider's header was measured on.
  */
+/**
+ * The study area these coordinates are in. Explicit now that the providers and
+ * the data loaders are per region — the fixtures below are Yokohama points and
+ * would score against nothing under any other slug.
+ */
+const REGION = "yokohama";
+
 const ORIGIN: [number, number] = [139.635, 35.42];
 const DESTINATION: [number, number] = [139.675, 35.445];
 
@@ -127,12 +134,14 @@ describe("route providers", () => {
     async (id, provider) => {
       const [original, alternative] = await Promise.all([
         provider.route({
+          region: REGION,
           origin: ORIGIN,
           destination: DESTINATION,
           routeType: "efficient",
           alternative: 0,
         }),
         provider.route({
+          region: REGION,
           origin: ORIGIN,
           destination: DESTINATION,
           routeType: "efficient",
@@ -162,6 +171,7 @@ describe("route providers", () => {
 
       it.each(ROUTE_TYPES)("returns a well-formed result for %s", async (routeType) => {
         const result = await provider.route({
+          region: REGION,
           origin: ORIGIN,
           destination: DESTINATION,
           routeType,
@@ -195,10 +205,11 @@ describe("route providers", () => {
    * `[lon, lat, ele]` and a 267-point line where ORS returns 2D.
    */
   it("produces geometry every provider's output can be scored from", async () => {
-    const [index, junctions] = await Promise.all([loadIndex(), loadJunctions()]);
+    const [index, junctions] = await Promise.all([loadIndex(REGION), loadJunctions(REGION)]);
 
     for (const provider of PROVIDERS) {
       const result = await provider.route({
+        region: REGION,
         origin: ORIGIN,
         destination: DESTINATION,
         routeType: "efficient",
@@ -250,7 +261,7 @@ describe("route providers", () => {
   it("gives the graph provider genuinely different routes per route type", async () => {
     const results = await Promise.all(
       ROUTE_TYPES.map((routeType) =>
-        graphProvider.route({ origin: ORIGIN, destination: DESTINATION, routeType, alternative: 0 })
+        graphProvider.route({ region: REGION, origin: ORIGIN, destination: DESTINATION, routeType, alternative: 0 })
       )
     );
 

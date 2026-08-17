@@ -45,7 +45,7 @@ import {
   LTS_COST_FACTOR,
   LTS_SPEED_FACTOR,
 } from "../scoring-constants";
-import { loadSegments } from "./data";
+import { loadSegments, perRegion } from "./data";
 import type {
   ProviderResult,
   RouteProvider,
@@ -93,11 +93,13 @@ function metres(a: Position, b: Position): number {
   return Math.hypot(dx, dy);
 }
 
-let graphPromise: Promise<RoutableGraph> | null = null;
-
-/** Built once per process, like the segment index it sits beside. */
-function loadGraph(): Promise<RoutableGraph> {
-  graphPromise ??= loadSegments().then((segments) => {
+/**
+ * Built once per region, like the segment index it sits beside — and bounded
+ * the same way, since a routable graph is the largest structure the server
+ * holds and keeping one per published city would not fit.
+ */
+const loadGraph = perRegion<RoutableGraph>((slug) =>
+  loadSegments(slug).then((segments) => {
     const nodes: Position[] = [];
     const adjacency: Edge[][] = [];
     const ids = new Map<string, number>();
@@ -146,9 +148,8 @@ function loadGraph(): Promise<RoutableGraph> {
     }
 
     return { nodes, adjacency, cells };
-  });
-  return graphPromise;
-}
+  })
+);
 
 // --- Cost ----------------------------------------------------------------
 
@@ -335,7 +336,7 @@ export const graphProvider: RouteProvider = {
   supportsAlternatives: false,
 
   async route(req: RouteRequest): Promise<ProviderResult> {
-    const graph = await loadGraph();
+    const graph = await loadGraph(req.region);
 
     const from = snapToNode(graph, req.origin);
     const to = snapToNode(graph, req.destination);

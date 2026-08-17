@@ -211,14 +211,25 @@ for (k in seq_along(wanted)) {
 # 4. Export
 # ------------------------------------------------------------
 
-dir.create("output/access", showWarnings = FALSE, recursive = TRUE)
+out_dir <- export_dir(cfg)
+
+# Cleared, not just created. This stage writes one file per origin and never
+# removed the previous run's, so the directory only ever grew: when school ids
+# went from school_<row> to school_ksj-<id> the old 106 files stayed put, and
+# every station beyond the current region's count stayed too. run_region.R
+# mirrors this directory verbatim, so all of it shipped - the app was serving
+# 346 surfaces against an index of 104. The destination-side unlink() there
+# could not help; the staleness was already in the source.
+access_dir <- file.path(out_dir, "access")
+unlink(access_dir, recursive = TRUE)
+dir.create(access_dir, showWarnings = FALSE, recursive = TRUE)
 
 # Corridor labels come from the investment ranking rather than being derived
 # again here. A frontier corridor is a row on that page, and a reader who
 # follows the link has to arrive at a street with the same name on it -
 # re-deriving `dominant_name()` in a second place is exactly how the two
 # would come to disagree.
-ranking_path <- "output/investment_ranking.json"
+ranking_path <- file.path(out_dir, "investment_ranking.json")
 if (!file.exists(ranking_path)) {
   stop("no ", ranking_path, "\n",
        "  Run scripts/12_compute_investment_ranking.R first - this stage ",
@@ -237,10 +248,10 @@ study_bands <- lapply(study, function(s) list(
   calm = band_population(s$calm, mesh)
 ))
 
-export_population_mesh(mesh, "output/population_mesh.geojson")
+export_population_mesh(mesh, file.path(out_dir, "population_mesh.geojson"))
 export_access_index(origins, surfaces, unlocks, corridors, cfg$name, mesh,
-                    study_bands, "output/access_index.json")
-export_access_surfaces(origins, surfaces, mesh, "output/access")
+                    study_bands, file.path(out_dir, "access_index.json"))
+export_access_surfaces(origins, surfaces, mesh, file.path(out_dir, "access"))
 
 primary <- which(ACCESS_BANDS_M == ACCESS_PRIMARY_BAND_M)
 reach   <- study_bands$school$any$population[primary]
@@ -251,4 +262,4 @@ message(sprintf(
   ACCESS_PRIMARY_BAND_M, reach, severed,
   100 * severed / max(reach, 1), sum(mesh$population, na.rm = TRUE)
 ))
-message("Wrote population_mesh.geojson, access_index.json and output/access/")
+message("Wrote population_mesh.geojson, access_index.json and access/ into ", out_dir, "/")

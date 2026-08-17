@@ -1,3 +1,4 @@
+source("R/utils_config.R")
 library(sf)
 library(leaflet)
 
@@ -5,14 +6,19 @@ library(leaflet)
 # LOAD DATA
 # ============================================================
 
+# Reads whichever region use_region() has selected - the same files 11_export.R
+# just wrote. Not one of run_region.R's stages (see its footer), so pick the
+# target yourself before sourcing this:  use_region("Yokohama")
+out_dir <- export_dir(load_study_area(), create = FALSE)
+
 hex <- st_read(
-  "output/hexagons.geojson",
+  file.path(out_dir, "hexagons.geojson"),
   quiet = TRUE
 ) |>
   st_transform(4326)
 
 segments <- st_read(
-  "output/segments.geojson",
+  file.path(out_dir, "segments.geojson"),
   quiet = TRUE
 ) |>
   st_transform(4326)

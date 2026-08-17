@@ -27,6 +27,8 @@ import {
   SELECTION_COLOR,
 } from "@/lib/scales";
 import type { FeatureCollection } from "geojson";
+import { useRegion } from "@/components/region/context";
+import { boundsOf, minZoomFor } from "@/lib/regions";
 
 export type Selection =
   | { kind: "segment"; feature: SegmentFeature }
@@ -322,6 +324,7 @@ export default function MapView({
   controlRef,
   onMapReady,
 }: MapViewProps) {
+  const { region, data } = useRegion();
   const showHex = coloredGeometry === "areas";
   const showSegments = coloredGeometry === "streets";
   const containerRef = useRef<HTMLDivElement>(null);
@@ -450,17 +453,19 @@ export default function MapView({
           },
         ],
       },
-      // Centre of the merged Naka-ku + Isogo-ku region, which spans
-      // 139.588–139.697 / 35.354–35.461. z13 puts its ~12km north-south extent
-      // at roughly 770px, so both wards land on screen at once; the old
-      // [139.6567, 35.4305] / z14 was Naka-ku's own centre and left Isogo
-      // entirely below the viewport.
-      center: [139.6423, 35.4075],
-      zoom: 13,
+      // The opening frame comes from the region's own published extent, not a
+      // constant. The hand-picked centre and zoom that used to live here were
+      // Yokohama's, worked out from its span by hand — and were quietly wrong
+      // for any other city, and wrong again for Yokohama itself each time a
+      // ward was added. fitBounds does that arithmetic per region.
+      bounds: boundsOf(region),
+      fitBoundsOptions: { padding: 24 },
       maxZoom: 18,
-      // The study area is ~12km across, which is 193px at z11 and 96px at z10
-      // — the two levels below this showed a blob, not a map.
-      minZoom: 11,
+      // Floors the zoom at roughly the whole study area in view. Derived
+      // rather than fixed at 11: that number was chosen because Yokohama is
+      // ~12km across and showed a blob below it, which says nothing about a
+      // region of a different size.
+      minZoom: minZoomFor(region),
     });
 
     map.addControl(new NavigationControl(), "top-right");
@@ -508,15 +513,15 @@ export default function MapView({
     map.addSource("segments", { type: "geojson", data: segments });
     map.addSource("bike-facilities", {
       type: "geojson",
-      data: "/data/bike_facilities.geojson",
+      data: data("bike_facilities.geojson"),
     });
     map.addSource("amenities", {
       type: "geojson",
-      data: "/data/amenities.geojson",
+      data: data("amenities.geojson"),
     });
     map.addSource("cycleways", {
       type: "geojson",
-      data: "/data/cycleways.geojson",
+      data: data("cycleways.geojson"),
     });
 
     map.addLayer({

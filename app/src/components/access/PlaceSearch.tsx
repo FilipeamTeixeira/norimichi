@@ -10,6 +10,7 @@ import {
 } from "@/lib/geocode-types";
 import type { AccessOrigin } from "@/lib/access-types";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 
 /**
  * One box, two ways of finding somewhere.
@@ -60,6 +61,7 @@ export default function PlaceSearch({
   onPickPlace,
 }: Props) {
   const t = useT();
+  const { region } = useRegion();
   const ts = t.access.search;
   const listId = useId();
 
@@ -110,9 +112,12 @@ export default function PlaceSearch({
 
       setLoading(true);
       try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-          signal: controller.signal,
-        });
+        const res = await fetch(
+          `/api/geocode?q=${encodeURIComponent(query)}&region=${region.slug}`,
+          {
+            signal: controller.signal,
+          }
+        );
         const body = (await res.json()) as GeocodeResponse | GeocodeError;
         if (controller.signal.aborted) return;
 
@@ -144,7 +149,7 @@ export default function PlaceSearch({
         if (!controller.signal.aborted) setLoading(false);
       }
     },
-    [t, ts]
+    [t, ts, region.slug]
   );
 
   const onChange = (next: string) => {

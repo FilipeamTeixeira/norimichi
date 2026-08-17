@@ -88,6 +88,37 @@ use_study_area <- function(...) {
   invisible(fields)
 }
 
+#' Where a region's app-facing exports go.
+#'
+#' Per region, and that is the whole point. The working files upstream of this
+#' are already keyed on the study area - {region}_segments.gpkg and friends -
+#' but the exports were not: 11/12/13 wrote a bare output/hexagons.geojson,
+#' output/summary.json and output/access/, one shared set for every region.
+#' Publishing Tokyo therefore overwrote Yokohama's exports in output/ *and*
+#' in the app, and nothing anywhere errored - the map just quietly served
+#' Shinjuku's 349k residents under Yokohama's name. Keying the export
+#' directory on cfg$name is what makes two regions independent all the way to
+#' the app, which is what the config file has always claimed they are.
+#'
+#' @param cfg the list returned by load_study_area()
+#' @param create create the directory if it does not exist yet
+export_dir <- function(cfg = load_study_area(), create = TRUE) {
+  dir <- file.path("output", "export", cfg$name)
+  if (create) dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+  dir
+}
+
+#' A region's URL slug - what the app routes on, e.g. "Yokohama" -> "yokohama".
+#'
+#' The app serves each region under /<slug>/, so this string ends up in every
+#' shared link. Kept deliberately dumb (lowercase, non-alphanumerics collapsed
+#' to a single hyphen) so that it is reproducible on the frontend without a
+#' lookup, and stable for any region name someone adds later.
+region_slug <- function(region) {
+  slug <- tolower(gsub("[^A-Za-z0-9]+", "-", region))
+  gsub("^-|-$", "", slug)
+}
+
 #' The regions available to run, as a character vector of names.
 #'
 #' Read straight from the file for the same reason study_wards() is: it is

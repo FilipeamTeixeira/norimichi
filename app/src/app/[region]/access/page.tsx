@@ -24,6 +24,7 @@ import {
   type SchoolClass,
 } from "@/lib/access-types";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 
 /**
  * Access — the half of this project addressed to the person making the trip
@@ -46,6 +47,7 @@ import { useT } from "@/i18n/context";
 
 export default function AccessPage() {
   const t = useT();
+  const { data } = useRegion();
   const [index, setIndex] = useState<AccessIndex | null>(null);
   const [mesh, setMesh] =
     useState<FeatureCollection<Polygon, MeshCellProperties> | null>(null);
@@ -137,7 +139,7 @@ export default function AccessPage() {
       setSelected(origin);
       setSurface(null);
 
-      fetch(`/data/access/${origin.origin_id}.json`)
+      fetch(data(`access/${origin.origin_id}.json`))
         .then((r) => {
           if (!r.ok) throw new Error(`${r.status}`);
           return r.json() as Promise<AccessSurface>;
@@ -152,16 +154,16 @@ export default function AccessPage() {
           if (id === requestId.current) setSurface(null);
         });
     },
-    [fitToSurface]
+    [fitToSurface, data]
   );
 
   useEffect(() => {
     Promise.all([
-      fetch("/data/access_index.json").then((r) => {
+      fetch(data("access_index.json")).then((r) => {
         if (!r.ok) throw new Error(`access_index.json: ${r.status}`);
         return r.json() as Promise<AccessIndex>;
       }),
-      fetch("/data/population_mesh.geojson").then((r) => {
+      fetch(data("population_mesh.geojson")).then((r) => {
         if (!r.ok) throw new Error(`population_mesh.geojson: ${r.status}`);
         return r.json() as Promise<
           FeatureCollection<Polygon, MeshCellProperties>
@@ -193,7 +195,7 @@ export default function AccessPage() {
         if (origin) selectWith(origin, idx.primary_band_m, cells);
       })
       .catch((e: Error) => setError(e.message));
-  }, [selectWith]);
+  }, [selectWith, data]);
 
   const select = useCallback(
     (origin: AccessOrigin, band: number) => selectWith(origin, band, mesh),

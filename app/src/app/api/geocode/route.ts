@@ -26,15 +26,14 @@
  * provider later touches this file only.
  */
 
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-import type { FeatureCollection, Point, Polygon } from "geojson";
+import type { FeatureCollection, Point } from "geojson";
 import type {
   GeocodeError,
   GeocodeErrorKind,
   GeocodeResponse,
   GeocodeResult,
 } from "@/lib/geocode-types";
+import { findRegion } from "@/lib/regions.server";
 
 export const runtime = "nodejs";
 
@@ -54,43 +53,27 @@ const SEARCH_PAD_DEG = 0.01;
 // --- Study area ---------------------------------------------------------
 
 /**
- * The hex grid, not segments.geojson: it covers the same ward, is a tenth of
- * the size, and this endpoint runs on keystrokes. Module-level promise, so the
- * parse happens once per instance rather than once per search.
+ * The searchable extent for one region.
+ *
+ * This used to parse hexagons.geojson here and walk every ring to find its
+ * bounds, memoised in a single module-level promise. Both halves had to go:
+ * the single promise meant the first region to be searched bounded every later
+ * one, and the parse was redundant — run_region.R already computes exactly
+ * this bbox, off exactly that file, and writes it into regions.json. Reading
+ * it back is the same number without the 300KB.
  */
-let bboxPromise: Promise<[number, number, number, number]> | null = null;
-
-function studyAreaBbox(): Promise<[number, number, number, number]> {
-  bboxPromise ??= readFile(
-    path.join(process.cwd(), "public", "data", "hexagons.geojson"),
-    "utf8"
-  ).then((raw) => {
-    const fc = JSON.parse(raw) as FeatureCollection<Polygon>;
-    let w = Infinity;
-    let s = Infinity;
-    let e = -Infinity;
-    let n = -Infinity;
-    for (const f of fc.features) {
-      for (const ring of f.geometry.coordinates) {
-        for (const [lon, lat] of ring) {
-          if (lon < w) w = lon;
-          if (lon > e) e = lon;
-          if (lat < s) s = lat;
-          if (lat > n) n = lat;
-        }
-      }
-    }
-    if (!Number.isFinite(w)) {
-      throw new Error("hexagons.geojson has no coordinates to bound");
-    }
-    return [
-      w - SEARCH_PAD_DEG,
-      s - SEARCH_PAD_DEG,
-      e + SEARCH_PAD_DEG,
-      n + SEARCH_PAD_DEG,
-    ] as [number, number, number, number];
-  });
-  return bboxPromise;
+async function studyAreaBbox(
+  slug: string
+): Promise<[number, number, number, number] | null> {
+  const region = await findRegion(slug);
+  if (!region) return null;
+  const [w, s, e, n] = region.bbox;
+  return [
+    w - SEARCH_PAD_DEG,
+    s - SEARCH_PAD_DEG,
+    e + SEARCH_PAD_DEG,
+    n + SEARCH_PAD_DEG,
+  ];
 }
 
 // --- Cache --------------------------------------------------------------
@@ -257,7 +240,13 @@ function fail(
 }
 
 export async function GET(request: Request): Promise<Response> {
-  const query = (new URL(request.url).searchParams.get("q") ?? "").trim();
+  const params = new URL(request.url).searchParams;
+  const query = (params.get("q") ?? "").trim();
+  const slug = (params.get("region") ?? "").trim();
+
+  if (!slug) {
+    return fail("bad_request", "No study area given for the search.", 400);
+  }
 
   if (query.length < MIN_QUERY_LENGTH) {
     return fail(
@@ -270,21 +259,30 @@ export async function GET(request: Request): Promise<Response> {
     return fail("bad_request", "That search is too long.", 400);
   }
 
-  const key = query.toLowerCase();
+  // Keyed on the region as well as the query. Every search is bounded to one
+  // study area, so the same string legitimately has different answers in
+  // different cities — a shared key would serve Yokohama's "chuo" to a reader
+  // in Osaka, cached and looking authoritative.
+  const key = `${slug} ${query.toLowerCase()}`;
   const hit = cacheGet(key);
   if (hit) {
     return Response.json({ results: hit, cached: true } satisfies GeocodeResponse);
   }
 
-  let bbox: [number, number, number, number];
+  let bbox: [number, number, number, number] | null;
   try {
-    bbox = await studyAreaBbox();
+    bbox = await studyAreaBbox(slug);
   } catch {
     return fail(
       "unavailable",
       "The study area extent could not be read, so search cannot be restricted to it. Click the map to set the trip instead.",
       503
     );
+  }
+  // An unpublished slug, not a transient failure. Distinguished from the catch
+  // above so it does not read as "try again later".
+  if (!bbox) {
+    return fail("bad_request", `Unknown study area: ${slug}`, 400);
   }
 
   const found = await search(query, bbox);

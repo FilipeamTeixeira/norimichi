@@ -23,13 +23,25 @@
 #
 # Adding a new region is: a new top-level entry here with its own `wards:` and
 # `pbf_path:`, then `run_ward.R`/`run_region.R` exactly as above, scoped to
-# that region's name. It never requires re-running an existing region.
+# that region's name. It never requires re-running an existing region, and
+# publishing it does not disturb one either - each region is exported to
+# output/export/<region>/ and served by the app at /<slug>/, where <slug> is
+# the key below lowercased ("Yokohama" -> /yokohama/). run_region.R rebuilds
+# app/public/data/regions.json from whatever is published, and the bare "/"
+# redirects to the first region listed here that has been.
+#
+# Commenting a region out here de-lists it from the app on the next publish of
+# any region. Its files are left on disk, so uncommenting it brings it back
+# without a re-run.
 #
 # Find a relation ID by searching openstreetmap.org, opening the matching
 # result, and reading "Relation: <name> (<id>)".
 
 regions:
   Yokohama:
+    label_ja: 横浜市          # optional - what the app's region switcher shows
+                              # in Japanese. Falls back to the region's key
+                              # above when absent, so it is never required.
     wards:
       Naka-ku: 2689447
       Isogo-ku: 2689464
@@ -54,10 +66,11 @@ regions:
                            # has needed that yet.
 
   Tokyo:
+    label_ja: 東京都
     wards:
       Shinjuku-ku: 1758858
-      Shibuiya-ku: 1759477
-      Chiyoda-ku: 1761742
+      #Shibuiya-ku: 1759477
+      #Chiyoda-ku: 1761742
     pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"
     prefecture_code: 13                          # 東京都
 

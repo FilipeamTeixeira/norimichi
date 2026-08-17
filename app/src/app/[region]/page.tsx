@@ -30,6 +30,7 @@ import {
   STREET_DETAIL_ZOOM,
 } from "@/lib/metrics";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 import { useViewById } from "@/i18n/metrics";
 import {
   AMENITY_COLORS,
@@ -109,6 +110,7 @@ function corridorFromUrl(): number | null {
 
 export default function NetworkPage() {
   const t = useT();
+  const { data } = useRegion();
   const viewById = useViewById();
   const [selected, setSelected] = useState<Selection>(null);
   const [toggles, setToggles] = useState<ToggleState>(DEFAULT_TOGGLES);
@@ -173,8 +175,8 @@ export default function NetworkPage() {
     };
 
     Promise.all([
-      load("/data/segments.geojson"),
-      load("/data/hexagons.geojson"),
+      load(data("segments.geojson")),
+      load(data("hexagons.geojson")),
     ])
       .then(([seg, hex]) => {
         if (cancelled) return;
@@ -217,7 +219,7 @@ export default function NetworkPage() {
 
         // Fetched only on a corridor handoff — the network view itself has no
         // use for the ranking, so it does not pay for it.
-        fetch("/data/investment_ranking.json")
+        fetch(data("investment_ranking.json"))
           .then((r) => (r.ok ? r.json() : null))
           .then((ranking: InvestmentRanking | null) => {
             if (cancelled || !ranking) return;
@@ -237,7 +239,10 @@ export default function NetworkPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+    // `data` is memoised on the region, so this re-runs on a region switch and
+    // at no other time. The layout also remounts this page on that switch, so
+    // in practice the dependency is belt and braces — but it is the honest one.
+  }, [data]);
 
   /**
    * Clicking the active view switches it off, which is the only way to see the

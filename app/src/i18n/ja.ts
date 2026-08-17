@@ -30,6 +30,7 @@ const ja: Dict = {
     ranking: "整備優先度",
     about: "本サイトについて",
     language: "言語",
+    region: "対象地域",
   },
 
   common: {

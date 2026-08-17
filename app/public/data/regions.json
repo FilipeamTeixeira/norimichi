@@ -1,0 +1,19 @@
+{
+  "default": "yokohama",
+  "regions": [
+    {
+      "slug": "yokohama",
+      "name": "Yokohama",
+      "wards": ["Naka-ku", "Isogo-ku", "Nishi-ku", "Minami-ku"],
+      "bbox": [139.570871, 35.353958, 139.696739, 35.472412],
+      "label_ja": "横浜市"
+    },
+    {
+      "slug": "tokyo",
+      "name": "Tokyo",
+      "wards": ["Shinjuku-ku"],
+      "bbox": [139.672431, 35.674303, 139.745305, 35.730793],
+      "label_ja": "東京都"
+    }
+  ]
+}

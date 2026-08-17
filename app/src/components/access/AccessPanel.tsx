@@ -5,6 +5,7 @@ import PanelShell from "@/components/panels/PanelShell";
 import FactorRow from "@/components/panels/FactorRow";
 import { ACCESS_SURFACE } from "@/lib/scales";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 import {
   bandAt,
   unlockAt,
@@ -39,6 +40,7 @@ interface Props {
 
 export default function AccessPanel({ origin, index, bandM, onClose }: Props) {
   const t = useT();
+  const { href } = useRegion();
   const ta = t.access;
   const band = bandAt(origin, bandM);
   const km = bandM / 1000;
@@ -151,7 +153,7 @@ export default function AccessPanel({ origin, index, bandM, onClose }: Props) {
                     return (
                       <Link
                         key={c.corridor_id}
-                        href={`/?corridor=${c.corridor_id}`}
+                        href={`${href("/")}?corridor=${c.corridor_id}`}
                         className="block rounded-lg border border-neutral-200 px-3 py-2 hover:border-neutral-300 hover:bg-neutral-50 transition-colors"
                       >
                         <div className="flex items-baseline justify-between gap-2">

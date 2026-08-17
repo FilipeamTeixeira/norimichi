@@ -113,5 +113,6 @@ message(sprintf(
   ledger$payback_years_low, ledger$payback_years_high
 ))
 
-export_investment_ranking(corridors, cfg$name, "output/investment_ranking.json",
+export_investment_ranking(corridors, cfg$name,
+                          file.path(export_dir(cfg), "investment_ranking.json"),
                           ledger = ledger)

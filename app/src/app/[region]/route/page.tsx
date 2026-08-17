@@ -26,6 +26,7 @@ import {
 } from "@/lib/route-types";
 import type { RouteAlternative, RouteType } from "@/lib/routing/types";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 import type { Dict } from "@/i18n/en";
 
 /**
@@ -80,6 +81,7 @@ const pinLabel = ([lon, lat]: Point, t: Dict) =>
 
 export default function RouteAnalysisPage() {
   const t = useT();
+  const { region } = useRegion();
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [pins, setPins] = useState<{
     origin: Endpoint | null;
@@ -164,6 +166,7 @@ export default function RouteAnalysisPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          region: region.slug,
           origin: from,
           destination: to,
           // Read from the ref, not from state, for the same reason the pins
@@ -196,7 +199,7 @@ export default function RouteAnalysisPage() {
     } finally {
       if (id === requestId.current) setLoading(false);
     }
-  }, []);
+  }, [region.slug]);
 
   /** Move one end, and score as soon as both exist. */
   const setPin = useCallback(

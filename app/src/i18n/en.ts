@@ -27,6 +27,7 @@ const en = {
     ranking: "Investment Ranking",
     about: "About",
     language: "Language",
+    region: "Study area",
   },
 
   common: {

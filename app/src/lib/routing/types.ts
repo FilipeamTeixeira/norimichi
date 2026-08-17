@@ -69,6 +69,16 @@ export function isRouteAlternative(v: unknown): v is RouteAlternative {
 }
 
 export interface RouteRequest {
+  /**
+   * Which study area this trip is in, as a published region slug.
+   *
+   * Carried on the request rather than read from a module constant because the
+   * network a route is drawn over is per region — and because it is part of
+   * the cache key. Two cities have their own [lon, lat] space in principle,
+   * but a shared cache keyed on coordinates alone would still be wrong the
+   * moment two regions overlap or abut.
+   */
+  region: string;
   /** `[lon, lat]`, already snapped to the cache grid by the caller. */
   origin: [number, number];
   destination: [number, number];

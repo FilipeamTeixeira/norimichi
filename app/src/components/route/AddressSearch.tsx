@@ -9,6 +9,7 @@ import {
   type GeocodeResult,
 } from "@/lib/geocode-types";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 
 /**
  * One end of the trip: a text field that searches addresses, over a value the
@@ -60,6 +61,7 @@ export default function AddressSearch({
   onClear,
 }: Props) {
   const t = useT();
+  const { region } = useRegion();
   const listId = useId();
   /**
    * What the reader has typed since focusing, or null when they haven't — in
@@ -96,9 +98,12 @@ export default function AddressSearch({
 
       setLoading(true);
       try {
-        const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`, {
-          signal: controller.signal,
-        });
+        const res = await fetch(
+          `/api/geocode?q=${encodeURIComponent(query)}&region=${region.slug}`,
+          {
+            signal: controller.signal,
+          }
+        );
         const body = (await res.json()) as GeocodeResponse | GeocodeError;
         if (controller.signal.aborted) return;
 
@@ -123,7 +128,7 @@ export default function AddressSearch({
         if (!controller.signal.aborted) setLoading(false);
       }
     },
-    [t]
+    [t, region.slug]
   );
 
   const onChange = (next: string) => {

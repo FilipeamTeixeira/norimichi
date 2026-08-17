@@ -11,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n/context";
+import { useRegion } from "@/components/region/context";
 
 /**
  * The whole-study-area ledger: what building every recommended corridor would
@@ -92,6 +93,7 @@ function Figure({
 
 export default function RankingPage() {
   const t = useT();
+  const { data, href } = useRegion();
   const router = useRouter();
   const [ranking, setRanking] = useState<InvestmentRanking | null>(null);
   const [hexes, setHexes] = useState<HexProperties[] | null>(null);
@@ -99,19 +101,19 @@ export default function RankingPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/data/investment_ranking.json")
+    fetch(data("investment_ranking.json"))
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json();
       })
       .then((d: InvestmentRanking) => setRanking(d))
       .catch((e: Error) => setError(e.message));
-  }, []);
+  }, [data]);
 
   // The hex overview is a secondary view, so its data only loads if asked for.
   useEffect(() => {
     if (tab !== "areas" || hexes) return;
-    fetch("/data/hexagons.geojson")
+    fetch(data("hexagons.geojson"))
       .then((r) => r.json())
       .then((d) =>
         setHexes(
@@ -119,7 +121,7 @@ export default function RankingPage() {
         )
       )
       .catch(() => setHexes([]));
-  }, [tab, hexes]);
+  }, [tab, hexes, data]);
 
   const rankedHexes = useMemo(() => {
     if (!hexes) return [];
@@ -137,7 +139,9 @@ export default function RankingPage() {
    * segments.geojson, which it loads anyway.
    */
   const openOnMap = (c: CorridorProperties) => {
-    router.push(`/?corridor=${c.corridor_id}`);
+    // Within the current region: corridor ids are assigned per region, so this
+    // link only means anything alongside the study area it came from.
+    router.push(`${href("/")}?corridor=${c.corridor_id}`);
   };
 
   return (

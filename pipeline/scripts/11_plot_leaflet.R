@@ -1,3 +1,4 @@
+source("R/utils_config.R")
 library(sf)
 library(leaflet)
 
@@ -5,8 +6,10 @@ library(leaflet)
 # Load hexagons
 # ------------------------------------------------------------
 
+# Reads whichever region use_region() has selected. Pick one before sourcing
+# this on its own:  use_region("Yokohama")
 hex <- st_read(
-  "output/hexagons.geojson",
+  file.path(export_dir(load_study_area(), create = FALSE), "hexagons.geojson"),
   quiet = TRUE
 )
 

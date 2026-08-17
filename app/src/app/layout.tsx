@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import TopNav from "@/components/layout/TopNav";
 import { LocaleProvider } from "@/i18n/context";
 import { getDictionary, getLocale } from "@/i18n/server";
 
@@ -35,10 +34,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`}>
       <body className="h-full flex flex-col">
-        <LocaleProvider initial={locale}>
-          <TopNav />
-          <div className="flex-1 flex overflow-hidden">{children}</div>
-        </LocaleProvider>
+        {/*
+          The nav and the page frame live in app/[region]/layout.tsx, not here:
+          both need the active study area, and this layout also wraps the bare
+          "/" redirect, which has no region yet.
+        */}
+        <LocaleProvider initial={locale}>{children}</LocaleProvider>
       </body>
     </html>
   );

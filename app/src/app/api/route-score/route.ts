@@ -30,6 +30,7 @@ import {
   loadJunctions,
 } from "@/lib/routing/data";
 import { activeProvider } from "@/lib/routing";
+import { findRegion } from "@/lib/regions.server";
 import {
   isRouteAlternative,
   isRouteType,
@@ -104,13 +105,18 @@ const cache = new Map<string, { at: number; payload: RouteScoreResponse }>();
  * watch for.
  */
 function cacheKey(
+  region: string,
   providerId: string,
   routeType: RouteType,
   alternative: RouteAlternative,
   from: [number, number],
   to: [number, number]
 ): string {
-  return `${providerId}|${routeType}|${alternative}|${from[0]},${from[1]}|${to[0]},${to[1]}`;
+  // Region first, and not optional. Coordinates alone would be a near-miss
+  // key: two study areas can abut or overlap, and the scored result depends on
+  // which region's segment network the line was matched against, not only on
+  // where the line is.
+  return `${region}|${providerId}|${routeType}|${alternative}|${from[0]},${from[1]}|${to[0]},${to[1]}`;
 }
 
 function cacheGet(key: string): RouteScoreResponse | null {
@@ -232,11 +238,23 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const {
+    region: requestedRegion,
     origin,
     destination,
     route_type: requestedType,
     alternative: requestedAlternative,
   } = (body ?? {}) as Record<string, unknown>;
+
+  // Validated against the manifest before it reaches any loader: it becomes
+  // part of a filesystem path there, and "is this a real published region" is
+  // the only check that actually establishes that.
+  if (typeof requestedRegion !== "string" || !requestedRegion) {
+    return fail("bad_request", "region must be a published region slug.", 400);
+  }
+  if (!(await findRegion(requestedRegion))) {
+    return fail("bad_request", `Unknown study area: ${requestedRegion}`, 400);
+  }
+  const region = requestedRegion;
 
   if (!isCoordinate(origin) || !isCoordinate(destination)) {
     return fail(
@@ -265,9 +283,9 @@ export async function POST(request: Request): Promise<Response> {
   const to: [number, number] = [snap(destination[0]), snap(destination[1])];
 
   const [index, junctions, facilities] = await Promise.all([
-    loadIndex(),
-    loadJunctions(),
-    loadFacilities(),
+    loadIndex(region),
+    loadJunctions(region),
+    loadFacilities(region),
   ]);
 
   if (!insideStudyArea(from, index.bbox) || !insideStudyArea(to, index.bbox)) {
@@ -289,11 +307,19 @@ export async function POST(request: Request): Promise<Response> {
     ? alternative
     : 0;
 
-  const key = cacheKey(provider.id, routeType, effectiveAlternative, from, to);
+  const key = cacheKey(
+    region,
+    provider.id,
+    routeType,
+    effectiveAlternative,
+    from,
+    to
+  );
   const hit = cacheGet(key);
   if (hit) return Response.json({ ...hit, cached: true });
 
   const result = await provider.route({
+    region,
     origin: from,
     destination: to,
     routeType,
