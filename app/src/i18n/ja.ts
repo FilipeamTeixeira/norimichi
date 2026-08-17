@@ -497,6 +497,12 @@ const ja: Dict = {
       unavailableType:
         "この種別に該当する路線はありません。駐輪場は点の施設であり、街路の区間ではないためです。",
       noMatch: "この条件に該当する路線はありません。",
+      shortHidden: (n: number, m: number) =>
+        `${m}m 未満の ${n} 路線は非表示です。単独の事業とするには短すぎます。交差点改良と地区をつなぐ区間は長さにかかわらず表示します。`,
+      shortShown: (n: number, m: number) =>
+        `${m}m 未満の ${n} 路線を含めています。`,
+      shortShow: "表示する",
+      shortHide: "非表示にする",
       summary: (rows: number, km: string) =>
         `${rows} 路線 · ${km} km · 行をクリックすると地図で表示します`,
       project: "事業",

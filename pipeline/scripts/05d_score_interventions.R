@@ -91,9 +91,21 @@ message(sprintf("Beneficiary estimates: median %.0f, max %d",
 # into one row per corridor is 12's job.
 
 segments$corridor_id <- assign_corridor_ids(segments)
+
+# Then discard the groups too short to be a project. Overwhelmingly these are
+# not streets at all but crumbs left where clipsrc cut a way against a ward
+# boundary that runs along it - see MIN_CORRIDOR_LENGTH_M in
+# R/build_corridors.R. Their segments stay in the table and in the network
+# graph; they simply stop being fundable, exactly as a non-recommendable
+# segment does.
+pruned <- drop_subscale_corridors(segments$corridor_id, segments$length_m)
+segments$corridor_id <- pruned$corridor_id
+
 message(sprintf("Corridor membership: %d segments in %d corridors",
                 sum(!is.na(segments$corridor_id)),
                 length(unique(na.omit(segments$corridor_id)))))
+message(sprintf("  %d corridor(s) under %gm dropped as sub-scale (%.0fm of street)",
+                pruned$dropped, MIN_CORRIDOR_LENGTH_M, pruned$metres))
 
 # --- Recommendation, cost tier, and the intervention simulation ----------
 #

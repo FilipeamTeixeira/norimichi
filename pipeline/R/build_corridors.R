@@ -40,6 +40,11 @@
 #      or more ways meet there, they are each other's straightest
 #      continuation.
 #
+# A second pass then discards whole components shorter than
+# MIN_CORRIDOR_LENGTH_M - drop_subscale_corridors(), also called from 05d. It is
+# deliberately not a fourth condition on the edges above: a size floor applied
+# per segment would split streets rather than clean up after them.
+#
 # WHY NOT ALSO REQUIRE THE SAME `recommendation` - IT USED TO
 # That was this file's original rule and it split streets down the middle.
 # `recommendation` is decided from a way's own attributes, and two of the
@@ -78,6 +83,33 @@ source("R/score_network.R")  # METRIC_CRS, VERTEX_SNAP_M
 # than ~45 starts cutting real corridors at dog-legs; anything looser than
 # ~75 starts absorbing side streets.
 CORRIDOR_MAX_DEFLECTION_DEG <- 60
+
+# Shortest corridor that can be a project at all. Below this a row is not a
+# street, it is what boundary clipping left behind. get_osm_roads() reads each
+# ward with GDAL's `clipsrc`, which cuts every way at the ward polygon, and in
+# central Tokyo the ward lines run down the centreline of the arterials -
+# 昭和通り is the Chuo/Taito line, 中央通り and 清洲橋通り the same. A road
+# running *along* a boundary is therefore sliced wherever the polygon wobbles
+# across it, and the crumbs reach the ranking under the arterial's own name:
+# way 583741284 is 28cm of 清洲橋通り, way 1442274165 is 59cm of 中央通り, each
+# with a computed clip point at one end and a real OSM node at the other. 29 of
+# the 51 sub-10m corridors in Tokyo carry a real street name, which is the worst
+# case - "昭和通り, 2.2m, protected cycle lane" reads as a genuine proposal.
+#
+# APPLIED TO THE CORRIDOR, NOT THE SEGMENT, for two reasons. A floor inside
+# is_recommendable() would make a 3m crumb mid-street non-recommendable, and a
+# non-recommendable segment splits its street in two (rule 1 above) - so the fix
+# for a crumb would fragment the real corridors either side of it. And nothing
+# leaves the segment table, so score_network.R's graph is untouched: of the 1,630
+# sub-10m segments here only 364 are clip products, the rest being real junction
+# connectors whose removal would fabricate island severance.
+#
+# 10m answers "is this real?", not "is this worth funding" - that second question
+# belongs to the frontend's display threshold, which is a policy choice about
+# what a funding table should show rather than a fact about the data. Dropping
+# these costs 331m of Tokyo's 795km and 41m of Yokohama's 370km, and 48 of the
+# 51 corridors it removes are a single segment.
+MIN_CORRIDOR_LENGTH_M <- 10
 
 # How far along a way its bearing at a terminal node is measured. A single
 # vertex pair is often a 1-2m micro-jog in the OSM geometry, which points
@@ -316,6 +348,46 @@ assign_corridor_ids <- function(segments, recommendable = NULL) {
   roots <- vapply(seq_len(nrow(sub)), find, integer(1))
   corridor_id[rec_rows] <- match(roots, sort(unique(roots)))
   corridor_id
+}
+
+#' Clear the corridors too short to be a project. See MIN_CORRIDOR_LENGTH_M.
+#'
+#' Runs on the output of assign_corridor_ids() rather than inside it: grouping
+#' asks "is this the same street", this asks "is the result big enough to fund",
+#' and keeping them apart is what stops a crumb from splitting the street it was
+#' cut out of.
+#'
+#' A segment whose id is cleared here is treated downstream exactly like a
+#' non-recommendable one - no corridor, and so no recommendation, cost tier or
+#' after-score - but it keeps its row, its geometry and its place in the network
+#' graph. Survivors are renumbered so the "ids are 1..N with no gaps" property
+#' assign_corridor_ids() provides still holds afterwards.
+#'
+#' @param corridor_id integer vector from assign_corridor_ids()
+#' @param length_m numeric vector over the same rows
+#' @param min_m shortest corridor kept, total length over all its members
+#' @return list with the rewritten `corridor_id`, the number of corridors
+#'   `dropped`, and the `metres` of street those corridors held
+drop_subscale_corridors <- function(corridor_id, length_m,
+                                    min_m = MIN_CORRIDOR_LENGTH_M) {
+  assigned <- !is.na(corridor_id)
+  if (!any(assigned)) {
+    return(list(corridor_id = corridor_id, dropped = 0L, metres = 0))
+  }
+
+  total <- tapply(length_m[assigned], corridor_id[assigned], sum, na.rm = TRUE)
+  too_short <- names(total)[total < min_m]
+
+  corridor_id[assigned & as.character(corridor_id) %in% too_short] <- NA_integer_
+
+  keep <- !is.na(corridor_id)
+  if (any(keep)) {
+    corridor_id[keep] <- match(corridor_id[keep], sort(unique(corridor_id[keep])))
+  }
+
+  list(corridor_id = corridor_id,
+       dropped = length(too_short),
+       metres = sum(total[too_short]))
 }
 
 #' One merged geometry per corridor, in METRIC_CRS.

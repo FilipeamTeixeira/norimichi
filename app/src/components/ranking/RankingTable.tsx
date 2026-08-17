@@ -37,6 +37,46 @@ const INTERVENTION_TYPES: InterventionType[] = [
  */
 const RATE_MEANINGFUL_ABOVE_M = 150;
 
+/**
+ * Shortest corridor listed by default. Deliberately the same number as
+ * RATE_MEANINGFUL_ABOVE_M, because it is the same observation twice: below
+ * ~150m a row stops describing a street and starts describing where OSM
+ * happened to cut one. Two thirds of the corridors under it are a single
+ * segment, against a median recommended OSM way of 119m.
+ *
+ * It also corrects a ranking distortion rather than only tidying the list.
+ * Build cost scales with length but `estimated_beneficiaries` barely does —
+ * it comes from a 500m buffer, so in Tokyo the median sub-100m corridor still
+ * claims 15,053 residents against 28,924 for one over 500m. Half the benefit
+ * at a tenth of the cost puts fragments at the top of a payback sort: the best
+ * payback in Tokyo currently belongs to a 47m corridor.
+ *
+ * This is a *display* threshold and the pipeline does not apply it — the map,
+ * the exported segment table and the programme ledger all keep the full 795km,
+ * because hiding a row from a funding table is not the same as claiming the
+ * street is not there. The pipeline's own floor is MIN_CORRIDOR_LENGTH_M in
+ * pipeline/R/build_corridors.R, which is 10m and answers a different question:
+ * whether the row is real at all.
+ */
+const MIN_FUNDABLE_LENGTH_M = 150;
+
+/**
+ * Whether a corridor is listed at the default length filter. Not a bare
+ * length test: two kinds of short corridor are the point rather than the
+ * noise, and cutting them would delete findings the pipeline exists to
+ * produce.
+ */
+function isFundableLength(c: CorridorProperties): boolean {
+  return (
+    c.length_m >= MIN_FUNDABLE_LENGTH_M ||
+    // A short link joining two low-stress islands is the cheapest high-value
+    // row in the table — exactly what score_network.R is for.
+    c.bridges_islands ||
+    // Length is not the unit of work for a point intervention.
+    c.recommendation === "Crossing improvement"
+  );
+}
+
 const TYPE_COLORS: Record<InterventionType, string> = {
   "Protected cycle lane": "#1baf7a",
   "Missing link": "#ef4444",
@@ -209,6 +249,8 @@ export default function RankingTable({ corridors, onSelect }: Props) {
    */
   const [sortKey, setSortKey] = useState<SortKey>("gap");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
+  /** See MIN_FUNDABLE_LENGTH_M. Off by default; the count is always stated. */
+  const [showShort, setShowShort] = useState(false);
 
   const cols = useMemo(() => columns(t), [t]);
 
@@ -219,10 +261,11 @@ export default function RankingTable({ corridors, onSelect }: Props) {
   }, [corridors]);
 
   const rows = useMemo(() => {
-    const filtered =
+    const byType =
       types.size === 0
         ? corridors
         : corridors.filter((c) => types.has(c.recommendation));
+    const filtered = showShort ? byType : byType.filter(isFundableLength);
 
     const value = (c: CorridorProperties): number | null => {
       switch (sortKey) {
@@ -261,7 +304,19 @@ export default function RankingTable({ corridors, onSelect }: Props) {
       // every corridor in one hex carries an identical gap score.
       return b.estimated_beneficiaries - a.estimated_beneficiaries;
     });
-  }, [corridors, types, sortKey, sortDir]);
+  }, [corridors, types, sortKey, sortDir, showShort]);
+
+  /**
+   * How many rows the length filter is holding back, counted inside whatever
+   * intervention filter is active so the number matches the table above it.
+   */
+  const shortHidden = useMemo(() => {
+    const byType =
+      types.size === 0
+        ? corridors
+        : corridors.filter((c) => types.has(c.recommendation));
+    return byType.length - byType.filter(isFundableLength).length;
+  }, [corridors, types]);
 
   const onSort = (k: SortKey) => {
     if (k === sortKey) setSortDir((d) => (d === -1 ? 1 : -1));
@@ -322,6 +377,22 @@ export default function RankingTable({ corridors, onSelect }: Props) {
           </button>
         )}
       </div>
+
+      {/* Outside the empty-table branch on purpose: a length filter strict
+          enough to empty the table must still be visible and reversible. */}
+      {shortHidden > 0 && (
+        <p className="text-[12px] text-neutral-400 mb-2.5 tabular-nums">
+          {showShort
+            ? tt.shortShown(shortHidden, MIN_FUNDABLE_LENGTH_M)
+            : tt.shortHidden(shortHidden, MIN_FUNDABLE_LENGTH_M)}{" "}
+          <button
+            onClick={() => setShowShort((v) => !v)}
+            className="text-neutral-500 underline underline-offset-2 hover:text-neutral-800"
+          >
+            {showShort ? tt.shortHide : tt.shortShow}
+          </button>
+        </p>
+      )}
 
       {rows.length === 0 ? (
         <p className="text-sm text-neutral-400">{tt.noMatch}</p>

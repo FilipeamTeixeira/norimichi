@@ -191,8 +191,12 @@ if (!"mean_slope_deg" %in% names(segments)) {
        "reach 05b, so 05c would score an incomplete table.")
 }
 
+# From the geometry, not a `length_m` column: 05 does not write one and 05d has
+# not run yet, so `segments$length_m` is NULL here and sum(NULL) reported every
+# merge as "0.0 km".
 message(sprintf("  %d segments, %.1f km",
-                nrow(segments), sum(segments$length_m, na.rm = TRUE) / 1000))
+                nrow(segments),
+                sum(as.numeric(sf::st_length(segments)), na.rm = TRUE) / 1000))
 
 # --- Hex grid ------------------------------------------------------------
 #

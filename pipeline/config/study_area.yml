@@ -47,6 +47,8 @@ regions:
       Isogo-ku: 2689464
       Nishi-ku: 2689468
       Minami-ku: 2689452
+      #Kanagawa-ku: 2689465
+      #Konan-ku: 2689462
 
     # Wards not run yet - move one up into `wards:` when you want it included.
     #  Minami-ku: 2689452
@@ -56,14 +58,7 @@ regions:
                                              # .osm.pbf - both the road network
                                              # and the boundary are read from it
 
-    prefecture_code: 14   # 神奈川県 (Kanagawa) - which e-Stat T001109 file
-                           # 07b_join_observed_cycling.R reads (tblT001109Q14.txt).
-                           # A prefecture code, not a region one: every ward in
-                           # a region must share one, since it selects a single
-                           # downloaded file. If a region ever spans two
-                           # prefectures this stops being enough - it isn't a
-                           # `wards:`-level field today only because no region
-                           # has needed that yet.
+    prefecture_code: 14   # 神奈川県
 
   Tokyo:
     label_ja: 東京都
@@ -73,7 +68,7 @@ regions:
       Chiyoda-ku: 1761742
       Chuo-ku: 1758897
       Minato-ku: 1761717
-      #Bunkyo-ku: 1758878
+      Bunkyo-ku: 1758878
     pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"
     prefecture_code: 13                          # 東京都
 

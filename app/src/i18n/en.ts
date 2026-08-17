@@ -516,6 +516,12 @@ const en = {
       unavailableType:
         "No corridor carries this type — bike parking is a point facility, not a stretch of street.",
       noMatch: "No corridors match that filter.",
+      shortHidden: (n: number, m: number) =>
+        `${n} corridor${n === 1 ? "" : "s"} under ${m}m not shown — too short to fund as their own scheme. Crossings and island-joining links are listed at any length.`,
+      shortShown: (n: number, m: number) =>
+        `Including ${n} corridor${n === 1 ? "" : "s"} under ${m}m.`,
+      shortShow: "Show them",
+      shortHide: "Hide them",
       summary: (rows: number, km: string) =>
         `${rows} corridors · ${km} km · click a row to see it on the map`,
       project: "Project",
