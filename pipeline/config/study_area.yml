@@ -1,30 +1,72 @@
-# Study area definition for the current pipeline run.
-# Every script reads this file so you only change your target area here -
+# Study area definitions for the pipeline.
+# Every script reads this file so you only change your target area(s) here -
 # nothing else in the pipeline should hardcode a place name or boundary.
 
-# --- The wards, and the region they add up to ----------------------------
+# --- Regions, each a named union of wards ---------------------------------
 #
-# run_ward.R reads `wards:` to find one ward's boundary; run_region.R merges
-# every ward listed here into `region:` and scores them as a single unit.
+# run_ward.R reads `<region>.wards:` to find one ward's boundary; run_region.R
+# merges every ward listed under a region into that region and scores them as
+# a single unit. Two regions are independent studies - nothing is shared or
+# compared between them, so a second region does not need to be adjacent to
+# the first, and does not touch the first's output when it runs.
 #
-# Adding a ward is: one line here, `Rscript run_ward.R <name>`, then a full
-# re-run of run_region.R. That last step is not optional - the region's scores
-# are relative to the set of wards in the merge, so a new ward moves the
-# existing wards' numbers too.
+# `pbf_path` lives per region, not globally: a region's wards are expected to
+# come from the same .osm.pbf extract (they get merged into one boundary set
+# in 09b), but a second region can be anywhere - Kansai, Kyushu, wherever - and
+# will need its own extract if it is not covered by the first region's file.
+#
+# Adding a ward to an existing region is: one line under that region's
+# `wards:`, `Rscript run_ward.R <region> <ward>`, then a full re-run of
+# `Rscript run_region.R <region>`. That last step is not optional - the
+# region's scores are relative to the set of wards in the merge, so a new ward
+# moves the existing wards' numbers too.
+#
+# Adding a new region is: a new top-level entry here with its own `wards:` and
+# `pbf_path:`, then `run_ward.R`/`run_region.R` exactly as above, scoped to
+# that region's name. It never requires re-running an existing region.
 #
 # Find a relation ID by searching openstreetmap.org, opening the matching
 # result, and reading "Relation: <name> (<id>)".
 
-region: "Yokohama"
+regions:
+  Yokohama:
+    wards:
+      Naka-ku: 2689447
+      Isogo-ku: 2689464
+      Nishi-ku: 2689468
+      Minami-ku: 2689452
 
-wards:
-  Naka-ku: 2689447
-  Isogo-ku: 2689464
-  Nishi-ku: 2689468
-  Minami-ku: 2689452
+    # Wards not run yet - move one up into `wards:` when you want it included.
+    #  Minami-ku: 2689452
 
-# Wards not run yet - move one up into `wards:` when you want it included.
-#  Minami-ku: 2689452
+    pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"
+                                             # set this to your actual downloaded
+                                             # .osm.pbf - both the road network
+                                             # and the boundary are read from it
+
+    prefecture_code: 14   # 神奈川県 (Kanagawa) - which e-Stat T001109 file
+                           # 07b_join_observed_cycling.R reads (tblT001109Q14.txt).
+                           # A prefecture code, not a region one: every ward in
+                           # a region must share one, since it selects a single
+                           # downloaded file. If a region ever spans two
+                           # prefectures this stops being enough - it isn't a
+                           # `wards:`-level field today only because no region
+                           # has needed that yet.
+
+  Tokyo:
+    wards:
+      Shinjuku-ku: 1758858
+      Shibuiya-ku: 1759477
+      Chiyoda-ku: 1761742
+    pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"
+    prefecture_code: 13                          # 東京都
+
+  # Osaka:
+  #   wards:
+  #     Kita-ku: 0000000
+  #   pbf_path: "/path/to/kansai-latest.osm.pbf"  # a disconnected region needs
+  #                                                # its own extract
+  #   prefecture_code: 27                          # 大阪府
 
 # --- Which area a run targets --------------------------------------------
 #
@@ -37,17 +79,14 @@ wards:
 # runners make:
 #
 #   source("R/utils_config.R")
-#   use_ward("Nishi-ku")            # for 01-04, 05, 05b, 06-09
+#   use_ward("Yokohama", "Nishi-ku")   # for 01-04, 05, 05b, 06-09
 #   source("scripts/06_build_hex_grid.R")
 #
-#   use_region()                    # for 09b, 05c, 10, 10b, 05d, 10c, 11, 12
+#   use_region("Yokohama")             # for 09b, 05c, 10, 10b, 05d, 10c, 11, 12
 #   source("scripts/11_export.R")
 
-# --- The same for every area ---------------------------------------------
+# --- The same for every region --------------------------------------------
 
-pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"   # set this to your actual downloaded
-                                             # .osm.pbf - both the road network
-                                             # and the boundary are read from it
 crs: 4326                       # WGS84 lon/lat - matches OSM, e-Stat, web maps
 hex_resolution: 9               # H3 resolution ~0.1 km2/cell - see docs, revisit
                                  # after you see the first render

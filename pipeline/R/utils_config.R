@@ -11,46 +11,54 @@ library(dplyr)
 
 #' Load the study area config
 #' @param path path to config/study_area.yml
-#' @return a list with name, pbf_path, osm_relation_id, crs, hex_resolution
+#' @return a list with name, region, pbf_path, prefecture_code, osm_relation_id,
+#'   crs, hex_resolution
 load_study_area <- function(path = "config/study_area.yml") {
-  cfg <- yaml::read_yaml(path)
+  cfg <- yaml::read_yaml(path)[c("crs", "hex_resolution")]
   override <- getOption("norimichi.study_area")
   if (length(override) > 0) cfg[names(override)] <- override
 
-  # `name` comes from a selector, never from the file. It used to sit in the
-  # file as a `name:` key next to an `osm_relation_id:`, which restated what
-  # `wards:` and `region:` already say - and two copies of one fact drift: the
-  # pair went "region name, ward ID", which would have clipped one ward's
-  # boundary into a file named after something else. There is one copy now.
+  # `name`, `region` and `pbf_path` come from a selector, never straight off
+  # the file: with more than one region in `regions:`, there is no longer one
+  # answer for "the" wards or "the" pbf_path to fall back to. use_ward()/
+  # use_region() resolve them from the named region before this is called.
   if (is.null(cfg$name)) {
     stop("no study area selected.\n",
          "  Pick one before sourcing a script on its own:\n",
-         "    use_ward(\"Naka-ku\")   for 01-04, 05, 05b, 06-09\n",
-         "    use_region()          for 09b, 05c, 10, 10b, 05d, 10c, 11, 12\n",
+         "    use_ward(\"Yokohama\", \"Naka-ku\")  for 01-04, 05, 05b, 06-09\n",
+         "    use_region(\"Yokohama\")             for 09b, 05c, 10, 10b, 05d, 10c, 11, 12\n",
          "  run_ward.R and run_region.R already do this for you.")
   }
   stopifnot(!is.null(cfg$pbf_path))
   cfg
 }
 
-#' Target one ward - its output prefix and its boundary, from the `wards:`
-#' registry. This is what run_ward.R runs on, and what you want before
-#' sourcing any of 01-04 or 06 by hand.
-use_ward <- function(ward, path = "config/study_area.yml") {
-  wards <- study_wards(path)
+#' Target one ward - its output prefix and its boundary, from the named
+#' region's `wards:` registry. This is what run_ward.R runs on, and what you
+#' want before sourcing any of 01-04 or 06 by hand.
+#' @param region a region listed under `regions:` in config/study_area.yml
+#' @param ward a ward listed under that region's `wards:`
+use_ward <- function(region, ward, path = "config/study_area.yml") {
+  wards <- study_wards(region, path)
   if (!ward %in% names(wards)) {
-    stop("unknown ward: ", ward, "\n",
+    stop("unknown ward: ", ward, " in region ", region, "\n",
          "  ", path, " lists: ", paste(names(wards), collapse = ", "), "\n",
-         "  Add it under `wards:` with its OSM boundary relation ID first.")
+         "  Add it under that region's `wards:` with its OSM boundary relation ID first.")
   }
-  use_study_area(name = ward, osm_relation_id = wards[[ward]])
+  def <- region_def(region, path)
+  use_study_area(name = ward, region = region, osm_relation_id = wards[[ward]],
+                 pbf_path = def$pbf_path, prefecture_code = def$prefecture_code)
 }
 
-#' Target the merged region. No boundary relation: a region is the union of
-#' its wards' extracts, not an admin area with a relation of its own - which
-#' is fine, because nothing downstream of the merge clips to a boundary.
-use_region <- function(path = "config/study_area.yml") {
-  use_study_area(name = study_region(path))
+#' Target a region's merged output. No boundary relation: a region is the
+#' union of its wards' extracts, not an admin area with a relation of its own
+#' - which is fine, because nothing downstream of the merge clips to a
+#' boundary.
+#' @param region a region listed under `regions:` in config/study_area.yml
+use_region <- function(region, path = "config/study_area.yml") {
+  def <- region_def(region, path)   # validates the name, stops if unknown
+  use_study_area(name = region, region = region, pbf_path = def$pbf_path,
+                 prefecture_code = def$prefecture_code)
 }
 
 #' Point the rest of this R session at a different study area.
@@ -80,18 +88,61 @@ use_study_area <- function(...) {
   invisible(fields)
 }
 
-#' The wards available to run, as a named list of OSM boundary relation IDs.
+#' The regions available to run, as a character vector of names.
+#'
+#' Read straight from the file for the same reason study_wards() is: it is
+#' the registry a runner lists in its usage message *before* anything is
+#' selected.
+all_regions <- function(path = "config/study_area.yml") {
+  regions <- names(yaml::read_yaml(path)$regions)
+  if (length(regions) == 0) {
+    stop("no regions listed in ", path, "\n",
+         "  Add one under `regions:` with its own `wards:` and `pbf_path:`.")
+  }
+  regions
+}
+
+#' One region's definition (its `wards:` and `pbf_path:`), read straight off
+#' the file. Stops early, with the list of known regions, rather than letting
+#' a typo surface later as a missing-file error three stages downstream.
+region_def <- function(region, path = "config/study_area.yml") {
+  regions <- yaml::read_yaml(path)$regions
+  if (!region %in% names(regions)) {
+    stop("unknown region: ", region, "\n",
+         "  ", path, " lists: ", paste(names(regions), collapse = ", "), "\n",
+         "  Add it under `regions:` with its own `wards:` and `pbf_path:` first.")
+  }
+  regions[[region]]
+}
+
+#' The wards available to run within one region, as a named list of OSM
+#' boundary relation IDs.
 #'
 #' Read straight from the file rather than through load_study_area(), since
 #' this is the registry a runner consults *before* it picks a target - it must
 #' not see that runner's own override.
-study_wards <- function(path = "config/study_area.yml") {
-  wards <- yaml::read_yaml(path)$wards
+#' @param region a region listed under `regions:` in config/study_area.yml
+study_wards <- function(region, path = "config/study_area.yml") {
+  wards <- region_def(region, path)$wards
   if (length(wards) == 0) {
-    stop("no wards listed in ", path, "\n",
-         "  Add them under `wards:` as  <name>: <osm relation id>.")
+    stop("no wards listed under region ", region, " in ", path, "\n",
+         "  Add them under its `wards:` as  <name>: <osm relation id>.")
   }
   wards
+}
+
+#' The region an override (set by use_ward()/use_region()) has already
+#' selected for this session. Stages sourced by run_ward.R/run_region.R read
+#' this rather than taking a `region` argument, since source() runs them in
+#' the global environment rather than in the runner's own local frame - the
+#' option is what actually carries the selection across that boundary.
+current_region <- function() {
+  region <- getOption("norimichi.study_area")$region
+  if (is.null(region)) {
+    stop("no region selected.\n",
+         "  Call use_ward(\"<region>\", \"<ward>\") or use_region(\"<region>\") first.")
+  }
+  region
 }
 
 #' TRUE only when this R process was started as `Rscript <name>`.
@@ -106,17 +157,6 @@ study_wards <- function(path = "config/study_area.yml") {
 invoked_as_script <- function(name) {
   file <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
   length(file) == 1 && basename(sub("^--file=", "", file)) == name
-}
-
-#' The name the merged wards are published under. Same reasoning as above.
-study_region <- function(path = "config/study_area.yml") {
-  region <- yaml::read_yaml(path)$region
-  if (is.null(region)) {
-    stop("no `region:` in ", path, "\n",
-         "  It names the merge of everything under `wards:`, and becomes the ",
-         "output file prefix.")
-  }
-  region
 }
 
 #' Fetch the study area's administrative boundary directly from the local
@@ -147,9 +187,9 @@ study_area_bbox_sf <- function(cfg) {
   if (is.null(cfg$osm_relation_id)) {
     stop("this stage clips to a ward boundary, but the selected study area ",
          "has none: ", cfg$name, "\n",
-         "  use_ward(\"<name>\") first. use_region() deliberately sets no ",
-         "boundary -\n  a region is the union of its wards' extracts, not a ",
-         "relation of its own.")
+         "  use_ward(\"<region>\", \"<ward>\") first. use_region() deliberately ",
+         "sets no boundary -\n  a region is the union of its wards' extracts, ",
+         "not a relation of its own.")
   }
 
   candidates <- osmextract::oe_read(

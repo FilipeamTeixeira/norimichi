@@ -53,14 +53,17 @@ library(dplyr)
 
 # --- What to merge -------------------------------------------------------
 #
-# Both come from config/study_area.yml: `region:`, and the ward names listed
-# under `wards:` - which are also the `name:` values run_ward.R used, i.e. the
-# output/ file prefixes. Reading them rather than taking arguments means a
-# standalone `Rscript scripts/09b_merge_regions.R` merges the same set
-# run_region.R would.
+# Both come from config/study_area.yml: the region use_region()/use_ward()
+# already selected (current_region(), since run_region.R's own selection lives
+# in an R option that survives across source() calls - see its header), and
+# the ward names listed under that region's `wards:` - which are also the
+# `name:` values run_ward.R used, i.e. the output/ file prefixes. Reading them
+# rather than taking arguments means a standalone
+# `Rscript scripts/09b_merge_regions.R` merges the same set run_region.R would,
+# once use_region("<name>") has been called first.
 
-REGION <- study_region()
-CITIES <- names(study_wards())
+REGION <- current_region()
+CITIES <- names(study_wards(REGION))
 
 # --- Columns that must NOT survive the merge ------------------------------
 #
@@ -262,6 +265,6 @@ for (layer in POINT_LAYERS) {
 message(sprintf("\nWrote output/%s_{segments,hexgrid,%s}.gpkg",
                 REGION, paste(POINT_LAYERS, collapse = ",")))
 message("Next: 05c -> 10 -> 10b -> 05d -> 10c -> 11 -> 12, with name: set to")
-message(sprintf("  \"%s\". run_region.R does both, and sources this script", REGION))
-message("  as its first stage - run that rather than these by hand.")
+message(sprintf("  \"%s\". run_region.R(\"%s\") does both, and sources this", REGION, REGION))
+message("  script as its first stage - run that rather than these by hand.")
 message("  (05d after 10b: it reads the roi_* columns 10b adds)")

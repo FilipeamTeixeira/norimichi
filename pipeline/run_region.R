@@ -1,22 +1,29 @@
 # run_region.R
-# Merges every ward listed under `wards:` in config/study_area.yml into the
-# single region named by `region:`, scores that region as one unit, and copies
-# the result into the Next.js app.
+# Merges every ward listed under one region's `wards:` in config/study_area.yml
+# into that region, scores it as one unit, and copies the result into the
+# Next.js app.
 #
 # From a shell:
 #
-#   Rscript run_region.R
+#   Rscript run_region.R Yokohama
 #
 # From R (open pipeline.Rproj first, so the working directory is pipeline/):
 #
 #   source("run_region.R")
-#   run_region()
+#   run_region("Yokohama")
 #
-# Run it after run_ward.R has been run for each ward, and re-run it in full
-# every time a ward is added. Not because the old wards' geometry changed -
-# because their scores did. A percentile rank and a min-max rescale are both
-# relative to the set of features in the run, so a third ward moves the first
-# two wards' numbers. There is no incremental version of this pass.
+# Run it after run_ward.R has been run for each ward in that region, and
+# re-run it in full every time a ward is added to it. Not because the old
+# wards' geometry changed - because their scores did. A percentile rank and a
+# min-max rescale are both relative to the set of features in the run, so a
+# third ward moves the first two wards' numbers. There is no incremental
+# version of this pass.
+#
+# A second region is a separate study, not an extension of this one: running
+# it neither reads nor rewrites the first region's output/ files (everything
+# is keyed on region/ward name), so adding Tokyo does not require re-running
+# Yokohama. Publishing still overwrites the app's single copy - see
+# publish_to_app() below.
 
 source("R/utils_config.R")
 
@@ -57,9 +64,9 @@ PUBLISHED <- c(
 # must not leave a stale surface behind for a deep link to keep resolving.
 PUBLISHED_DIRS <- c("access")
 
-run_region <- function() {
-  region <- study_region()
-  wards  <- names(study_wards())
+#' @param region a region listed under `regions:` in config/study_area.yml
+run_region <- function(region) {
+  wards <- names(study_wards(region))   # validates the name, stops if unknown
 
   # Every stage below is keyed on cfg$name, so the region name has to be in
   # force before the first one runs. Leaving it pointed at a ward is exactly
@@ -67,8 +74,8 @@ run_region <- function() {
   # {region}_*.gpkg, the export reads {ward}_*.gpkg, and you get one ward's
   # numbers published under the region's name with no error anywhere.
   #
-  # 09b itself is unaffected - it reads region/wards straight off the file.
-  use_region()
+  # 09b itself is unaffected - it reads the region name via current_region().
+  use_region(region)
 
   message(sprintf("=== %s: %s ===", region, paste(wards, collapse = " + ")))
 
@@ -118,6 +125,12 @@ publish_to_app <- function(region) {
   message("Restart the dev server if it is running: /api/geocode memoises the")
   message("study area's bounding box from hexagons.geojson at first request, so")
   message("address search stays bounded to the old region until the process restarts.")
+  message("")
+  message("app/public/data/ holds one region at a time - publishing a second")
+  message("region overwrites this one's files here (the pipeline's own output/")
+  message("is untouched and always has both). Ask when you want two regions")
+  message("servable in the app at once; that needs a per-region publish path")
+  message("plus a matching change on the frontend's fetch calls.")
 }
 
 # scripts/11_plot_leaflet_v2.R is deliberately not one of the stages. The old
@@ -126,4 +139,12 @@ publish_to_app <- function(region) {
 # data. Run it by hand when you want it; it reads the same output/{region}_*
 # files this pass just wrote.
 
-if (invoked_as_script("run_region.R")) run_region()
+if (invoked_as_script("run_region.R")) {
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) != 1) {
+    stop("usage: Rscript run_region.R <region>\n",
+         "  available: ", paste(all_regions(), collapse = ", "),
+         call. = FALSE)
+  }
+  run_region(args[[1]])
+}

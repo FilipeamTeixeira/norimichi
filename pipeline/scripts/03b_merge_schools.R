@@ -34,7 +34,19 @@ if (!file.exists(ksj_path)) {
   stop("no ", ksj_path, "\n  Run scripts/03_download_ksj.R first.")
 }
 
-ksj <- ksj_schools(sf::st_read(ksj_path, quiet = TRUE))
+ksj_raw <- sf::st_read(ksj_path, quiet = TRUE)
+
+# 03 stops on an empty clip itself, so reaching here empty means a stale file
+# written before that check existed - by a run that had the wrong prefecture's
+# P29 file for this ward.
+if (nrow(ksj_raw) == 0) {
+  stop(ksj_path, " has no schools in it.\n",
+       "  Re-run scripts/03_download_ksj.R - it now checks the P29 file matches ",
+       "the region's `prefecture_code`\n  and says so rather than writing an ",
+       "empty layer.")
+}
+
+ksj <- ksj_schools(ksj_raw)
 
 # A KSJ 学校分類コード this file has never seen would otherwise arrive as a
 # school with no level, which the Access page would then filter out without

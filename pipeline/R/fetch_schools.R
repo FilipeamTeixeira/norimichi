@@ -63,22 +63,42 @@ SCHOOL_CLASSES <- c(
 #'
 #' 16003 中等教育学校 and a combined 中高一貫 both take `junior_high`: they
 #' serve two levels at one site, and the younger cohort is the one the access
-#' question is about.
+#' question is about. 16014 義務教育学校 is the same rule one level down - a
+#' 9-year compulsory school covering both 小学校 and 中学校 (Shinagawa's
+#' 品川学園, Koto's 有明西学園), so it lands on `elementary`.
 #'
-#' 16015 各種学校 -> `international` is a **local** reading, not a definition.
-#' The code is a legal category that elsewhere also covers driving schools and
-#' evening language schools; in this study area it is the international and
-#' ethnic schools on the Yamate bluff. Re-check it if the study area moves.
+#' 16005 高等専門学校, 16006 短期大学 and 16007 大学 all take `tertiary`:
+#' post-secondary is one bucket here, and nothing downstream splits it.
+#'
+#' 16006 and 16014 are absent from Kanagawa's P29 file and present in Tokyo's,
+#' which is the only reason they were not here from the start.
+#'
+#' 16015 各種学校 -> `international` was a **local** reading, not a definition:
+#' the code is a legal catch-all, and in Yokohama its members happen to be the
+#' international and ethnic schools on the Yamate bluff. That note said to
+#' re-check it if the study area moved. It has, and the reading does not
+#' survive: Tokyo's 137 各種学校 include 東京會舘クッキングスクール,
+#' ドレスメーカーシック女学院 and 御茶の水美術学院 alongside 東京中華学校 -
+#' cooking, dressmaking and art-prep schools, which would arrive on the Access
+#' page as international schools children commute to.
+#'
+#' UNRESOLVED. Left as-is rather than quietly redefined, because the fix that
+#' works - classifying 各種学校 by name, the way OSM's are classified, since
+#' the legal code carries no level - also reclassifies Yokohama's and would
+#' move an already-published region's numbers. That is a study decision, not
+#' one this file should make on its own.
 KSJ_SCHOOL_CLASSES <- c(
   "16001" = "elementary",
   "16002" = "junior_high",
   "16003" = "junior_high",
   "16004" = "high",
   "16005" = "tertiary",
+  "16006" = "tertiary",
   "16007" = "tertiary",
   "16011" = "kindergarten",
   "16012" = "special",
   "16013" = "kindergarten",
+  "16014" = "elementary",
   "16015" = "international",
   "16016" = "vocational"
 )
@@ -328,14 +348,21 @@ report_unclassified <- function(schools) {
 
 #' Normalise the KSJ layer into the shared schema.
 #'
+#' The two constants are written to the row count rather than left to recycle:
+#' on an empty layer `paste0("ksj:", character(0))` is `"ksj:"` and `"ksj"` is
+#' itself, both length 1 against a length-0 geometry, and st_sf() then fails
+#' with "arguments imply differing number of rows: 1, 0" - which says nothing
+#' about the empty input that caused it.
+#'
 #' @param schools sf POINT, KSJ P29 as read by 03_download_ksj.R
 ksj_schools <- function(schools) {
+  n <- nrow(schools)
   sf::st_sf(
-    school_id    = paste0("ksj:", schools$P29_002),
-    name         = schools$P29_004,
-    address      = schools$P29_005,
+    school_id    = if (n == 0) character(0) else paste0("ksj:", schools$P29_002),
+    name         = as.character(schools$P29_004),
+    address      = as.character(schools$P29_005),
     school_class = unname(KSJ_SCHOOL_CLASSES[as.character(schools$P29_003)]),
-    source       = "ksj",
+    source       = rep("ksj", n),
     geometry     = sf::st_geometry(schools)
   )
 }

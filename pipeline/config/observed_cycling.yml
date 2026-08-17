@@ -19,9 +19,16 @@
 # 令和2年国勢調査 地域メッシュ統計, table T001109 — the same 250m grid the
 # population already comes on, so it joins to the hex grid by exactly the
 # route 07_join_population.R already uses. Downloaded per prefecture as
-# tblT001109Q<NN>.txt; Kanagawa is Q14.
+# tblT001109Q<NN>.txt.
 #
 #   https://www.e-stat.go.jp/dbview?sid=0003454513
+#
+# WHICH PREFECTURE
+#
+# Not here. `prefecture_code` is a per-region fact - it picks the file, and a
+# second region in a different prefecture needs a different one - so it lives
+# under that region's entry in config/study_area.yml, next to its `pbf_path`.
+# Everything below is the census table's own schema, unrelated to region.
 #
 # The columns that matter are the last six: 利用交通手段別１５歳以上自宅外
 # 就業者・通学者 by 徒歩のみ / 鉄道・電車 / 乗合バス / 自家用車 / オートバイ /
@@ -40,9 +47,9 @@
 # same reason: different population of trips.
 
 # Where the downloaded prefecture files live, relative to the pipeline
-# directory, and which prefecture the study area is in.
+# directory. Which prefecture is config/study_area.yml's `prefecture_code`,
+# per region.
 data_dir: "../data/estat_bike_data"
-prefecture_code: 14        # 神奈川県 -> tblT001109Q14.txt
 census_year: 2020
 source: "令和2年国勢調査 地域メッシュ統計 T001109（利用交通手段別15歳以上自宅外就業者・通学者）"
 

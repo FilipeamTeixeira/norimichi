@@ -44,8 +44,14 @@ library(yaml)
 cfg <- load_study_area()
 obs_cfg <- yaml::read_yaml("config/observed_cycling.yml")
 
+if (is.null(cfg$prefecture_code)) {
+  stop("no prefecture_code for region ", cfg$region %||% cfg$name, "\n",
+       "  Add it under that region's entry in config/study_area.yml, next to ",
+       "its `pbf_path`.")
+}
+
 path <- file.path(obs_cfg$data_dir,
-                  sprintf("tblT001109Q%02d.txt", as.integer(obs_cfg$prefecture_code)))
+                  sprintf("tblT001109Q%02d.txt", as.integer(cfg$prefecture_code)))
 
 hexes <- sf::st_read(sprintf("output/%s_hexgrid.gpkg", cfg$name), quiet = TRUE) |>
   sf::st_transform(4326)
@@ -85,8 +91,9 @@ mesh <- redistribute_suppressed(
 mesh <- mesh[mesh$mesh_code %in% pop_by_mesh$mesh_code, ]
 message(sprintf("  %d cell(s) overlap this ward's population mesh", nrow(mesh)))
 if (nrow(mesh) == 0) {
-  stop("no census mesh cells match this ward - check prefecture_code in ",
-       "config/observed_cycling.yml (", obs_cfg$prefecture_code, ")")
+  stop("no census mesh cells match this ward - check prefecture_code for ",
+       "region ", cfg$region %||% cfg$name, " in config/study_area.yml (",
+       cfg$prefecture_code, ")")
 }
 
 # ------------------------------------------------------------

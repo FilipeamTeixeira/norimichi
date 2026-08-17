@@ -36,7 +36,7 @@ library(igraph)
 library(jpmesh)
 
 cfg   <- load_study_area()
-wards <- names(study_wards())
+wards <- names(study_wards(current_region()))
 
 segments <- sf::st_read(sprintf("output/%s_segments.gpkg", cfg$name), quiet = TRUE)
 schools  <- sf::st_read(sprintf("output/%s_schools.gpkg", cfg$name), quiet = TRUE)

@@ -4,18 +4,19 @@
 #
 # From a shell:
 #
-#   Rscript run_ward.R Naka-ku
-#   Rscript run_ward.R Isogo-ku
+#   Rscript run_ward.R Yokohama Naka-ku
+#   Rscript run_ward.R Yokohama Isogo-ku
 #
 # From R (open pipeline.Rproj first, so the working directory is pipeline/):
 #
 #   source("run_ward.R")
-#   run_ward("Naka-ku")
-#   run_ward("Isogo-ku")
+#   run_ward("Yokohama", "Naka-ku")
+#   run_ward("Yokohama", "Isogo-ku")
 #
 # Sourcing the file only defines run_ward() - there is nothing to edit in here
-# to change ward. The ward must be listed under `wards:` in
-# config/study_area.yml, which is where its boundary relation ID comes from.
+# to change ward. The region must be listed under `regions:`, and the ward
+# under that region's `wards:`, in config/study_area.yml - which is where its
+# boundary relation ID comes from.
 #
 # WHY IT STOPS AT 09
 #
@@ -48,11 +49,12 @@ WARD_STAGES <- c(
   "09_join_terrain"
 )
 
-#' @param ward a name listed under `wards:` in config/study_area.yml
-run_ward <- function(ward) {
-  cfg <- use_ward(ward)   # validates the name against `wards:` and stops if unknown
+#' @param region a region listed under `regions:` in config/study_area.yml
+#' @param ward a ward listed under that region's `wards:`
+run_ward <- function(region, ward) {
+  cfg <- use_ward(region, ward)   # validates both names and stops if unknown
 
-  message(sprintf("=== %s (OSM relation %s) ===", ward, cfg$osm_relation_id))
+  message(sprintf("=== %s / %s (OSM relation %s) ===", region, ward, cfg$osm_relation_id))
 
   # source() with its default local = FALSE, so the stages still run in the
   # global environment exactly as they did under the old single-file runner.
@@ -62,16 +64,17 @@ run_ward <- function(ward) {
   }
 
   message(sprintf("\n%s is ready to merge.", ward))
-  message("Run run_ward() for any other ward you want, then run_region.R.")
+  message(sprintf("Run run_ward() for any other ward in %s, then run_region.R %s.",
+                  region, region))
   invisible(ward)
 }
 
 if (invoked_as_script("run_ward.R")) {
   args <- commandArgs(trailingOnly = TRUE)
-  if (length(args) != 1) {
-    stop("usage: Rscript run_ward.R <ward>\n",
-         "  available: ", paste(names(study_wards()), collapse = ", "),
+  if (length(args) != 2) {
+    stop("usage: Rscript run_ward.R <region> <ward>\n",
+         "  available regions: ", paste(all_regions(), collapse = ", "),
          call. = FALSE)
   }
-  run_ward(args[[1]])
+  run_ward(args[[1]], args[[2]])
 }
