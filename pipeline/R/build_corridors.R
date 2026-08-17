@@ -217,10 +217,17 @@ corridor_candidate_edges <- function(segments_m) {
     between <- abs((term$bearing[pairs[1, ]] - term$bearing[pairs[2, ]] + 180)
                    %% 360 - 180)
 
+    # A closed way (ring road, roundabout) has both its terminals at the same
+    # node, so it pairs with itself; drop those, and drop the node entirely if
+    # that is all it had.
     keep <- a != b
+    if (!any(keep)) return(NULL)
     data.frame(a = a[keep], b = b[keep], node = nd,
                deflection = (180 - between)[keep])
   })
+
+  out <- out[!vapply(out, is.null, logical(1))]
+  if (length(out) == 0) return(empty)
 
   do.call(rbind, out)
 }

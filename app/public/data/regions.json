@@ -11,8 +11,8 @@
     {
       "slug": "tokyo",
       "name": "Tokyo",
-      "wards": ["Shinjuku-ku"],
-      "bbox": [139.672431, 35.674303, 139.745305, 35.730793],
+      "wards": ["Shinjuku-ku", "Shibuiya-ku", "Chiyoda-ku", "Chuo-ku", "Minato-ku"],
+      "bbox": [139.659687, 35.621898, 139.7938, 35.730793],
       "label_ja": "東京都"
     }
   ]

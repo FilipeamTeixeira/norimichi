@@ -69,8 +69,11 @@ regions:
     label_ja: 東京都
     wards:
       Shinjuku-ku: 1758858
-      #Shibuiya-ku: 1759477
-      #Chiyoda-ku: 1761742
+      Shibuiya-ku: 1759477
+      Chiyoda-ku: 1761742
+      Chuo-ku: 1758897
+      Minato-ku: 1761717
+      #Bunkyo-ku: 1758878
     pbf_path: "/Users/Fil/naturegap-freshclone/pipeline/data/raw/regional/kanto-latest.osm.pbf"
     prefecture_code: 13                          # 東京都
 

@@ -1,82 +1,82 @@
 {
   "network": {
-    "total_segments": 6041,
-    "total_length_km": 547.3,
+    "total_segments": 21666,
+    "total_length_km": 2106.7,
     "lts_distribution": {
-      "1": 406,
-      "2": 4343,
-      "3": 809,
-      "4": 483
+      "1": 2458,
+      "2": 12961,
+      "3": 3900,
+      "4": 2347
     },
-    "pct_high_stress_length": 32.2,
-    "pct_no_sidewalk_length": 32.3,
-    "pct_no_safe_option_length": 2.1,
-    "pct_likely_informal_parking": 13
+    "pct_high_stress_length": 37.8,
+    "pct_no_sidewalk_length": 23.3,
+    "pct_no_safe_option_length": 2.6,
+    "pct_likely_informal_parking": 16
   },
   "existing_cycling_network": {
-    "total_length_km": 34.2,
-    "pct_of_network_length": 6.2,
-    "dedicated_km": 0.1,
-    "shared_path_km": 0,
-    "on_road_km": 34.1
+    "total_length_km": 175.3,
+    "pct_of_network_length": 8.3,
+    "dedicated_km": 9.9,
+    "shared_path_km": 0.8,
+    "on_road_km": 164.5
   },
   "destinations": {
-    "shops_and_restaurants": 2991,
-    "schools": 214,
-    "stations": 49
+    "shops_and_restaurants": 13228,
+    "schools": 714,
+    "stations": 229
   },
   "demand": {
-    "total_population": 349149,
-    "avg_potential_score": 0.427,
-    "avg_gap_score": -0.151,
+    "total_population": 1083221,
+    "avg_potential_score": 0.289,
+    "avg_gap_score": -0.275,
     "missed_opportunity_hexes": 10,
-    "population_in_missed_opportunity_hexes": 8387
+    "population_in_missed_opportunity_hexes": 14810
   },
   "observed": {
     "source": "令和2年国勢調査 地域メッシュ統計 T001109",
     "trips": "commute and school journeys only (通勤・通学)",
-    "commuters": 135023,
-    "bicycle_commuters": 12559,
-    "bicycle_share": 0.093,
-    "rail_share": 0.5679,
-    "car_share": 0.0316,
+    "commuters": 448362,
+    "bicycle_commuters": 40027,
+    "bicycle_share": 0.0893,
+    "rail_share": 0.5408,
+    "car_share": 0.0413,
     "validation": {
-      "hexes_used": 181,
-      "hexes_excluded_too_few_commuters": 10,
+      "hexes_used": 677,
+      "hexes_excluded_too_few_commuters": 98,
       "min_commuters": 50,
-      "corr_potential": -0.046,
-      "corr_gap": -0.195,
-      "corr_infra_quality": 0.285,
-      "corr_rail_share": 0.033,
-      "partial_corr_potential_given_infra": -0.036,
+      "corr_potential": 0.052,
+      "corr_gap": -0.079,
+      "corr_infra_quality": 0.178,
+      "corr_rail_share": 0.181,
+      "partial_corr_potential_given_infra": 0.077,
       "by_infra_quartile": [
         {
           "quartile": 1,
-          "hexes": 46,
-          "mean_infra_quality": 0.443,
-          "mean_observed_bicycle_share": 0.0774,
-          "mean_potential_score": 0.449
+          "hexes": 170,
+          "mean_infra_quality": 0.401,
+          "mean_observed_bicycle_share": 0.0701,
+          "mean_potential_score": 0.333
         },
         {
           "quartile": 2,
-          "hexes": 45,
-          "mean_infra_quality": 0.59,
-          "mean_observed_bicycle_share": 0.0949,
-          "mean_potential_score": 0.463
+          "hexes": 169,
+          "mean_infra_quality": 0.541,
+          "mean_observed_bicycle_share": 0.0813,
+          "mean_potential_score": 0.313
         },
         {
           "quartile": 3,
-          "hexes": 45,
-          "mean_infra_quality": 0.636,
-          "mean_observed_bicycle_share": 0.0943,
-          "mean_potential_score": 0.398
+          "hexes": 169,
+          "mean_infra_quality": 0.617,
+          "mean_observed_bicycle_share": 0.0862,
+          "mean_potential_score": 0.288
         },
         {
           "quartile": 4,
-          "hexes": 45,
-          "mean_infra_quality": 0.683,
-          "mean_observed_bicycle_share": 0.0999,
-          "mean_potential_score": 0.415
+          "hexes": 169,
+          "mean_infra_quality": 0.692,
+          "mean_observed_bicycle_share": 0.0936,
+          "mean_potential_score": 0.278
         }
       ],
       "note": "Reported, never fitted. potential_score is an index of characteristics, not a forecast; tuning it to reproduce observed cycling would redefine it as a prediction of the status quo, which is the thing this project argues is not the ceiling. Read the partial correlation rather than the raw one.",
@@ -85,14 +85,14 @@
   },
   "roi_scenario": {
     "note": "Illustrative order-of-magnitude estimates - see R/score_roi.R for assumptions and sources",
-    "daily_car_trips": 244405,
-    "daily_congestion_cost_yen": 85522045,
-    "daily_operating_cost_yen": 11941607,
-    "daily_shifted_trips": 48881,
-    "daily_congestion_savings_yen": 17104409,
-    "daily_operating_savings_yen": 2388321,
-    "daily_emissions_avoided_kg": 12709,
-    "daily_health_benefit_yen": 1466427,
-    "parking_spaces_freed": 977.6
+    "daily_car_trips": 758255,
+    "daily_congestion_cost_yen": 265328434,
+    "daily_operating_cost_yen": 37048318,
+    "daily_shifted_trips": 151651,
+    "daily_congestion_savings_yen": 53065687,
+    "daily_operating_savings_yen": 7409664,
+    "daily_emissions_avoided_kg": 39429.2,
+    "daily_health_benefit_yen": 4549527,
+    "parking_spaces_freed": 3033
   }
 }
