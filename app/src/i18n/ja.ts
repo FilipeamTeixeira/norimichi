@@ -322,6 +322,9 @@ const ja: Dict = {
 
   legend: {
     dismiss: "閉じる",
+    title: "凡例",
+    overlays: "重ね合わせ",
+    collapse: "凡例を隠す",
   },
 
   network: {
@@ -344,11 +347,9 @@ const ja: Dict = {
       recommendations: {
         title: "対策の提案",
         entry: "対策が提案されている区間",
-        note: "道路をクリックすると、整備内容・概算費用・受益者が表示されます。",
       },
       cycleways: {
         title: "既存の自転車通行空間",
-        note: "既存分の大半は歩行者と共用の自転車歩行者道です。専用の通行空間と合算していないのはそのためです。",
       },
       amenities: {
         title: "施設",

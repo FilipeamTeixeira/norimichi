@@ -341,6 +341,10 @@ const en = {
 
   legend: {
     dismiss: "Dismiss",
+    title: "Legend",
+    /** Heading over the folded overlay swatches — matches sidebar.overlays. */
+    overlays: "Overlays",
+    collapse: "Hide the legend",
   },
 
   network: {
@@ -363,11 +367,9 @@ const en = {
       recommendations: {
         title: "Recommendations",
         entry: "Intervention proposed",
-        note: "Click the street for what to build, its cost tier and who benefits.",
       },
       cycleways: {
         title: "Existing cycleways",
-        note: "Most of what exists is shared with people on foot (自転車歩行者道), which is why it is not summed with dedicated provision.",
       },
       amenities: {
         title: "Amenities",

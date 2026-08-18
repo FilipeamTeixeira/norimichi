@@ -23,6 +23,7 @@ import {
   AMENITY_COLORS,
   BIKE_COLOR,
   CYCLEWAY_COLOR,
+  MISSING_LINK_COLOR,
   RECOMMENDATION_COLOR,
   SELECTION_COLOR,
 } from "@/lib/scales";
@@ -70,11 +71,18 @@ interface MapViewProps {
   /** Paint expression for whichever geometry that is. */
   color: ExpressionSpecification | string;
   /**
-   * The property the street layer is currently coloured by. Three of them are
-   * styled by width and alpha as well as by colour — see ANALYTICAL_LINE above
-   * — and the rest fall back to the plain zoom ramps.
+   * The property the street layer is currently coloured by. Four of them are
+   * styled by width and alpha as well as by colour — see ANALYTICAL_LINE and
+   * islandLine above — and the rest fall back to the plain zoom ramps.
    */
   segmentMetric?: string | null;
+  /**
+   * The category values that metric's scale named, where it picked them from
+   * the data. Only "Disconnected networks" uses this: its ramp has to weight
+   * the three largest clusters differently from the rest, and which ids those
+   * are is a property of the region's data, not of the code.
+   */
+  segmentDomain?: string[] | null;
   /** The bridge overlay says nothing outside the connectivity view. */
   showBridges: boolean;
   /**
@@ -364,10 +372,109 @@ const GAP_OPACITY: ExpressionSpecification = [
 ];
 
 /**
+ * "Disconnected networks" — `island_id`. The odd one out of the four, in two
+ * ways.
+ *
+ * Its classes are identities rather than values, so weight cannot follow the
+ * variable: the three named clusters are drawn identically and differ only in
+ * hue, because saying island #17 is more important than island #5 would be
+ * saying something the analysis does not. What weight there is separates
+ * *kinds* of thing — a named cluster from the couple of hundred small ones
+ * behind it, and both from the streets that are in no low-stress cluster at
+ * all.
+ *
+ * And its finding is not in this expression at all. The missing links live in
+ * their own layer (islands-bridges, below) because they are drawn dashed, and
+ * `line-dasharray` is one of the few paint properties MapLibre will not
+ * evaluate as a data-driven expression. That layer sits above this one and
+ * carries the top of the hierarchy: the whole view exists to say "these are
+ * separate networks, and *these* are the links that would join them".
+ *
+ * Which ids count as named is decided by the scale builder from the data (the
+ * three largest clusters), so the ramp is built per region rather than being a
+ * constant like the other three.
+ */
+const islandLine = (
+  named: string[]
+): { width: ExpressionSpecification; opacity: ExpressionSpecification } => {
+  const byIsland = (
+    namedValue: number,
+    other: number,
+    noData: number
+  ): ExpressionSpecification => {
+    const expr: unknown[] = [
+      "match",
+      // Null becomes "", which is its own case: a street in no low-stress
+      // cluster is not a small cluster, and drawing it as one would invent a
+      // network that is not there.
+      ["to-string", ["coalesce", ["get", "island_id"], ""]],
+    ];
+    for (const id of named) expr.push(id, namedValue);
+    expr.push("", noData);
+    expr.push(other);
+    return expr as unknown as ExpressionSpecification;
+  };
+
+  return {
+    width: [
+      "step",
+      ["zoom"],
+      byIsland(1.0, 1.0, 1.0),
+      13,
+      byIsland(1.65, 1.3, 1.1),
+      15,
+      byIsland(2.0, 1.5, 1.15),
+      16.5,
+      byIsland(2.3, 1.65, 1.35),
+    ],
+    opacity: [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      12.4,
+      byIsland(0.5, 0.3, 0.12),
+      13.6,
+      byIsland(0.85, 0.55, 0.22),
+    ],
+  };
+};
+
+/**
+ * The missing links themselves. Widths run wider than any island line at every
+ * regime and the alpha never drops below 0.95, including at the opening frame:
+ * this is the one class in the view that should be findable before the reader
+ * has zoomed anywhere.
+ *
+ * The dash is in line-width units, so it scales with the ramp and keeps its
+ * proportions at every zoom.
+ */
+const MISSING_LINK_WIDTH: ExpressionSpecification = [
+  "step",
+  ["zoom"],
+  1.65,
+  13,
+  2.5,
+  15,
+  3.0,
+  16.5,
+  3.5,
+];
+
+const MISSING_LINK_OPACITY: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  12.4,
+  0.95,
+  13.6,
+  1.0,
+];
+
+/**
  * Which street views get an analytical ramp, keyed by the metric they colour
- * by. Anything not listed — island_id, and any view added later — keeps the
- * plain zoom ramps, which is the right default: a variable whose distribution
- * has not been looked at should not be given a hierarchy it may not have.
+ * by. Anything not listed keeps the plain zoom ramps, which is the right
+ * default: a variable whose distribution has not been looked at should not be
+ * given a hierarchy it may not have.
  */
 const ANALYTICAL_LINE: Record<
   string,
@@ -378,11 +485,18 @@ const ANALYTICAL_LINE: Record<
   infra_gap: { width: GAP_WIDTH, opacity: GAP_OPACITY },
 };
 
-const segmentPaint = (metric: string | null | undefined) =>
-  (metric ? ANALYTICAL_LINE[metric] : undefined) ?? {
-    width: SEGMENT_WIDTH,
-    opacity: SEGMENT_OPACITY,
-  };
+const segmentPaint = (
+  metric: string | null | undefined,
+  domain: string[] | null | undefined
+) => {
+  if (metric === "island_id") return islandLine(domain ?? []);
+  return (
+    (metric ? ANALYTICAL_LINE[metric] : undefined) ?? {
+      width: SEGMENT_WIDTH,
+      opacity: SEGMENT_OPACITY,
+    }
+  );
+};
 
 /**
  * Hexes stay readable but step back as they grow: one is ~302 m across, so it
@@ -550,6 +664,7 @@ export default function MapView({
   coloredGeometry,
   color,
   segmentMetric,
+  segmentDomain,
   showBridges,
   focus,
   controlRef,
@@ -854,8 +969,8 @@ export default function MapView({
         "line-color": color,
         // Kept in step by the paint effect below, which is where a view change
         // lands — this only sets the state the layer is born in.
-        "line-width": segmentPaint(segmentMetric).width,
-        "line-opacity": segmentPaint(segmentMetric).opacity,
+        "line-width": segmentPaint(segmentMetric, segmentDomain).width,
+        "line-opacity": segmentPaint(segmentMetric, segmentDomain).opacity,
       },
     });
 
@@ -871,22 +986,10 @@ export default function MapView({
         "line-cap": "round",
       },
       paint: {
-        "line-color": "#0b0b0b",
-        "line-width": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          11,
-          1.5,
-          13,
-          2.5,
-          15,
-          4,
-          18,
-          6.5,
-        ],
+        "line-color": MISSING_LINK_COLOR,
+        "line-width": MISSING_LINK_WIDTH,
         "line-dasharray": [1.5, 1],
-        "line-opacity": 0.9,
+        "line-opacity": MISSING_LINK_OPACITY,
       },
     });
 
@@ -1068,11 +1171,11 @@ export default function MapView({
       map.setPaintProperty("segments-layer", "line-color", color);
       // Width and alpha carry the variable too in the three analytical views;
       // every other one hands them back to the plain zoom ramps.
-      const { width, opacity } = segmentPaint(segmentMetric);
+      const { width, opacity } = segmentPaint(segmentMetric, segmentDomain);
       map.setPaintProperty("segments-layer", "line-width", width);
       map.setPaintProperty("segments-layer", "line-opacity", opacity);
     }
-  }, [color, showHex, showSegments, segmentMetric, dataReady]);
+  }, [color, showHex, showSegments, segmentMetric, segmentDomain, dataReady]);
 
   // --- A corridor arriving from the Investment Ranking table -------------
   //

@@ -36,6 +36,7 @@ import {
   AMENITY_COLORS,
   BIKE_COLOR,
   CYCLEWAY_COLOR,
+  MISSING_LINK_COLOR,
   RECOMMENDATION_COLOR,
   SELECTION_COLOR,
   buildScale,
@@ -366,8 +367,12 @@ export default function NetworkPage() {
       // in it.
       if (view.id === NETWORK_VIEW_ID) {
         entries.push({
-          color: "#0b0b0b",
+          color: MISSING_LINK_COLOR,
           label: t.network.legend.missingLink,
+          // The map draws this class dashed, and the dash is what marks it as
+          // a proposal rather than a street that exists. A solid swatch for it
+          // would be describing a different mark.
+          dash: [1.5, 1],
         });
       }
       sections.push({
@@ -390,7 +395,7 @@ export default function NetworkPage() {
           },
         ],
         hasNoData: false,
-        note: t.network.legend.recommendations.note,
+        compact: true,
       });
     }
 
@@ -414,7 +419,7 @@ export default function NetworkPage() {
           },
         ],
         hasNoData: false,
-        note: t.network.legend.cycleways.note,
+        compact: true,
       });
     }
 
@@ -428,6 +433,7 @@ export default function NetworkPage() {
           { color: AMENITY_COLORS.shop, label: t.network.legend.amenities.shop },
         ],
         hasNoData: false,
+        compact: true,
       });
     }
 
@@ -440,6 +446,7 @@ export default function NetworkPage() {
           { color: "#ffffff", label: t.network.legend.bikeFacilities.parking },
         ],
         hasNoData: false,
+        compact: true,
       });
     }
 
@@ -464,6 +471,7 @@ export default function NetworkPage() {
           coloredGeometry={coloredGeometry}
           color={scale?.expression ?? "#9ca3af"}
           segmentMetric={view?.metric.key ?? null}
+          segmentDomain={scale?.domain ?? null}
           showBridges={activeView === NETWORK_VIEW_ID}
           focus={focus}
           controlRef={mapControls}

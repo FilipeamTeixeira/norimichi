@@ -107,6 +107,37 @@ export const GAP_COLORS = {
   high: "#D96C4F",
 } as const;
 
+/**
+ * The three largest low-stress clusters in "Disconnected networks", which the
+ * scale picks from the data rather than from a fixed domain.
+ *
+ * Equal in weight on purpose. These are identities, not a ranking: island #17
+ * is not better than island #5, it is merely the one with more streets in it,
+ * and a ramp would say otherwise. So the three sit at the same lightness and
+ * chroma and differ only in hue.
+ *
+ * Teal rather than the categorical palette's green (#1baf7a), because a green
+ * street line already means something two views over — "high suitability" in
+ * Where to invest — and the two views are one click apart. Muted for the same
+ * reason as CATEGORY_COLORS: the islands are the context in this view, and the
+ * missing links between them are the finding.
+ */
+const ISLAND_COLORS = ["#4F8FCC", "#E28B55", "#39A889"];
+
+/**
+ * The specific links that would join two clusters into one network — the
+ * actionable result of the whole connectivity analysis, and the only thing in
+ * this view that is not context.
+ *
+ * Charcoal rather than the black it used to be (#0b0b0b). Pure black is not a
+ * colour any other layer here uses, so it read as an artefact of the basemap
+ * rather than as the top of this view's hierarchy; charcoal keeps the weight
+ * without pretending to be ink. It stays dashed regardless: this class is the
+ * one mark on the map that is a *proposal* rather than a measurement, and the
+ * dash is what says so.
+ */
+export const MISSING_LINK_COLOR = "#3F4347";
+
 /** Categorical slots 1-4, in the order the palette fixes them. */
 const NOMINAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
 
@@ -114,8 +145,15 @@ const NOMINAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
 const BOOL_FALSE = "#eb6834";
 const BOOL_TRUE = "#2a78d6";
 
-/** Present but not one of the named identities. */
-const OTHER = "#898781";
+/**
+ * Present but not one of the named identities — in practice, the couple of
+ * hundred small clusters behind the three largest.
+ *
+ * A cool grey rather than the warm #898781 it was, so it sits with the island
+ * hues instead of alongside them as a fourth one. These are still real
+ * networks, so they are drawn; they are just not the ones the view is naming.
+ */
+const OTHER = "#9CA3AA";
 /** Value missing from the data entirely. */
 export const NO_DATA = "#d8d8d6";
 
@@ -226,6 +264,17 @@ export interface Scale {
   entries: LegendEntry[];
   /** Set when some features have no value for this metric. */
   hasNoData: boolean;
+  /**
+   * The category values this scale actually named, where it chose them from
+   * the data rather than from a fixed domain — island_id, which runs to a few
+   * hundred clusters and gets its three largest.
+   *
+   * Published because the map needs the same list: "Disconnected networks"
+   * draws the named islands at a different weight from the rest, and only the
+   * builder knows which ids those are. Without it the two would have to count
+   * the features separately and could disagree.
+   */
+  domain?: string[];
 }
 
 type RawValue = string | number | boolean | null | undefined;
@@ -508,7 +557,11 @@ function nominalScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
     foldedRest = ordered.length > domain.length;
   }
 
-  const colors = domain.map((_, i) => NOMINAL[i % NOMINAL.length]);
+  // The clusters get their own equal-weight trio; anything else keeps the
+  // generic categorical slots.
+  const isIslands = metric.key === "island_id";
+  const palette = isIslands ? ISLAND_COLORS : NOMINAL;
+  const colors = domain.map((_, i) => palette[i % palette.length]);
 
   const expr: unknown[] = ["match", ["to-string", ["get", metric.key]]];
   domain.forEach((d, i) => expr.push(d, colors[i]));
@@ -516,9 +569,7 @@ function nominalScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
 
   const entries = domain.map((d, i) => ({
     color: colors[i],
-    label:
-      metric.domainLabels?.[i] ??
-      (metric.key === "island_id" ? t.scales.island(d) : d),
+    label: metric.domainLabels?.[i] ?? (isIslands ? t.scales.island(d) : d),
   }));
   if (foldedRest) entries.push({ color: OTHER, label: t.scales.otherIslands });
 
@@ -526,6 +577,7 @@ function nominalScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
     expression: expr as unknown as ExpressionSpecification,
     entries,
     hasNoData,
+    domain,
   };
 }
 
