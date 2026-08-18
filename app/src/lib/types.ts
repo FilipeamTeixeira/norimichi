@@ -446,12 +446,20 @@ export function suitabilityColor(score: number): string {
  * low-scoring road that connects nothing reads as de-prioritised (neutral
  * grey) instead of urgent (red). Kept in sync with the thresholds in
  * pipeline/R/score_suitability.R.
+ *
+ * Muted a step from the pure green/amber/red they started as (#22c55e /
+ * #f59e0b / #ef4444). Those were picked to be read one segment at a time, in a
+ * panel; across a whole city of lines they are four fully saturated hues
+ * competing at equal volume, and the bottleneck — 14% of network length, and
+ * the entire point of the view — had nothing left to be louder with. These sit
+ * lower in chroma so that width and alpha can carry the hierarchy instead (see
+ * INVEST_WIDTH in MapView).
  */
 export const CATEGORY_COLORS: Record<DisplayCategory, string> = {
-  high: "#22c55e",
-  moderate: "#f59e0b",
-  bottleneck: "#ef4444",
-  low_priority: "#9ca3af",
+  high: "#43B97F",
+  moderate: "#E7A33E",
+  bottleneck: "#D94B4B",
+  low_priority: "#9AA3AD",
 };
 
 /**

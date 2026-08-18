@@ -69,6 +69,12 @@ interface MapViewProps {
   coloredGeometry: ViewGeometry | null;
   /** Paint expression for whichever geometry that is. */
   color: ExpressionSpecification | string;
+  /**
+   * The property the street layer is currently coloured by. Three of them are
+   * styled by width and alpha as well as by colour — see ANALYTICAL_LINE above
+   * — and the rest fall back to the plain zoom ramps.
+   */
+  segmentMetric?: string | null;
   /** The bridge overlay says nothing outside the connectivity view. */
   showBridges: boolean;
   /**
@@ -103,8 +109,9 @@ setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
 const vis = (on: boolean): "visible" | "none" => (on ? "visible" : "none");
 
 /**
- * Zoom ramps, and nothing else. No layer appears, disappears or changes
- * meaning here — these only keep a mark legible at the scale it is drawn at.
+ * Zoom ramps. No layer appears, disappears or changes meaning here — these only
+ * keep a mark legible at the scale it is drawn at. (The stress ramps further
+ * down are the one exception, and say so.)
  *
  * The widths are set from the arithmetic rather than by eye. A coloured line
  * needs roughly 3px before its hue reads reliably, and a 100 m segment is 13px
@@ -153,6 +160,229 @@ const SEGMENT_OPACITY: ExpressionSpecification = [
   18,
   0.5,
 ];
+
+// --- Analytical line ramps ---------------------------------------------
+//
+// Three street views — traffic stress, where to invest, infrastructure gap —
+// share the structure below. They are the views whose *distribution* breaks the
+// default styling: in each of them the class a reader came to find is a small
+// minority of the network, and drawn at a uniform 3.5px it is outnumbered on
+// screen by its own context. So each carries its variable on three channels
+// instead of one — colour, width, alpha — and lets zoom decide how much of the
+// network is competing for attention at all.
+//
+// The regime edges are shared, and are set from the zooms this map can actually
+// be at rather than from round numbers. `minZoomFor` floors both published
+// regions at z11 and their whole extent fits at about z12.7, so a "zoomed right
+// out" regime written for z<11 never fires and the opening frame lands
+// mid-regime — which is how the first cut of the stress ramp shipped with LTS 2
+// still painting a solid mass at maximum zoom-out. So:
+//
+//   z<13      region to city — the opening frame lands here
+//   13-15     neighbourhood
+//   15-16.5   street
+//   z>=16.5   address; the map reaches z18, where a 3px line on a road casing
+//             about that wide stops reading as an annotation of the street
+//
+// Widths `step` at those edges: these are regimes with edges, not a continuum,
+// and a road either belongs to the scale you are looking at or it does not.
+// Alpha `interpolate`s across 12.4-13.6 instead, because it is the channel
+// carrying the change — most of the lines on screen going from ghost to solid
+// in one frame reads as the data reloading rather than as a map gaining detail.
+// Interpolating between two `match` expressions is the same shape AMENITY_RADIUS
+// uses: zoom stays at the top level of the property, the class lives inside it.
+//
+// Nothing here filters. Every feature is in the source, in the legend and
+// clickable at every zoom; the context classes fall to a tenth of their alpha,
+// not to nothing, so the reader can still see that the findings run through a
+// dense network rather than across an empty page.
+
+/**
+ * Traffic stress. In Yokohama the classes run 3 / 72 / 15 / 10 percent of
+ * network length, so LTS 2 alone is nearly three quarters of every line on the
+ * map, and the LTS 3-4 corridors the view exists to show are buried in it.
+ *
+ * This is the one ordered variable of the three, so weight simply rises along
+ * it, which also means it survives colour-vision deficiency: the arterials are
+ * the widest and most solid lines regardless of hue.
+ *
+ * LTS 1 recedes with LTS 2 rather than separately. The ramp is ordered, so what
+ * fades has to be a *tail* — dimming the calm streets and the hostile ones while
+ * the 72% in between stayed solid would read as a network with holes in it
+ * rather than as a map at a coarser scale.
+ */
+const byLts = (
+  lts1: number,
+  lts2: number,
+  lts3: number,
+  lts4: number
+): ExpressionSpecification => [
+  "match",
+  // Same idiom as RouteLayer's ROUTE_COLOR: a missing lts becomes "" and falls
+  // through to the fallback rather than erroring on a type mismatch. Segments
+  // without a class are drawn as the quietest one — they are grey under
+  // STRESS_LINE, so nothing is claimed about them by giving them least weight.
+  ["to-string", ["coalesce", ["get", "lts"], ""]],
+  "1",
+  lts1,
+  "2",
+  lts2,
+  "3",
+  lts3,
+  "4",
+  lts4,
+  lts1,
+];
+
+const STRESS_WIDTH: ExpressionSpecification = [
+  "step",
+  ["zoom"],
+  byLts(1.0, 1.2, 1.6, 2.0),
+  13,
+  byLts(1.0, 1.4, 2.0, 2.5),
+  15,
+  byLts(1.4, 1.8, 2.4, 3.0),
+  16.5,
+  byLts(1.8, 2.2, 3.0, 3.8),
+];
+
+/**
+ * A ghost rather than a removal, because the two say different things. Dropped
+ * entirely, Yokohama at z12 reads as a city with a dozen arterials and nothing
+ * else — the reader cannot tell whether the quiet grid is missing from the
+ * analysis or merely quiet. At a tenth, the mesh is present as texture: enough
+ * to see that the arterials cut through a dense network, not enough to compete
+ * with them for attention.
+ */
+const STRESS_OPACITY: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  12.4,
+  byLts(0.1, 0.1, 0.92, 0.98),
+  13.6,
+  byLts(0.6, 0.8, 0.92, 0.98),
+];
+
+/**
+ * "Where to invest" — `display_category` — on the same structure.
+ *
+ * It has the same problem as stress and a different shape to it. The classes
+ * run 29 / 46 / 14 / 11 percent of Yokohama's network length (high / moderate /
+ * bottleneck / low priority), so the two middle classes are three quarters of
+ * the map while the bottleneck — the thing a planner opens this view to find —
+ * is one segment in seven. Painted at one width, the answer is outnumbered by
+ * its own context.
+ *
+ * Unlike stress, this variable is not ordered, so weight cannot simply rise
+ * along it. It follows the *intervention* hierarchy instead: bottleneck first,
+ * then the suitability pair, then low priority, which is the one class that
+ * says "there is nothing to do here" and is therefore closer to basemap than to
+ * finding. That is why low priority stays thin at every zoom and is the faintest
+ * thing on the map at the region scale — 0.06, below even the LTS ghost.
+ */
+const byCategory = (
+  high: number,
+  moderate: number,
+  bottleneck: number,
+  lowPriority: number
+): ExpressionSpecification => [
+  "match",
+  ["to-string", ["coalesce", ["get", "display_category"], ""]],
+  "high",
+  high,
+  "moderate",
+  moderate,
+  "bottleneck",
+  bottleneck,
+  "low_priority",
+  lowPriority,
+  // An unclassified segment is not a finding, so it is drawn as context.
+  lowPriority,
+];
+
+const INVEST_WIDTH: ExpressionSpecification = [
+  "step",
+  ["zoom"],
+  byCategory(1.0, 1.1, 1.6, 1.0),
+  13,
+  byCategory(1.0, 1.4, 2.0, 1.0),
+  15,
+  byCategory(1.4, 1.8, 2.4, 1.15),
+  16.5,
+  byCategory(1.8, 2.2, 3.0, 1.4),
+];
+
+const INVEST_OPACITY: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  12.4,
+  byCategory(0.1, 0.1, 0.9, 0.06),
+  13.6,
+  byCategory(0.6, 0.8, 0.92, 0.4),
+];
+
+/**
+ * "Infrastructure gap" — two values, one of which is the finding.
+ *
+ * The easiest of the three: 85% of Yokohama's network is `low` (adequate for
+ * what the road is), and the 15% marked `high` is the whole output. So adequate
+ * is context at the region scale and the gap is drawn at full weight throughout
+ * — there is no zoom at which the gaps should be hard to find.
+ */
+const byGap = (adequate: number, gap: number): ExpressionSpecification => [
+  "match",
+  ["to-string", ["coalesce", ["get", "infra_gap"], ""]],
+  "low",
+  adequate,
+  "high",
+  gap,
+  adequate,
+];
+
+const GAP_WIDTH: ExpressionSpecification = [
+  "step",
+  ["zoom"],
+  byGap(1.0, 1.6),
+  13,
+  byGap(1.3, 2.0),
+  15,
+  byGap(1.7, 2.4),
+  16.5,
+  byGap(2.1, 3.0),
+];
+
+const GAP_OPACITY: ExpressionSpecification = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  12.4,
+  byGap(0.09, 0.9),
+  13.6,
+  byGap(0.75, 0.95),
+];
+
+/**
+ * Which street views get an analytical ramp, keyed by the metric they colour
+ * by. Anything not listed — island_id, and any view added later — keeps the
+ * plain zoom ramps, which is the right default: a variable whose distribution
+ * has not been looked at should not be given a hierarchy it may not have.
+ */
+const ANALYTICAL_LINE: Record<
+  string,
+  { width: ExpressionSpecification; opacity: ExpressionSpecification }
+> = {
+  lts: { width: STRESS_WIDTH, opacity: STRESS_OPACITY },
+  display_category: { width: INVEST_WIDTH, opacity: INVEST_OPACITY },
+  infra_gap: { width: GAP_WIDTH, opacity: GAP_OPACITY },
+};
+
+const segmentPaint = (metric: string | null | undefined) =>
+  (metric ? ANALYTICAL_LINE[metric] : undefined) ?? {
+    width: SEGMENT_WIDTH,
+    opacity: SEGMENT_OPACITY,
+  };
 
 /**
  * Hexes stay readable but step back as they grow: one is ~302 m across, so it
@@ -319,6 +549,7 @@ export default function MapView({
   hexagons,
   coloredGeometry,
   color,
+  segmentMetric,
   showBridges,
   focus,
   controlRef,
@@ -621,8 +852,10 @@ export default function MapView({
       layout: { visibility: vis(showSegments) },
       paint: {
         "line-color": color,
-        "line-width": SEGMENT_WIDTH,
-        "line-opacity": SEGMENT_OPACITY,
+        // Kept in step by the paint effect below, which is where a view change
+        // lands — this only sets the state the layer is born in.
+        "line-width": segmentPaint(segmentMetric).width,
+        "line-opacity": segmentPaint(segmentMetric).opacity,
       },
     });
 
@@ -831,8 +1064,15 @@ export default function MapView({
     // One expression, applied to whichever geometry is currently visible. The
     // other keeps its stale paint, which costs nothing because it isn't drawn.
     if (showHex) map.setPaintProperty("hex-fill", "fill-color", color);
-    if (showSegments) map.setPaintProperty("segments-layer", "line-color", color);
-  }, [color, showHex, showSegments, dataReady]);
+    if (showSegments) {
+      map.setPaintProperty("segments-layer", "line-color", color);
+      // Width and alpha carry the variable too in the three analytical views;
+      // every other one hands them back to the plain zoom ramps.
+      const { width, opacity } = segmentPaint(segmentMetric);
+      map.setPaintProperty("segments-layer", "line-width", width);
+      map.setPaintProperty("segments-layer", "line-opacity", opacity);
+    }
+  }, [color, showHex, showSegments, segmentMetric, dataReady]);
 
   // --- A corridor arriving from the Investment Ranking table -------------
   //

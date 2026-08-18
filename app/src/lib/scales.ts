@@ -65,11 +65,22 @@ const DIVERGING = ["#256abf", "#9ec5f4", "#c3e3cf", "#e89287", "#b13f3c"];
  * `infra_gap` thresholds on exactly that line. A single blue ramp put "anyone
  * can ride this" and "confident adults only" a shade apart.
  *
- * Blue<->red is also the safest two-hue axis under colour-vision deficiency.
- * Checked with the palette validator against the light surface: worst adjacent
- * pair 20.5 (protan) / 20.4 (tritan) / 21.3 normal, all well clear of the
- * floors. The lightest step sits under 3:1 on contrast, which the legend's
- * always-present labels relieve — do not use this ramp unlabelled.
+ * Blue<->red is also the safest two-hue axis under colour-vision deficiency,
+ * and LTS 3 is amber rather than a second red so the 3/4 step reads as a step
+ * rather than as two shades of the same alarm.
+ *
+ * The lightest step is *deliberately* faint. LTS 1 is the modal class by a wide
+ * margin — most of a Japanese city is quiet residential street — and painted at
+ * the same weight as everything else it merges into one blue mass that hides the
+ * variable the map exists to show. It is not carrying its class on colour alone:
+ * STRESS_WIDTH and STRESS_OPACITY below encode the same four values as width and
+ * as alpha, so stress reads as three channels at once and the pale end is
+ * recessive rather than illegible. That also means this ramp must stay labelled
+ * — the legend entries are what make the faint end nameable.
+ *
+ * These four hexes are set from the design brief rather than from the palette
+ * validator; they have not been re-checked against the CVD floors that the
+ * previous ramp (#5b9fe8 / #1f5aa8 / #d9776f / #992f2c) was measured on.
  *
  * Exported because the Route Analysis page colours a trip by the same variable
  * on the same ramp. It is deliberately *not* the green/amber/red of
@@ -79,7 +90,22 @@ const DIVERGING = ["#256abf", "#9ec5f4", "#c3e3cf", "#e89287", "#b13f3c"];
  * the route line and the panel's stacked bar are the same four colours, so a
  * red stretch on the map is the same red bar in the breakdown.
  */
-export const STRESS_LINE = ["#5b9fe8", "#1f5aa8", "#d9776f", "#992f2c"];
+export const STRESS_LINE = ["#BFD8EC", "#4C86C5", "#E09A45", "#B43F3F"];
+
+/**
+ * `infra_gap`, which is nominal in the data ("low" / "high") but is not really
+ * an identity: one of its two values is the finding. So it gets a named pair
+ * rather than the first two categorical slots, which would have handed the
+ * problem case (#eb6834) and the fine case (#2a78d6) equal weight.
+ *
+ * Blue for adequate and a warm red for the gap, at the same modest chroma as
+ * STRESS_LINE and CATEGORY_COLORS: three street views that all mean "this is
+ * the bit that needs work" should not each shout in a different register.
+ */
+export const GAP_COLORS = {
+  low: "#5A8FC7",
+  high: "#D96C4F",
+} as const;
 
 /** Categorical slots 1-4, in the order the palette fixes them. */
 const NOMINAL = ["#2a78d6", "#eb6834", "#1baf7a", "#4a3aa7"];
@@ -156,13 +182,20 @@ export const SELECTION_COLOR = "#8ec5f0";
  * or as a neighbourhood, and a reader moving between the Network tab and this
  * one would have to learn the break twice.
  *
- * Taken from inside each half of the ramp rather than from its ends, since
- * these are large flat fills at low opacity and the extremes (#5b9fe8, #992f2c)
- * read as either washed out or alarming at that size.
+ * The calm state is the ramp's second step rather than its first: the LTS 1
+ * colour is deliberately near-invisible on the line layers, and at 0.42 opacity
+ * across a 250m cell it would not clear the basemap at all.
+ *
+ * The severed state is the ramp's last step rather than its third, which is a
+ * change forced by the new ramp: LTS 3 is now amber, and amber against blue
+ * reads as a third state rather than as the other side of a break. Severed
+ * means "LTS 3-4 only", so it takes the end of that half — the muted red is
+ * calm enough at this size that the old reason for stepping in from the end
+ * (the previous #992f2c was alarming across a whole cell) no longer applies.
  */
 export const ACCESS_SURFACE = {
   calm: STRESS_LINE[1],
-  severed: STRESS_LINE[2],
+  severed: STRESS_LINE[3],
 } as const;
 
 /**
@@ -435,6 +468,23 @@ function nominalScale(metric: MetricDef, values: RawValue[], t: Dict): Scale {
       entries: domain.map((d) => ({
         color: CATEGORY_COLORS[d],
         label: t.categories[d],
+      })),
+      hasNoData,
+    };
+  }
+
+  // infra_gap is the same shape: a fixed two-value domain whose colours mean
+  // something, rather than an open set of identities.
+  if (metric.key === "infra_gap") {
+    const domain = (metric.domain ?? []).map(String) as ("low" | "high")[];
+    const expr: unknown[] = ["match", ["to-string", ["get", metric.key]]];
+    domain.forEach((d) => expr.push(d, GAP_COLORS[d]));
+    expr.push(NO_DATA);
+    return {
+      expression: expr as unknown as ExpressionSpecification,
+      entries: domain.map((d, i) => ({
+        color: GAP_COLORS[d],
+        label: metric.domainLabels?.[i] ?? d,
       })),
       hasNoData,
     };

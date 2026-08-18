@@ -463,6 +463,7 @@ export default function NetworkPage() {
           hexagons={hexagons}
           coloredGeometry={coloredGeometry}
           color={scale?.expression ?? "#9ca3af"}
+          segmentMetric={view?.metric.key ?? null}
           showBridges={activeView === NETWORK_VIEW_ID}
           focus={focus}
           controlRef={mapControls}
