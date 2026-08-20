@@ -41,6 +41,7 @@ const CONTENTS = [
   ["glossary", "Every field, by where it appears"],
   ["roi", "The numbers behind “return on investment”"],
   ["sources", "Where the data comes from"],
+  ["licensing", "Licence and reuse"],
   ["limits", "What this tool doesn’t claim"],
 ] as const;
 
@@ -763,6 +764,46 @@ export default function AboutContentEn() {
           hierarchy, not what kind of facility it is, and excluding the class
           silently dropped 42 km of ordinary named street — much of it
           mid-corridor, leaving otherwise-connected streets unable to touch.
+        </Note>
+      </Section>
+
+      <Section
+        id="licensing"
+        title="Licence and reuse"
+        lede="All of it is reusable. The terms differ by what you are reusing."
+      >
+        <Bullets>
+          <Bullet>
+            <Lead>The data</Lead> —{" "}
+            <ExternalLink href="https://opendatacommons.org/licenses/odbl/1-0/">
+              Open Database Licence 1.0
+            </ExternalLink>
+            . Not a free choice: the road network is derived from
+            OpenStreetMap, and the exported layers carry OSM geometry and OSM
+            tags, which makes them a derivative database rather than a
+            picture. ODbL’s share-alike condition follows the data — if you
+            publish an adapted version, it has to be ODbL too.
+          </Bullet>
+          <Bullet>
+            <Lead>The code</Lead> — MIT. The R pipeline and this application
+            both. Take the scoring logic and point it at another city.
+          </Bullet>
+          <Bullet>
+            <Lead>This page and the methodology</Lead> —{" "}
+            <ExternalLink href="https://creativecommons.org/licenses/by/4.0/">
+              CC BY 4.0
+            </ExternalLink>
+            . Quote it, translate it, argue with it in print.
+          </Bullet>
+        </Bullets>
+        <Note>
+          If you publish a map or a figure from this tool, the credit line it
+          needs is: Map data © OpenStreetMap contributors (ODbL). Basemap ©
+          CARTO. Population: e-Stat (Statistics Bureau of Japan). Schools and
+          stations: 国土数値情報, MLIT. Elevation: Geospatial Information
+          Authority of Japan. The government sources also ask that processed
+          figures be marked as processed — the numbers here are adapted, and
+          should not be cited as the official statistic as published.
         </Note>
       </Section>
 

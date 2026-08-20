@@ -781,19 +781,23 @@ export default function MapView({
       style: {
         version: 8,
         sources: {
-          osm: {
+          // Named `basemap`, not `osm`: /api/tiles proxies CARTO's raster
+          // basemap, so both CARTO and OpenStreetMap have to be credited —
+          // CARTO for the cartography, OSM for the data underneath it.
+          basemap: {
             type: "raster",
             tiles: ["/api/tiles/{z}/{x}/{y}"],
             tileSize: 256,
             attribution:
+              '&copy; <a href="https://carto.com/attributions">CARTO</a> | ' +
               '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
           },
         },
         layers: [
           {
-            id: "osm-layer",
+            id: "basemap-layer",
             type: "raster",
-            source: "osm",
+            source: "basemap",
             minzoom: 0,
             maxzoom: 19,
           },

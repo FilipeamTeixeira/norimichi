@@ -1,0 +1,58 @@
+# Data License — Open Database License (ODbL) v1.0
+
+## What this covers
+
+Every dataset Norimichi produces or redistributes, including but not limited
+to:
+
+  * `app/public/data/**` — the GeoJSON layers the frontend reads
+    (segments, corridors, cycleways, hexes, schools, stations, access
+    surfaces, and any other exported layer)
+  * `pipeline/output/**` — GeoPackages and intermediate tables
+  * any extract, tile set, or dump derived from the above
+
+## The license
+
+These datasets are made available under the Open Database License v1.0.
+
+    https://opendatacommons.org/licenses/odbl/1-0/
+
+Any rights in individual contents of the database are licensed under the
+Database Contents License v1.0.
+
+    https://opendatacommons.org/licenses/dbcl/1-0/
+
+## Why ODbL and not a Creative Commons license
+
+This is not a free choice. Norimichi's road network is derived from
+OpenStreetMap, which is licensed under ODbL 1.0. The exports carry OSM
+geometry together with OSM attributes — `osm_id`, `way_id`, `highway`,
+`speed_kmh`, `surface`, `lit`, `cycleway_type` and others (see
+`pipeline/R/export_geojson.R`).
+
+That makes them a **Derivative Database** under ODbL section 1.0, not a
+*Produced Work*. ODbL's share-alike condition (section 4.4) therefore applies:
+a publicly distributed Derivative Database must itself be offered under ODbL.
+
+Relicensing this data as CC BY, CC BY-SA, or CC0 would not be permitted.
+
+The *Produced Work* exemption — under which attribution alone suffices and the
+work may carry any license — applies to the rendered map a visitor looks at,
+and to figures and screenshots taken from it. It does not extend to the
+underlying data files.
+
+## What you must do when you reuse this data
+
+1. **Attribute.** Credit OpenStreetMap contributors and the other upstream
+   sources listed in ATTRIBUTION.md.
+
+2. **Share alike.** If you publicly use an adapted version of this database,
+   offer that adapted database under ODbL 1.0 as well.
+
+3. **Keep it open.** If you distribute the database (or a derivative) in a
+   form that technologically restricts access, you must also supply an
+   unrestricted version.
+
+Note that some upstream sources carry their own additional conditions —
+notably the Geospatial Information Authority of Japan's terms for elevation
+data. ATTRIBUTION.md records these per source.

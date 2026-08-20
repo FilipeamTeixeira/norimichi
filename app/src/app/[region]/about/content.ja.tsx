@@ -33,6 +33,7 @@ const CONTENTS = [
   ["glossary", "全項目一覧（表示場所別）"],
   ["roi", "「費用対効果」の根拠となる数値"],
   ["sources", "データの出典"],
+  ["licensing", "ライセンスと二次利用"],
   ["limits", "本ツールが主張しないこと"],
 ] as const;
 
@@ -506,6 +507,41 @@ export default function AboutContentJa() {
           trunk
           は含めています。日本ではこのタグは道路の路線階層上の位置づけを示すものであって施設の種類を示すものではなく、この区分を除外すると、名前のあるごく普通の街路が 42
           km 分、無言のうちに落ちていました——その多くは路線の途中にあり、本来つながる街路どうしが接することができなくなっていました。
+        </Note>
+      </Section>
+
+      <Section
+        id="licensing"
+        title="ライセンスと二次利用"
+        lede="すべて二次利用できます。ただし何を利用するかによって条件が異なります。"
+      >
+        <Bullets>
+          <Bullet>
+            <Lead>データ</Lead> —{" "}
+            <ExternalLink href="https://opendatacommons.org/licenses/odbl/1-0/">
+              Open Database License 1.0（ODbL）
+            </ExternalLink>
+            。これは選択の余地がありません。道路ネットワークは OpenStreetMap
+            由来であり、書き出したレイヤーは OSM
+            のジオメトリとタグをそのまま保持しているため、単なる画像ではなく派生データベースに当たります。ODbL
+            の継承条件はデータに従って移ります——改変版を公開する場合、それも ODbL
+            でなければなりません。
+          </Bullet>
+          <Bullet>
+            <Lead>ソースコード</Lead> — MIT。R
+            パイプラインと本アプリケーションの双方が対象です。評価ロジックをそのまま持ち出して、別の都市に向けて使えます。
+          </Bullet>
+          <Bullet>
+            <Lead>本ページおよび手法の記述</Lead> —{" "}
+            <ExternalLink href="https://creativecommons.org/licenses/by/4.0/">
+              CC BY 4.0
+            </ExternalLink>
+            。引用、翻訳、そして活字での反論も自由です。
+          </Bullet>
+        </Bullets>
+        <Note>
+          本ツールの地図や図を公開する場合、次の出典表示が必要です。地図データ ©
+          OpenStreetMap contributors（ODbL）。背景地図 © CARTO。人口：e-Stat（総務省統計局）。学校・駅：「国土数値情報」（国土交通省）。標高：「標高タイル（数値標高モデル）」（国土地理院）。なお政府系の出典については、加工した数値をそのまま公的統計として引用せず、加工したものであることを明示する必要があります。本ツールの数値はいずれも加工値です。
         </Note>
       </Section>
 

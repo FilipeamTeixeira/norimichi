@@ -1,0 +1,46 @@
+# Documentation License — Creative Commons Attribution 4.0 International
+
+## What this covers
+
+The written, explanatory material of Norimichi — the prose, not the code and
+not the data:
+
+  * the in-app "About" text (`app/src/app/[region]/about/content.en.tsx` and
+    `content.ja.tsx`), including the methodology, glossary, and stated limits
+  * project documentation and methodology writeups
+  * README files and this repository's own descriptive text
+
+## The license
+
+This material is licensed under a Creative Commons Attribution 4.0
+International License.
+
+    https://creativecommons.org/licenses/by/4.0/
+
+Full legal code:
+
+    https://creativecommons.org/licenses/by/4.0/legalcode
+
+## What that means
+
+You are free to share and adapt this material, for any purpose including
+commercially, provided you give appropriate credit, link to the license, and
+indicate whether you made changes.
+
+Suggested attribution:
+
+    "Norimichi" methodology documentation by Filipe Teixeira, licensed under
+    CC BY 4.0. Source: https://github.com/FilipeamTeixeira/norimichi
+
+## What this does NOT cover
+
+  * **Source code** — MIT. See LICENSE. Creative Commons explicitly
+    recommends against using CC licenses for software, because they do not
+    address patent rights or the source/object-code distinction.
+
+  * **Data** — ODbL 1.0, and not optional. See LICENSE-DATA.
+
+  * **Quoted third-party material.** Where the documentation cites external
+    figures — for example MLIT's cost-benefit unit values — those remain the
+    property of their source and are used as factual citation. The CC BY grant
+    here applies to this project's own expression, not to quoted content.
